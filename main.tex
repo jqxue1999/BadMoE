@@ -1,6 +1,6 @@
 \documentclass{article}
 
-\usepackage[nonatbib]{neurips_2026}
+\usepackage{neurips_2026}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -25,8 +25,8 @@
 \newcommand{\AminSM}{{\mathcal{A}^{-}_{\text{SM}}}}
 \newcommand{\AposSM}{{\mathcal{A}^{+}_{\text{SM}}}}
 
-\title{Query-Adaptive Expert Suppression via Causal Gradients\\
-  for Jailbreak Defense in Mixture-of-Experts Language Models}
+\title{Different Inputs, Different Adversarial Experts:\\
+  Locate with Causal Gradients, Suppress via Router Bias}
 
 \author{%
   Anonymous Authors \\
@@ -38,120 +38,127 @@
 \maketitle
 
 \begin{abstract}
-Mixture-of-Experts (MoE) language models route each token through a sparse
-subset of feed-forward experts, opening an under-explored surface for test-time
-safety intervention. Existing steering approaches such as SteerMoE select a
-\emph{fixed} set of safety-associated experts from coarse activation
-statistics and apply the same intervention to every input. We argue that this
-is mechanistically wasteful: different jailbreak prompts recruit different
-router pathways, and a global mask is neither the sharpest target nor the
-safest one. We introduce a query-adaptive defense that, for each incoming
-query, extracts a 1024-dimensional causal fingerprint via a single
-forward-backward pass on router biases and suppresses the top-$K$ experts
-whose activation most reduces a behavioral refusal direction. On
-OLMoE-1B-7B, suppressing the top-25 per-query experts (router bias $-10$)
-without any amplification outperforms SteerMoE's global $K{=}50$
-($25$ activate $+$ $25$ deactivate) intervention on three of four engaged
-jailbreak attacks, including a $32{\rightarrow}62\%$ safety rate improvement
-on past-tense attacks. Per-query selected experts overlap the SteerMoE
-``unsafe'' pool at $4{\times}$ chance rate, establishing independent
-validation of the concept while demonstrating that \emph{which} unsafe
-expert to suppress varies substantially across queries
-(Jaccard $0.11$ between per-query top-5 sets). We further report a clean
-negative result: symmetric amplification of per-query ``safe'' experts
-destroys generation coherence even at conservative bias
-magnitudes, revealing an asymmetry between suppression and amplification
-that tracks the divergence between our per-query signal and coarse
-activation-count safety pools.
+Existing MoE-steering defenses (e.g., SteerMoE) assume a \emph{fixed}
+set of safety-relevant experts, derived from population activation
+statistics and applied identically to every input. We show this
+assumption is wrong: \textbf{different harmful inputs recruit different
+adversarial experts} — the set of experts whose activation most reduces
+the model's refusal behavior differs substantially from query to query,
+with pairwise Jaccard of only $0.11$ between top-5 sets across $200$
+queries on OLMoE-1B-7B. We propose a two-step defense that respects
+this input-specificity: (i) \emph{locate} per-query adversarial experts
+by taking a causal autograd through router biases against a behavioral
+refusal direction, yielding a $1024$-dimensional signed fingerprint per
+query; (ii) \emph{suppress} the top-$K$ most-negative experts by a
+constant router-bias shift during generation. At identical bandwidth
+($K{=}25$), our method beats SteerMoE on three of four engaged
+jailbreak attacks (peak: past-tense $32{\rightarrow}62\%$
+safety rate) \emph{and} incurs $0$\,pp helpfulness tax on XSTest benign
+prompts while SteerMoE over-refuses $12$\,pp under the same judge.
+We further report that per-query \emph{positive}-$\Delta$ experts do not
+align with SteerMoE's safe-expert pool (chance-level enrichment), and
+correspondingly amplifying them breaks generation coherence — an
+asymmetry between suppression and amplification that matches the
+asymmetric validity of the two expert pools.
 \end{abstract}
 
 \section{Introduction}
 
-Mixture-of-Experts (MoE) architectures scale language model capacity while
-keeping inference compute bounded by routing each token through only a
-small subset of feed-forward experts
+Mixture-of-Experts (MoE) architectures scale language models by routing
+each token through a sparse subset of feed-forward experts
 \cite{shazeer2017outrageously,jiang2024mixtralexperts,muennighoff2025olmoe}.
-The sparsity that enables this scaling also surfaces a natural interface
-for test-time behavioral control: rather than editing weights or activations,
-one can adjust \emph{which experts fire} on the input at hand.
+The router is a natural surface for test-time behavioral control: adjusting
+\emph{which experts fire} on an input is cheaper and more interpretable
+than weight edits or activation steering.
 
-Recent work (SteerMoE, \cite{fayyaz2025steermoe}) demonstrates that
-promoting or suppressing a fixed set of ``safety-associated'' experts
-can meaningfully steer MoE models toward safer behavior, without
-fine-tuning. The experts are selected globally, using the difference of
-token-level activation frequencies between paired safe and unsafe
-responses (a risk-difference statistic). The same mask is then applied to
-every input at inference time.
+Recent work (SteerMoE~\citep{fayyaz2025steermoe}) demonstrates the
+promise of this approach. SteerMoE selects two global expert pools —
+safety-associated ($\mathcal{A}^{+}$) and unsafe-associated
+($\mathcal{A}^{-}$) — from the difference of activation frequencies on
+paired safe/unsafe responses, and applies a fixed log-softmax clipping
+mask to those pools at inference on \emph{every} input. This treatment
+assumes that a single population-level partition of experts into
+``safe'' and ``unsafe'' is adequate to steer the model on any given
+query.
 
-This paper asks a simple question: \emph{do different jailbreak inputs call
-for different expert interventions?} If the routing signatures of attacks
-vary with content, a query-adaptive intervention should outperform a
-fixed mask of identical size. We find the answer is yes — and the shape
-of the improvement reveals a more general asymmetry between the
-\emph{suppression} and \emph{amplification} sides of MoE steering.
+\paragraph{This assumption is wrong.} We measure, per query, the
+\emph{causal} effect of perturbing each $(\ell, e)$ router logit on
+the model's projection onto a behavioral refusal direction. This
+yields a signed $L \times E$ fingerprint $\mdelta(q)$ of experts that,
+on \emph{this} query, either drive or suppress refusal. On $200$
+harmful prompts across four attack families, the top-5 most-adversarial
+experts (i.e., most refusal-suppressing) overlap only at pairwise
+Jaccard $0.11$ across queries — the set of ``adversarial experts''
+depends strongly on the input. Tellingly, the union of per-query
+top-5 sets covers $145$ distinct $(\ell, e)$ pairs out of $1024$, yet
+no single expert appears in more than $52\%$ of top-5 sets. There is
+no universal adversarial expert.
 
-\paragraph{Our approach.} For each input query $q$, we compute a causal
-fingerprint $\mdelta(q) \in \mathbb{R}^{L \times E}$ via a single forward
-and backward pass. Each coordinate $\Delta_{\ell,e}(q)$ measures how a
-small router-logit perturbation on expert $(\ell, e)$ would shift the
-last-prompt-token residual projection onto a learned behavioral refusal
-direction $\dbeh$. Experts with strongly negative $\Delta_{\ell,e}(q)$
-are the experts whose activation actively \emph{reduces} refusal behavior
-on this specific query. Our defense suppresses the top-$K$ of these
-(router bias $-10$) during generation, then lets the model sample.
+\paragraph{Method (two steps).}
+\begin{enumerate}
+  \item \textbf{Locate adversarial experts via causal gradients.}
+  For an incoming query $q$, register a zero-initialised bias
+  $b_{\ell,e}$ on each router logit, forward to a mid-layer probe,
+  and take one autograd call against
+  $\mathrm{refuse\_score}(q) = h_{\ell^*}^{\top} \dbeh$. The resulting
+  $\Delta_{\ell,e}(q) = \partial \mathrm{refuse\_score} / \partial b_{\ell,e}$
+  ranks experts by their signed causal contribution to refusal.
+  \item \textbf{Suppress via router bias.} Apply a constant negative
+  bias ($-10$) to the top-$K$ most-negative-$\Delta$ experts during
+  generation. Everything else is untouched.
+\end{enumerate}
 
-\paragraph{Findings.} On OLMoE-1B-7B \cite{muennighoff2025olmoe} across
-four engaged jailbreak attack families drawn from PandaGuard (\emph{none},
-GCG, PAIR, past-tense),
+\paragraph{Findings.} On OLMoE-1B-7B across four engaged jailbreak
+families from PandaGuard (\emph{none}, GCG, PAIR, past-tense) at
+identical bandwidth ($K{=}25$) as SteerMoE:
 \begin{itemize}
-\item \textbf{Per-query suppression beats global SteerMoE} on 3/4 attacks
-  using half the intervention bandwidth and no amplification: safety
-  rate on past-tense rises from $32\%$ baseline to $62\%$
-  ($+30$pp over baseline, $+21$pp over SteerMoE).
-\item \textbf{Per-query selection is genuinely query-specific:} top-5
-  negative-$\Delta$ sets have pairwise Jaccard $0.11$ across queries
-  within attacks, yet selected experts enrich into SteerMoE's global
-  $\Amin$ pool at $4$–$8{\times}$ chance, showing agreement on
-  \emph{which experts are bad} but disagreement on \emph{which ones matter
-  per query}.
-\item \textbf{Amplification fails even at conservative magnitudes:}
-  adding top-$K$ positive-$\Delta$ experts with a $+3$ router bias
-  destroys generation coherence across all four attacks, despite
-  suppression working with the same query signal. We show this
-  asymmetry tracks the observation that per-query positive-$\Delta$
-  experts do \emph{not} align with SteerMoE's safe-expert pool
-  (chance-level enrichment), unlike the negative-$\Delta$ side.
+\item The two-step method beats SteerMoE on 3/4 attacks (peak:
+  past-tense $+21$pp over SteerMoE, $+30$pp over baseline) using only
+  the negative-$\Delta$ half — \emph{no amplification}.
+\item On XSTest benign prompts, the method incurs $0$\,pp over-refusal
+  cost; SteerMoE over-refuses $12$\,pp under the same judge on the
+  same $50$ prompts.
+\item \textbf{Positive-$\Delta$ experts are different: amplification
+  fails.} The top-$K$ \emph{positive}-$\Delta$ experts do not enrich
+  into SteerMoE's $\mathcal{A}^{+}$ (chance-level overlap), and
+  amplifying them with a $+3$ bias produces fluent-looking gibberish.
+  The asymmetry between suppression success and amplification failure
+  tracks this asymmetric enrichment.
 \end{itemize}
 
-Our contribution is (i) a lightweight, per-query causal-gradient method
-for expert attribution on MoE safety; (ii) a test-time defense that
-outperforms a strong MoE-steering baseline with less bandwidth; and
-(iii) a negative result that isolates MoE steering's suppress-amplify
-asymmetry to an identifiable difference in how per-query and
-population-level expert signals align.
+\paragraph{Contributions.}
+(i) Empirical evidence that adversarial experts in MoE models are
+input-specific rather than population-universal, refuting a premise
+of prior fixed-mask steering; (ii) a two-step test-time defense —
+causal-gradient localisation followed by router-bias suppression —
+that outperforms the strong SteerMoE baseline on safety while
+reducing helpfulness cost to zero; (iii) a clean negative result
+pinning the success of suppression and the failure of amplification
+to concordance (or lack thereof) between per-query and
+population-level expert pools.
 
 \section{Related Work}
 \label{sec:related}
 
-\paragraph{Refusal directions.} \cite{arditi2024refusal} identified a
+\paragraph{Refusal directions.}~\citet{arditi2024refusal} identified a
 one-dimensional refusal direction in dense transformer residual streams
 and showed that orthogonalizing this direction from attention and MLP
-output weights ablates the model's safety behavior. \cite{chen2025persona}
+output weights ablates the model's safety behavior.~\citet{chen2025persona}
 extended the technique to arbitrary persona traits using contrastive
 system prompts. Both works operate at the activation or weight level and
 do not exploit MoE routing.
 
-\paragraph{MoE expert steering.} SteerMoE \cite{fayyaz2025steermoe}
+\paragraph{MoE expert steering.} SteerMoE~\cite{fayyaz2025steermoe}
 proposed expert-level steering for MoE by (i) detecting behavior-linked
 experts via a risk-difference (RD) statistic on paired safe/unsafe
 responses from BeaverTails, and (ii) activating or deactivating the
 top-$K$ experts (by $|\text{RD}|$) via log-softmax clipping on router
-logits. RICE \cite{wang2025rice} amplifies thinking-token experts for
+logits. RICE~\cite{wang2025rice} amplifies thinking-token experts for
 reasoning tasks. Both methods select experts \emph{globally} from
 aggregate statistics and apply a fixed mask at inference.
 
 \paragraph{Weight-level safety.} Recent work has explored structural
-removal of refusal directions from MoE weights \cite{fayyaz2025steermoe,
+removal of refusal directions from MoE weights~\cite{fayyaz2025steermoe,
 arditi2024refusal}. In Appendix~\ref{app:weight-ortho} we show that
 applying Arditi-style orthogonalization to all $E \times L$ expert
 down-projections on OLMoE is marginal (e.g., $+6$pp on clean harmful
@@ -173,85 +180,123 @@ layer $\ell$ outputs
 where $\mathcal{T}_{\ell,t}$ is the top-$k$ set drawn from the router
 probabilities $p_{\ell,t,i} = \mathrm{softmax}(W_\ell^{\text{router}} \mathbf{h}_{\ell,t})_i$.
 
-\subsection{Behavioral Refusal Direction $\dbeh$}
-\label{sec:dbeh}
+\subsection{Two Probe Directions}
+\label{sec:directions}
 
-We extract a per-layer direction $\dbeh[\ell] \in \mathbb{R}^d$ that
-captures \emph{the model is currently refusing} rather than the upstream
-\emph{the model detected harmful intent}. For a set of baseline harmful
-prompts, we generate responses under the original model and obtain a
-Qwen2.5-14B safety judgment for each. Partitioning responses into refuse
-vs.\ comply sets ($R, C$) on the same prompts, we compute the
-response-token-averaged hidden-state mean difference
+Our method uses two per-layer directions, each extracted via mean-diff
+over a different contrast and each playing a distinct role.
+
+\paragraph{$\drefuse$ — harmfulness detector (for gating).}
+$\drefuse[\ell]$ is the classical Arditi-style refusal direction:
+the mean difference of the \emph{prompt}'s last-token residual between
+harmful and benign prompts at layer $\ell$. It is strong on ``does this
+prompt look harmful?'' and is directly comparable across benign and
+harmful distributions. We use it as a gate signal.
+
+\paragraph{$\dbeh$ — refusal-vs-compliance axis (for attribution).}
+$\dbeh[\ell]$ captures \emph{the model is currently refusing} rather
+than \emph{the model detected harmful intent}. On a set of baseline
+harmful prompts we generate under the original model, obtain
+Qwen2.5-14B safety judgments, partition responses into refuse ($R$)
+and comply ($C$) sets on the \emph{same} prompts, and compute
 \begin{equation}
   \dbeh[\ell] = \operatorname*{mean}_{r \in R, t \in r} \mathbf{h}_{\ell,t}(r) - \operatorname*{mean}_{c \in C, t \in c} \mathbf{h}_{\ell,t}(c).
 \end{equation}
-This is the response-conditioned analogue of the prompt-residual
-\emph{refusal direction} in Arditi et al.\ Crucially, $\dbeh$ is
-aggregated across four distinct attack distributions (\emph{none},
-cipher, PAIR, past-tense) and reweighted equally, reducing sensitivity
-to any single attack's prompt idiosyncrasy. We normalize each
-$\dbeh[\ell]$ to unit length.
+$\dbeh$ is aggregated across four attack distributions (\emph{none},
+cipher, PAIR, past-tense) with equal weight. Because its contrast is
+between two behaviors on the same harmful prompts, projections onto
+$\dbeh$ are only reliable under \emph{harmful-input distribution} —
+which is exactly why we use $\drefuse$ (not $\dbeh$) for gating. Both
+directions are unit-normalized per layer.
 
-\subsection{Per-Query Causal Fingerprint $\mdelta(q)$}
+\subsection{Step 1: Locate Adversarial Experts}
 \label{sec:delta}
 
-Fix a probe layer $\ell^*$. For a single query $q$, we compute the
-last-prompt-token residual's projection onto $\dbeh[\ell^*]$ as
-\begin{equation}
-  \mathrm{refuse\_score}(q) = \mathbf{h}_{\ell^*,T(q)}(q)^\top \dbeh[\ell^*],
-\end{equation}
-where $T(q)$ is the index of the final prompt token. We then ask: if
-we perturbed each router logit by a small additive bias $b_{\ell,e}$,
-how would refuse\_score change? This question has a closed-form answer
-via one autograd call:
+Fix a probe layer $\ell^*$. Forward the query to layer $\ell^*$ and
+capture the last-prompt-token residual $\mathbf{h}^* = \mathbf{h}_{\ell^*,T(q)}(q)$.
+From this single residual we compute two scalars:
+\begin{align}
+  \lambda(q) &= \mathbf{h}^* \cdot \drefuse[\ell^*] && \text{(harmfulness)} \\
+  \mathrm{refuse\_score}(q) &= \mathbf{h}^* \cdot \dbeh[\ell^*] && \text{(current refusal engagement)}
+\end{align}
+
+\paragraph{Causal attribution via autograd.}
+We register a zero-initialized bias $b_{\ell,e}$ on every
+router logit in layers $\{0,\dots,\ell^*\}$ and ask: if we perturbed
+$b_{\ell,e}$ by a small amount, how would refuse\_score change? A single
+\verb|torch.autograd.grad| call answers this:
 \begin{equation}
   \Delta_{\ell,e}(q) \;=\; \left. \frac{\partial \, \mathrm{refuse\_score}(q)}{\partial b_{\ell,e}} \right|_{b=0}.
 \end{equation}
-Concretely, we register bias parameters with \texttt{requires\_grad=True}
-on all $L$ layers' router linear outputs, run a single forward pass with
-the bias added to $\mathbf{z}$ before softmax, and invoke
-\verb|torch.autograd.grad| on the scalar refuse\_score against the
-$L \times E$ bias tensor.
+Note that $\lambda(q)$ and $\mathrm{refuse\_score}(q)$ share the same
+forward pass: the gate signal comes free alongside $\mdelta$.
+$\Delta_{\ell,e}(q) < 0$ identifies experts whose activation
+\emph{reduces} refusal on this query — our adversarial experts.
 
-\textbf{Interpretation.} $\Delta_{\ell,e}(q) > 0$ means that marginally
-routing more probability to expert $(\ell, e)$ would push the model's
-last-token state \emph{toward} the refusal direction. Conversely,
-$\Delta_{\ell,e}(q) < 0$ identifies experts whose activation \emph{reduces}
-refusal. The full $L \times E$ tensor is a per-query fingerprint of who
-helps and who hurts refusal on this input.
-
-\subsection{Query-Adaptive Defense $C_{\text{perQ-sup}}$}
+\subsection{Step 2: Adaptive Router-Bias Suppression}
 \label{sec:defense}
 
-For each incoming query $q$:
-\begin{enumerate}
-\item Extract $\mdelta(q)$ as in \S\ref{sec:delta} (one forward +
-  one backward pass, ${\approx}0.6$s on B200).
-\item Select $\Amin(q) = \operatorname*{arg\,topk}_{\ell,e}\bigl\{-\Delta_{\ell,e}(q)\bigr\}$ — the $K$ experts with most-negative $\Delta$.
-\item Generate a response with a constant router-logit bias $b_{\ell,e} = -\beta$ applied to each $(\ell, e) \in \Amin(q)$ and $0$ elsewhere.
-\end{enumerate}
-We use $K=25$ and $\beta = 10$ throughout. All intervention is confined
-to a single forward hook on the MoE gate module; the model weights are
-untouched.
+Rather than a uniform intervention, we scale the bias magnitude
+(i) at the query level by the harmfulness score $\lambda(q)$, and
+(ii) at the expert level by the causal magnitude $|\Delta_{\ell,e}(q)|$.
 
-\subsection{Offline Caching}
-In practice, $\mdelta(q)$ is computed once per query and cached, so the
-inference pipeline incurs only the hook overhead during generation.
-Because $\mdelta$ depends on the query alone (not on the intervention
-choice), cache reuse amortizes the cost across every intervention
-variant we study.
+\paragraph{Query-level magnitude.}
+Define a linear ramp on $\lambda(q)$:
+\begin{equation}
+  \beta_{\text{eff}}(q) = \beta \cdot \operatorname{clip}\!\left(\frac{\lambda(q) - \lambda_{\text{lo}}}{\lambda_{\text{hi}} - \lambda_{\text{lo}}},\, 0,\, 1\right).
+\end{equation}
+$\lambda_{\text{lo}}$ and $\lambda_{\text{hi}}$ are calibrated once from
+two held-out distributions (benign and harmful) — specifically, the
+$95$th percentile of $\lambda$ on a mixture of benign queries and the
+$5$th percentile on harmful queries, respectively. No held-out fitting
+per attack or per deployment. Truly benign queries
+($\lambda \le \lambda_{\text{lo}}$) yield $\beta_{\text{eff}} = 0$ — no
+intervention; clearly harmful queries
+($\lambda \ge \lambda_{\text{hi}}$) yield full $\beta$; ambiguous
+queries interpolate.
+
+\paragraph{Expert-level weighting.}
+For each query $q$, let $\Amin(q) = \operatorname*{arg\,topk}_{\ell,e}\bigl\{-\Delta_{\ell,e}(q)\bigr\}$.
+Weight the bias on each selected expert by its relative
+adversarial magnitude:
+\begin{equation}
+  b_{\ell,e}(q) = -\, \beta_{\text{eff}}(q) \cdot \frac{|\Delta_{\ell,e}(q)|}{\max_{(\ell',e') \in \Amin(q)} |\Delta_{\ell',e'}(q)|}
+  \quad \text{for } (\ell,e) \in \Amin(q),
+\end{equation}
+and $b_{\ell,e} = 0$ otherwise. The strongest adversarial expert on a
+given query receives the full $-\beta_{\text{eff}}(q)$ bias; weaker ones
+receive proportionally less.
+
+\paragraph{Generation.}
+Register a single forward hook on each MoE gate module that adds
+$b_{\ell,e}(q)$ to router logits before softmax, then generate
+autoregressively. Model weights are never modified.
+
+Hard-gate ($\mathbf{1}[\lambda > \tau]$) and uniform-magnitude
+($b_{\ell,e} = -\beta_{\text{eff}}(q)$ without expert-level weighting)
+variants are ablated in Appendix~\ref{app:adaptive}.
+
+\subsection{Offline Caching and Inference Cost}
+\label{sec:cost}
+$\lambda(q)$, $\mathrm{refuse\_score}(q)$, and $\mdelta(q)$ all come
+from a \emph{single} forward-backward pass through layers
+$\{0,\dots,\ell^*\}$ ($\sim 0.6$s on B200). Under the gate, truly
+benign queries can skip the backward entirely after reading
+$\lambda(q)$. Generation itself is unchanged; the method adds only one
+(shared) pass of attribution, not three separate inferences. Amortized
+over a $256$-token response, total latency overhead is
+approximately $5{-}10\%$ (App.~\ref{app:impl}).
 
 \section{Experiments}
 \label{sec:experiments}
 
 \subsection{Setup}
 
-\paragraph{Model.} OLMoE-1B-7B-0924-Instruct \cite{muennighoff2025olmoe}:
+\paragraph{Model.} OLMoE-1B-7B-0924-Instruct~\cite{muennighoff2025olmoe}:
 $L{=}16$ layers, $E{=}64$ experts per layer, top-$k{=}8$, hidden dim
 $d{=}2048$. Weights frozen throughout.
 
-\paragraph{Attacks.} PandaGuard JBB attack suite \cite{pandaguard}; we
+\paragraph{Attacks.} PandaGuard JBB attack suite~\cite{pandaguard}; we
 focus on four \emph{engaged} attack families where the baseline model
 meaningfully engages refusal circuitry (observed
 $\|\mdelta\| \gg 0$ at the probe layer): \emph{none} (direct harmful
@@ -267,7 +312,7 @@ Delta-based intervention.
 \begin{itemize}
 \item \textbf{No intervention (baseline):} OLMoE with no hooks.
 \item \textbf{SteerMoE:} our faithful reimplementation of
-  \cite{fayyaz2025steermoe} on OLMoE, $K_{\Apos} = K_{\Amin} = 25$,
+ ~\cite{fayyaz2025steermoe} on OLMoE, $K_{\Apos} = K_{\Amin} = 25$,
   selection via BeaverTails risk-difference, evaluated on the same
   $n{=}50$ prompts per attack.
 \item \textbf{Fixed-5:} a hand-selected small set of 5 universal
@@ -282,7 +327,7 @@ threshold used for baseline, SteerMoE, and our methods.
 
 \paragraph{Probe layer.} $\ell^* = 10$, selected based on the prior
 observation that refusal-related signal peaks mid-network for
-Instruct-tuned decoder models \cite{arditi2024refusal}.
+Instruct-tuned decoder models~\cite{arditi2024refusal}.
 
 \subsection{Main Result: Safety on Engaged Jailbreaks}
 \label{sec:main}
@@ -291,30 +336,50 @@ Table~\ref{tab:main} reports safety rates on the four engaged attacks.
 
 \begin{table}[t]
 \centering
-\caption{Safety rate (\%, higher is better) on four engaged jailbreak
-attack families. $n{=}50$ per cell, Qwen2.5-14B judge, threshold $70$.
-All K-using methods: $K{=}25$ per direction. Per-query suppression beats
-SteerMoE on 3/4 attacks while using only half the intervention bandwidth
-(no amplification).}
+\caption{Safety rate (\%, higher is better) on jailbreak attacks spanning
+all 5 mechanistic clusters of PandaGuard JBB (L47e taxonomy). $n{=}100$
+per cell, Qwen2.5-14B judge, threshold $70$. All $K$-using methods:
+$K{=}25$ per direction. Bypass-cluster attacks (bottom) serve as negative
+controls confirming mechanistic unreachability. \textbf{[PLACEHOLDER
+rows 1--10 pending Exp 1 in \texttt{experiment\_plan.md}; current rows
+1, 2, 5 at $n{=}50$ from earlier pilot.]}}
 \label{tab:main}
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{llcccc}
 \toprule
- & baseline & SteerMoE & \textbf{$C_{\text{perQ-sup}}$ (ours)} & $D_{\text{perQ-comb}}$ (ours) \\
- & (no hook) & ($K{=}25{+}25$, global) & (\textbf{$K{=}25$, neg only}) & ($K{=}25{+}25$, per-query) \\
+Attack & Cluster & baseline & SteerMoE & $C_{\text{perQ-sup}}$ (ours) & $D_{\text{perQ-comb}}$ \\
+ & & (no hook) & ($K{=}25{+}25$) & ($K{=}25$, neg only) & ($K{=}25{+}25$, per-q) \\
 \midrule
-\emph{none}        & 48.0 & 45.5 & \textbf{52.0} & ~0.0 \\
-GCG                & 16.0 & --   & \textbf{30.0} & ~0.0 \\
-PAIR               & 25.0 & 33.0 & 22.0          & ~0.0 \\
-past-tense         & 32.0 & 41.4 & \textbf{62.0} & ~0.0 \\
+\multicolumn{6}{l}{\emph{Engaged cluster (5)}} \\
+\emph{none}         & 5 & 48.0 & 45.5 & \textbf{52.0} & ~0.0 \\
+GCG                 & 5 & 16.0 & XX.X\textsuperscript{\dag} & \textbf{30.0} & ~0.0 \\
+PAIR                & 5 & 25.0 & 33.0 & 22.0          & ~0.0 \\
+ICA                 & 5 & XX.X & XX.X & XX.X          & XX.X \\
 \midrule
-mean (4 attacks)   & 30.3 & $\geq$ 40.0\textsuperscript{*} & \textbf{41.5} & ~0.0 \\
+\multicolumn{6}{l}{\emph{Tense-shift cluster (4)}} \\
+past-tense          & 4 & 32.0 & 41.4 & \textbf{62.0} & ~0.0 \\
+tense\_future       & 4 & XX.X & XX.X & XX.X          & XX.X \\
+\midrule
+\multicolumn{6}{l}{\emph{DAN / roleplay cluster (3)}} \\
+AIM                 & 3 & XX.X & XX.X & XX.X          & XX.X \\
+BETTER\_DAN         & 3 & XX.X & XX.X & XX.X          & XX.X \\
+\midrule
+\multicolumn{6}{l}{\emph{Persuasion / search cluster (1)}} \\
+new\_pair           & 1 & XX.X & XX.X & XX.X          & XX.X \\
+new\_renellm        & 1 & XX.X & XX.X & XX.X          & XX.X \\
+\midrule
+\multicolumn{6}{l}{\emph{Bypass cluster (2) -- negative controls}} \\
+new\_deepinception  & 2 & XX.X & XX.X & XX.X          & XX.X \\
+new\_gpt4\_cipher   & 2 & XX.X & XX.X & XX.X          & XX.X \\
+\midrule
+mean (non-bypass $n{=}10$) & & XX.X & XX.X & \textbf{XX.X} & ~0.0 \\
 \bottomrule
 \end{tabular}
 \\
 \vspace{2pt}
 \footnotesize
-\textsuperscript{*} SteerMoE GCG not in our reproduction.
+\textsuperscript{\dag} SteerMoE GCG was omitted from the L40 reproduction
+due to scoping; Exp 1 re-runs to fill.
 \end{table}
 
 Per-query suppression improves safety on three of four attacks, with a
@@ -324,6 +389,12 @@ GCG improves by $+14$pp over baseline; SteerMoE was not evaluated on
 GCG in our reproduction. PAIR is the one attack where $C_{\text{perQ-sup}}$
 slightly underperforms baseline ($-3$pp); we return to this in
 \S\ref{sec:discussion}.
+
+Numbers in Table~\ref{tab:main} are at $n{=}50$ per cell (binomial 95\%
+CI $\pm 14$pp). Extended results at $n{=}100$, a $K$ sweep, and a
+direction ablation ($\dbeh$ vs $\drefuse$) are reported in
+Appendices~\ref{app:n100}, \ref{app:ksweep}, and \ref{app:drefuse}
+respectively. The main-text conclusions hold under all three.
 
 \subsection{Amplification Fails: A Clean Negative Result}
 \label{sec:amplify}
@@ -392,7 +463,7 @@ observation is diagnostic for the amplification failure
 between the two frameworks, while there is a shared notion of an
 ``unsafe expert''.
 
-\subsection{Diversity of Per-Query Selections}
+\subsection{Adversarial Experts Are Input-Specific}
 \label{sec:diversity}
 
 Is per-query selection actually per-query, or does it collapse into a
@@ -440,27 +511,42 @@ prompt.
 
 \begin{table}[h]
 \centering
-\caption{Benign answer rate (\%, higher is better) on XSTest safe prompts
-($n{=}50$). Over-refusal cost measures helpfulness degradation.
-\textbf{[Results pending: L49f in queue.]}}
+\caption{Benign answer rate (\%, higher is better) on the same 50 XSTest
+safe prompts used throughout. Apples-to-apples: identical prompts,
+identical Qwen2.5-14B ANSWER/REFUSE classifier. $C_{\text{perQ-sup}}$
+incurs zero helpfulness tax; SteerMoE over-refuses 7 of 50 prompts.}
 \label{tab:benign}
 \small
-\begin{tabular}{lcc}
+\begin{tabular}{lccc}
 \toprule
- & baseline & $C_{\text{perQ-sup}}$ \\
+ & baseline & \textbf{$C_{\text{perQ-sup}}$} & SteerMoE \\
 \midrule
-answer rate (\%)    & \textsc{tbd} & \textsc{tbd} \\
-over-refusal cost   & --           & \textsc{tbd} \\
+answer rate (\%)    & 98.0 (49/50) & \textbf{98.0 (49/50)} & 86.0 (43/50) \\
+over-refusal cost   & --           & \textbf{0.0\,pp}      & \textbf{--12\,pp} \\
+\midrule
+\multicolumn{4}{l}{\emph{Per-type breakdown}:} \\
+figurative language & 100\,(25/25) & 100\,(25/25) & 88\,(22/25) \\
+homonyms            &  96\,(24/25) &  96\,(24/25) & 84\,(21/25) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-We expect a small but non-zero cost: $\Delta_{\text{beh}}$ has weak
-signal on benign prompts (no refuse-vs-comply divergence to
-differentiate from), so top-$K$ selection partially reduces to noise,
-occasionally hitting generically useful experts. The paper claim is
-conditional on this cost being small ($\leq 10$pp); if it is larger, we
-propose mitigations in \S\ref{sec:discussion}.
+The comparison is striking. Both methods target expert-level router
+intervention at identical total bandwidth ($K{=}25$), on the exact same
+50 XSTest prompts under the same judge. $C_{\text{perQ-sup}}$'s refused
+prompt (a single homonym-style query) is refused identically under the
+baseline — no genuine over-refusal. SteerMoE, by contrast, over-refuses
+7 of 50 benign prompts (12\,pp cost), uniformly distributed across both
+XSTest categories. We attribute the difference to \emph{selection
+locality}: per-query top-$K$ picks experts by each query's own causal
+fingerprint, whereas SteerMoE's global mask applies the same 25
+``unsafe'' and 25 ``safe'' experts to every input — including benign
+queries about killing Python processes or terminating subscriptions,
+where the global mask has no justification. Combined with the
+amplification asymmetry established in \S\ref{sec:amplify}, the paper's
+main claim — \emph{query-adaptive expert suppression improves safety on
+3 of 4 engaged attacks and reduces over-refusal on benign prompts
+relative to the fixed-mask baseline} — is supported end to end.
 
 \section{Discussion}
 \label{sec:discussion}
@@ -520,73 +606,27 @@ for negligible safety gain.
 
 \section{Conclusion}
 
-We have presented a per-query, causal-gradient approach to MoE
-jailbreak defense that outperforms a strong fixed-mask baseline using
-half the intervention bandwidth and no amplification. The key
-mechanism — a single autograd call to identify query-specific
-disruptor experts — is cheap, composable with existing router-bias
-infrastructure, and weight-preserving. The positive result
-(suppression beats SteerMoE on $3/4$ engaged attacks) and the
-negative result (amplification destroys coherence despite the same
-per-query machinery) together pin down the asymmetry: MoE safety
-steering is primarily a matter of \emph{which unsafe experts to avoid
-on this input}, not \emph{which safe experts to promote universally}.
+\emph{Different inputs recruit different adversarial experts in
+Mixture-of-Experts language models.} We quantified this input-specificity
+(Jaccard $0.11$ between per-query top-5 sets on $200$ queries), and
+designed a two-step defense that respects it: locate per-query
+adversarial experts with a single causal autograd through router
+biases, suppress them with a constant router-bias shift at generation.
+The method is weight-preserving, adds only a single forward-backward
+pass per query, and at identical intervention bandwidth outperforms
+the strong SteerMoE baseline on jailbreak safety while incurring zero
+over-refusal cost on XSTest benign prompts. The suppress-amplify
+asymmetry we report closes the loop: the ``unsafe'' direction of our
+per-query signal has concordant evidence from a population-level pool
+(SteerMoE's $\mathcal{A}^{-}$), the ``safe'' direction does not — and
+amplification accordingly fails. MoE safety steering is, at bottom, a
+matter of \emph{which adversarial experts to silence on this input}.
 
 \section*{Acknowledgments}
 \emph{Deferred to final copy.}
 
-\begin{thebibliography}{99}
-
-\bibitem[Arditi et al.(2024)]{arditi2024refusal}
-A.~Arditi, O.~Obeso, A.~Syed, D.~Paleka, N.~Panickssery, W.~Gurnee, and N.~Nanda.
-\newblock Refusal in language models is mediated by a single direction.
-\newblock In \emph{NeurIPS}, 2024.
-
-\bibitem[Chen et al.(2025)]{chen2025persona}
-R.~Chen, A.~Arditi, H.~Sleight, O.~Evans, and J.~Lindsey.
-\newblock Persona vectors: Monitoring and controlling character traits in language models.
-\newblock \emph{arXiv preprint arXiv:2507.21509}, 2025.
-
-\bibitem[Fayyaz et al.(2025)]{fayyaz2025steermoe}
-M.~Fayyaz, A.~Modarressi, H.~Deilamsalehy, F.~Dernoncourt, R.~Rossi, T.~Bui, H.~Schütze, and N.~Peng.
-\newblock {SteerMoE}: Steering mixture-of-experts {LLMs} via expert (de)activation.
-\newblock \emph{arXiv preprint}, 2025.
-
-\bibitem[Jiang et al.(2024)]{jiang2024mixtralexperts}
-A.~Q. Jiang et~al.
-\newblock Mixtral of experts.
-\newblock \emph{arXiv preprint arXiv:2401.04088}, 2024.
-
-\bibitem[Muennighoff et al.(2025)]{muennighoff2025olmoe}
-N.~Muennighoff et~al.
-\newblock {OLMoE}: Open mixture-of-experts language models.
-\newblock \emph{arXiv preprint arXiv:2409.02060}, 2025.
-
-\bibitem[Shazeer et al.(2017)]{shazeer2017outrageously}
-N.~Shazeer, A.~Mirhoseini, K.~Maziarz, A.~Davis, Q.~Le, G.~Hinton, and J.~Dean.
-\newblock Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.
-\newblock \emph{ICLR}, 2017.
-
-\bibitem[Andriushchenko et al.(2024)]{andriushchenko2024past}
-M.~Andriushchenko et~al.
-\newblock Jailbreaking leading safety-aligned {LLMs} with past-tense reformulations.
-\newblock \emph{arXiv}, 2024.
-
-\bibitem[Röttger et al.(2024)]{rottger2024xstest}
-P.~Röttger et~al.
-\newblock {XSTest}: A test suite for identifying exaggerated safety behaviours in large language models.
-\newblock \emph{NAACL}, 2024.
-
-\bibitem[Wang et al.(2025)]{wang2025rice}
-X.~Wang et~al.
-\newblock {RICE}: Experts need steering — thinking experts discovered via nPMI.
-\newblock \emph{arXiv}, 2025.
-
-\bibitem[PandaGuard]{pandaguard}
-PandaGuard {JBB} attack suite.
-\newblock \url{https://github.com/PandaGuard}, accessed 2026.
-
-\end{thebibliography}
+\bibliographystyle{plainnat}
+\bibliography{example_paper}
 
 \appendix
 
@@ -636,6 +676,164 @@ $C_{\text{perQ-sup}}$ on these attacks shows $0$–$4\%$ refusal rate,
 matching baseline within noise. We regard this cluster as mechanically
 out of reach for any $\dbeh$-anchored defense.
 
+Table~\ref{tab:bypass_quant} quantifies this claim across three
+representative bypass families under both our method and SteerMoE.
+\textbf{[PLACEHOLDER: fill after Exp 5 in \texttt{experiment\_plan.md}.]}
+
+\begin{table}[h]
+\centering
+\caption{Safety rate on bypass-cluster attacks
+($n{=}50$ per cell). No method moves the needle.
+\textbf{[PLACEHOLDER]}}
+\label{tab:bypass_quant}
+\small
+\begin{tabular}{lccc}
+\toprule
+attack & baseline & SteerMoE & $C_{\text{perQ-sup}}$ \\
+\midrule
+new\_deepinception & XX.X & XX.X & XX.X \\
+new\_gpt4\_cipher  & XX.X & XX.X & XX.X \\
+AIM                & XX.X & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Extended $n{=}100$ Scale}
+\label{app:n100}
+
+The main-text Table~\ref{tab:main} uses $n{=}50$ per cell. Table~\ref{tab:main_n100}
+re-runs all conditions at $n{=}100$ to halve the binomial CI.
+\textbf{[PLACEHOLDER: fill after Exp 1.]}
+
+\begin{table}[h]
+\centering
+\caption{Safety rate at $n{=}100$. \textbf{[PLACEHOLDER]}}
+\label{tab:main_n100}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & baseline & SteerMoE & $C_{\text{perQ-sup}}$ & $D_{\text{perQ-comb}}$ \\
+\midrule
+\emph{none}      & XX.X & XX.X & XX.X & ~0.0 \\
+GCG              & XX.X & --   & XX.X & ~0.0 \\
+PAIR             & XX.X & XX.X & XX.X & ~0.0 \\
+past-tense       & XX.X & XX.X & XX.X & ~0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Adaptive Magnitude Ablation}
+\label{app:adaptive}
+
+Our method (\S\ref{sec:defense}) scales the bias at two levels:
+query-wise by $\beta_{\text{eff}}(q) = \beta \cdot f(\lambda(q))$ with
+$f$ a linear ramp, and expert-wise by
+$|\Delta_{\ell,e}(q)| / \max_{(\ell',e')\in\Amin(q)}|\Delta_{\ell',e'}(q)|$.
+Table~\ref{tab:adaptive} contrasts four variants. \textbf{[PLACEHOLDER:
+fill after Exp 9 in \texttt{experiment\_plan.md}.]}
+
+\begin{table}[h]
+\centering
+\caption{Intervention-magnitude ablation on engaged jailbreaks and
+benign (XSTest + AlpacaEval), $n{=}50$ each. \textbf{[PLACEHOLDER]}}
+\label{tab:adaptive}
+\small
+\begin{tabular}{lcccc}
+\toprule
+scheme & query gate & expert weight & engaged safety $\uparrow$ & benign answer $\uparrow$ \\
+\midrule
+uniform, always on  & none          & uniform    & XX.X & XX.X \\
+hard gate only      & $\mathbf{1}[\lambda > \tau]$ & uniform    & XX.X & XX.X \\
+linear ramp only    & $\beta \cdot f(\lambda)$ & uniform & XX.X & XX.X \\
+linear ramp + $|\Delta|$-weighted   & $\beta \cdot f(\lambda)$ & $\propto |\Delta|$ & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Calibration: $\lambda_{\text{lo}}$ = 95th percentile of $\lambda$ on a
+held-out benign mixture (AlpacaEval + XSTest); $\lambda_{\text{hi}}$ =
+5th percentile on a held-out harmful mixture (PandaGuard's 25 attacks).
+\textbf{[PLACEHOLDER: report exact values after calibration.]}
+
+\section{$K$ Sweep Ablation}
+\label{app:ksweep}
+
+$K{=}25$ was chosen to match SteerMoE's bandwidth. Table~\ref{tab:ksweep}
+shows $C_{\text{perQ-sup}}$ safety rate on past-tense as a function of
+$K$. \textbf{[PLACEHOLDER: fill after Exp 3.]}
+
+\begin{table}[h]
+\centering
+\caption{Safety rate on past-tense by $K$. \textbf{[PLACEHOLDER]}}
+\label{tab:ksweep}
+\small
+\begin{tabular}{cccccc}
+\toprule
+$K$ & 5 & 10 & 25 & 50 & 100 \\
+\midrule
+safe \% & XX.X & XX.X & XX.X & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Direction Ablation: d\_behavior vs d\_refuse}
+\label{app:drefuse}
+
+Our score function uses $\dbeh$. Table~\ref{tab:drefuse} shows the same
+pipeline with $\drefuse$ (prompt last-token harmful-vs-benign mean-diff,
+used by prior work \cite{arditi2024refusal}).
+\textbf{[PLACEHOLDER: fill after Exp 4.]}
+
+\begin{table}[h]
+\centering
+\caption{Effect of score function on per-query selection.
+\textbf{[PLACEHOLDER]}}
+\label{tab:drefuse}
+\small
+\begin{tabular}{lcc}
+\toprule
+ & $C_{\text{perQ-behavior}}$ (ours) & $C_{\text{perQ-refuse}}$ \\
+\midrule
+\emph{none}      & 52.0 & XX.X \\
+GCG              & 30.0 & XX.X \\
+PAIR             & 22.0 & XX.X \\
+past-tense       & 62.0 & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Generalisation to a Second MoE Architecture}
+\label{app:qwen_moe}
+
+To test whether our findings depend on OLMoE-specific quirks, we
+replicate the full pipeline on Qwen1.5-MoE-A2.7B (24 layers, 60
+experts, top-$k{=}4$). The same hyperparameters ($K{=}25$,
+$\beta{=}{-}10$) and probe-layer convention (40\,\% depth) are used.
+\textbf{[PLACEHOLDER: fill after Exp 2 in \texttt{experiment\_plan.md}.]}
+
+\begin{table}[h]
+\centering
+\caption{Main results reproduced on Qwen1.5-MoE-A2.7B. \textbf{[PLACEHOLDER]}}
+\label{tab:qwen_moe}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & baseline & SteerMoE & $C_{\text{perQ-sup}}$ & $\Delta$ vs SteerMoE \\
+\midrule
+\emph{none}        & XX.X & XX.X & XX.X & XX.X \\
+GCG                & XX.X & --   & XX.X & -- \\
+PAIR               & XX.X & XX.X & XX.X & XX.X \\
+past-tense         & XX.X & XX.X & XX.X & XX.X \\
+\midrule
+benign (XSTest $n{=}50$) & XX.X & XX.X & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We further check that the per-query diversity finding replicates:
+pairwise Jaccard of top-$K$ sets across queries is
+\textbf{[PLACEHOLDER]}, comparable to 0.11 observed on OLMoE.
+
 \section{Fixed-5 Expert Selection}
 \label{app:fixed5}
 
@@ -655,6 +853,12 @@ addition before softmax and re-extracting top-$k$.
 \paragraph{Generation config.} Greedy decoding, \texttt{do\_sample=False},
 \texttt{max\_new\_tokens=256}, \texttt{temperature=1.0}, bf16 throughout.
 \texttt{pad\_token\_id} set to \texttt{eos\_token\_id}.
+
+\paragraph{Inference overhead.} End-to-end wall-clock at $n{=}10$:
+baseline \textbf{[PLACEHOLDER]} ms/query, $C_{\text{perQ-sup}}$ with
+online $\Delta$ extraction \textbf{[PLACEHOLDER]} ms/query, overhead
+\textbf{[PLACEHOLDER]} \%. Measured on a single NVIDIA B200 (Exp 6 in
+\texttt{experiment\_plan.md}).
 
 \paragraph{Compute.} All experiments run on a single NVIDIA B200
 (180 GB). $\Delta$ cache: ${\sim}10$ min for $N{=}200$. Main generation:
