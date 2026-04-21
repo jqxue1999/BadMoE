@@ -1,0 +1,24 @@
+\begin{wraptable}{r}{0.58\textwidth}
+    \vspace{-0.15in}
+    \setlength\tabcolsep{5pt}
+    \small
+    \centering
+    \tabcolsep=0.10cm
+    \begin{tabular}{l@{\hspace{4pt}}|ccc}
+        \toprule
+        \textbf{Method (Modifying 100 Experts)} & \makecell{Safe Response Rate} \\
+        \midrule
+        Before Steering & 100\% \\
+        Random selection of experts (Seed 0) & 100\% & \\
+        Random selection of experts (Seed 1) & 100\% & \\
+        Random selection of experts (Seed 2) & 100\% & \\
+        Bottom k Experts & 100\% & \\
+        \textbf{Steering with Our Selection} & \textcolor{DarkRed}{\textbf{0\%}}  \\
+        
+        \bottomrule
+    \end{tabular}
+	\caption{Safe response rates of GPT-OSS-120b on 50 AdvBench examples. Naive selection baselines fail to steer the model in a meaningful way.}
+	\label{tab:selection_baselines}
+    
+\vspace{-0.2in}
+\end{wraptable}

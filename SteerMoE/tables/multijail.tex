@@ -1,0 +1,24 @@
+\begin{wraptable}{r}{0.55\textwidth}
+    \vspace{-0.15in}
+    \setlength\tabcolsep{5pt}
+    \small
+    \centering
+    \tabcolsep=0.10cm
+    \begin{tabular}{l@{\hspace{4pt}}|ccc}
+        \toprule
+        \textbf{Jailbreak Method} & \makecell{English} & \makecell{Italian}  & \makecell{Thai} \\
+        \midrule
+        Direct Instruction & 99.7\% & 100\% & 99.4\% \\
+        AIM & 100\% & 100\% & 100\% \\
+        
+        \midrule
+        \textbf{SteerMoE} & 94.3\% & 90.2\% & 87.9\% \\
+        \textbf{SteerMoE + AIM} & \textcolor{DarkRed}{\textbf{9.5\%}} & \textcolor{DarkRed}{\textbf{11.4\%}} & \textcolor{DarkRed}{\textbf{7.3\%}} \\
+        
+        \bottomrule
+    \end{tabular}
+	\caption{Safe response rates of GPT-OSS-120b on 315 MultiJail examples (lower = stronger attack). SteerMoE is competitive alone and yields the best results combined with AIM even on different languages.}
+	\label{tab:multijail}
+    
+% \vspace{-0.2in}
+\end{wraptable}

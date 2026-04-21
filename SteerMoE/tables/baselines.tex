@@ -1,0 +1,55 @@
+\begin{wraptable}{r}{0.55\textwidth}
+    % \vspace{-0.15in}
+    \setlength\tabcolsep{5pt}
+    \small
+    \centering
+    \tabcolsep=0.10cm
+    \begin{tabular}{l@{\hspace{4pt}}|cccc}
+        \toprule
+        \textbf{Jailbreak Method} & \makecell{GPT-OSS\\120b \openai} & \makecell{Qwen3\\\qwen}  & \makecell{Phi-3.5\\\microsoft} & \makecell{OLMoE\\\aitwo} \\
+        \midrule
+        Direct Instruction & 100\% & 98\% & 100\% & 100\% \\
+        GCG & 100\% & 100\% & 100\% & 98\% \\
+        ArtPrompt & 58\% & 96\% & 40\% & 86\% \\
+        FFA & 100\% & 48\% & 100\% & 92\% \\
+        AIM & 100\% & \textcolor{DarkRed}{\textbf{2\%}} & 96\% & 100\% \\
+        
+        \midrule
+        \textbf{SteerMoE} & 90\% & 60\% & 94\% & 88\% \\
+        \textbf{SteerMoE + FFA} & 18\% & 48\% & 56\% & 70\% \\
+        \textbf{SteerMoE + AIM} & \textcolor{DarkRed}{\textbf{0\%}} & \textcolor{DarkRed}{\textbf{2\%}} & \textcolor{DarkRed}{\textbf{0\%}} & \textcolor{DarkRed}{\textbf{36\%}} \\
+        
+        \bottomrule
+    \end{tabular}
+	\caption{Safe response rates on 50 AdvBench examples (lower = stronger attack). SteerMoE is competitive alone and yields the best results combined with others.}
+	\label{tab:baselines}
+    
+\vspace{-0.2in}
+\end{wraptable}
+
+
+
+% \begin{wraptable}{r}{0.55\textwidth}
+% 	\setlength\tabcolsep{5pt}
+%     \small
+%     \centering
+%     \tabcolsep=0.10cm
+%     \begin{tabular}{l@{\hspace{4pt}}|cccc}
+%         \toprule
+%         \textbf{Jailbreak Method} & Mixtral & DeepSeek &  Qwen3 & OLMoE \\
+%         \midrule
+%         Direct Instruction & 76\% & 92\% & 98\% & 100\% \\
+%         GCG & 72\% & 90\% & 100\% & 98\% \\
+%         ArtPrompt & 52\% & 92\% & 96\% & 86\% \\
+%         FFA & \textbf{4\%} & 48\% & \textbf{48\%} & 92\% \\
+%         AdvTok & - & 50\% & - & 64\% \\
+%         \midrule
+%         \textbf{SteerMoE} & 44\% & 44\% & 78\% & 86\% \\
+%         \textbf{SteerMoE + GCG} & 28\% & 34\% & 64\% & \textbf{56\%} \\
+%         \textbf{SteerMoE + FFA} & 6\% & \textbf{22\%} & \textbf{48\%} & 64\% \\
+%         % \textbf{SteerMoE + ArtPrompt} & \textit{88\%} & \underline{60\%} & \underline{64\%} & 0.00 \\
+%         \bottomrule
+%     \end{tabular}
+% 	\caption{Safe response rates on 50 AdvBench examples (lower = stronger attack). Steering MoE is competitive alone and achieves the best results on recent models when combined with other methods.}
+% 	\label{tab:baselines}
+% \end{wraptable}

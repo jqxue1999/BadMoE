@@ -1,0 +1,45 @@
+\begin{table}[h]
+% \scriptsize
+\small
+\centering
+\begin{tabular}{llc}
+    \toprule
+    \multicolumn{1}{c} {Model} & \multicolumn{1}{c} {Citation} & \multicolumn{1}{c} {Application} \\
+
+    \midrule
+    \openai ~ \href{https://huggingface.co/openai/gpt-oss-120b}{openai/gpt-oss-120b} & \citet{openai2025gptoss120bgptoss20bmodel} & MoE Steering \\
+
+    \midrule
+    \openai ~  \href{https://huggingface.co/openai/gpt-oss-20b}{openai/gpt-oss-20b} & \citet{openai2025gptoss120bgptoss20bmodel} & MoE Steering \\
+
+    \midrule
+    \qwen ~ \href{https://huggingface.co/Qwen/Qwen3-30B-A3B}{Qwen/Qwen3-30B-A3B} & \citet{yang2025qwen3technicalreport} & MoE Steering \\
+
+    \midrule
+    \aitwo ~ \href{https://huggingface.co/allenai/OLMoE-1B-7B-0924-Instruct}{allenai/OLMoE-1B-7B-0924-Instruct} & \citet{muennighoff2025olmoeopenmixtureofexpertslanguage} & MoE Steering\\
+
+    \midrule
+    \microsoft ~ \href{https://huggingface.co/microsoft/Phi-3.5-MoE-instruct}{microsoft/Phi-3.5-MoE-instruct} & \citet{abdin2024phi3technicalreporthighly} & MoE Steering\\
+
+    % \midrule
+    % \href{https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite-Chat}{deepseek-ai/DeepSeek-V2-Lite-Chat} & \citet{deepseekai2024deepseekv2strongeconomicalefficient} & MoE Steering\\
+    
+    \midrule
+    \mistral ~ \href{https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1}{mistralai/Mixtral-8x7B-Instruct-v0.1} & \citet{jiang2024mixtralexperts} & MoE Steering\\
+
+
+
+    \midrule
+    \llama ~ \href{https://huggingface.co/meta-llama/Llama-Guard-3-8B}{meta-llama/Llama-Guard-3-8B} & \citet{dubey2024llama3herdmodels} & Safety Evaluation\\
+
+    \midrule
+    \google ~ \href{https://huggingface.co/google/gemma-3-27b-it}{google/gemma-3-27b-it} & \citet{gemmateam2025gemma3technicalreport} & Fluency Evaluation\\
+    % \midrule
+    % \href{https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct}{meta-llama/Llama-4-Scout-17B-16E-Instruct} & \citet{} \\
+    
+    \bottomrule
+\end{tabular}
+% \vspace{-1ex}
+\caption{The details of the models we used in this work.}
+\label{tab:models}
+\end{table}

@@ -1,0 +1,85 @@
+\begin{algorithm}[t]
+\caption{Computing Expert Risk Differences from Two Routing Distributions}
+\begin{algorithmic}[1]
+
+\STATE \textbf{Inputs:}
+\STATE \hspace{0.5em} Two routing–probability tensors $\mathcal{P}^{(A)}, \mathcal{P}^{(B)} \in \mathbb{R}^{T \times L \times E}$
+\STATE \hspace{0.5em} Number of routed experts $k$
+
+\STATE \textbf{Initialize:}
+\STATE Counters $\mathsf{Hit}^{(A)}, \mathsf{Miss}^{(A)}, \mathsf{Hit}^{(B)}, \mathsf{Miss}^{(B)} \in \mathbb{N}^{L \times E}$ to zero.
+
+\STATE \textbf{(A) Count expert activations and non-activations}
+\FOR{each token $t = 1 \dots T$}
+  \FOR{each layer $\ell = 1 \dots L$}
+    \STATE Determine top-$k$ experts for $\mathcal{P}^{(A)}_{t,\ell, :}$.
+    \STATE Increment $\mathsf{Hit}^{(A)}_{\ell, e}$ for each activated expert $e$.
+    \STATE Increment $\mathsf{Miss}^{(A)}_{\ell, e}$ for all remaining experts.
+    \STATE Repeat the same procedure for $\mathcal{P}^{(B)}$ using $\mathsf{Hit}^{(B)}$ and $\mathsf{Miss}^{(B)}$.
+  \ENDFOR
+\ENDFOR
+
+\STATE \textbf{(B) Compute activation frequencies and risk differences}
+\FOR{each layer $\ell$ and expert $e$}
+  \STATE Activation rates:
+  \[
+     r^{(A)}_{\ell,e} = 
+       \frac{\mathsf{Hit}^{(A)}_{\ell,e}}
+            {\mathsf{Hit}^{(A)}_{\ell,e} + \mathsf{Miss}^{(A)}_{\ell,e}},
+     \qquad
+     r^{(B)}_{\ell,e} = 
+       \frac{\mathsf{Hit}^{(B)}_{\ell,e}}
+            {\mathsf{Hit}^{(B)}_{\ell,e} + \mathsf{Miss}^{(B)}_{\ell,e}} .
+  \]
+  \STATE Risk difference:
+  \[
+     \Delta_{\ell,e} = r^{(A)}_{\ell,e} - r^{(B)}_{\ell,e}.
+  \]
+\ENDFOR
+
+\STATE \textbf{Output:} Risk differences $\Delta_{\ell,e}$ for all layers and experts.
+
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+
+\begin{algorithm}[h]
+\caption{Inference-Time Expert Steering in an MoE Layer}
+\begin{algorithmic}[1]
+
+\STATE \textbf{Inputs:}
+\STATE \hspace{0.5em} Token representations $H \in \mathbb{R}^{N \times d}$
+\STATE \hspace{0.5em} Gating network $\mathcal{G}$ producing router logits over $E$ experts
+\STATE \hspace{0.5em} Steering vector $w \in \mathbb{R}^{E}$ for this layer
+\STATE \hspace{0.5em} Margin parameter $\varepsilon > 0$ (e.g.\ $\varepsilon = 0.01$)
+
+\STATE \textbf{Step 1: Compute base router scores}
+\STATE $Z \in \mathbb{R}^{N \times E} \gets \mathcal{G}(H)$ \COMMENT{router logits per token}
+\STATE $S \gets \log \mathrm{softmax}(Z)$ \COMMENT{log-probabilities over experts}
+
+\STATE \textbf{Step 2: Identify positively and negatively steered experts}
+\STATE $P \gets \{ e \in \{1,\dots,E\} : w_e > 0 \}$ \COMMENT{positively steered experts}
+\STATE $N \gets \{ e \in \{1,\dots,E\} : w_e < 0 \}$ \COMMENT{negatively steered experts}
+
+\STATE \textbf{Step 3: Clamp log-scores by per-token max/min}
+\FOR{each token index $i = 1 \dots N$}
+  \STATE $m^{\max}_i \gets \max_{j} S_{i,j}$ \COMMENT{max log-score for token $i$}
+  \STATE $m^{\min}_i \gets \min_{j} S_{i,j}$ \COMMENT{min log-score for token $i$}
+  \FOR{each expert $e \in P$}
+    \STATE $S_{i,e} \gets m^{\max}_i + \varepsilon$
+  \ENDFOR
+  \FOR{each expert $e \in N$}
+    \STATE $S_{i,e} \gets m^{\min}_i - \varepsilon$
+  \ENDFOR
+\ENDFOR
+
+\STATE \textbf{Step 4: Route through experts with steered scores}
+\STATE Use $S$ as the routing scores to compute the MoE layer output.
+
+\STATE \textbf{Output:} Steered mixture-of-experts output for all tokens.
+
+\end{algorithmic}
+\end{algorithm}
