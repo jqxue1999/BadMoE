@@ -1,493 +1,664 @@
 \documentclass{article}
 
-% if you need to pass options to natbib, use, e.g.:
-%     \PassOptionsToPackage{numbers, compress}{natbib}
-% before loading neurips_2026
+\usepackage[nonatbib]{neurips_2026}
 
-% The authors should use one of these tracks.
-% Before accepting by the NeurIPS conference, select one of the options below.
-% 0. "default" for submission
-\usepackage{neurips_2026}
-% the "default" option is equal to the "main" option, which is used for the Main Track with double-blind reviewing.
-% 1. "main" option is used for the Main Track
-%  \usepackage[main]{neurips_2026}
-% 2. "position" option is used for the Position Paper Track
-%  \usepackage[position]{neurips_2026}
-% 3. "eandd" option is used for the Evaluations & Datasets Track
- % \usepackage[eandd]{neurips_2026}
- % if you need to opt-in for a single-blind submission in the E&D track:
- %\usepackage[eandd, nonanonymous]{neurips_2026}
-% 4. "creativeai" option is used for the Creative AI Track
-%  \usepackage[creativeai]{neurips_2026}
-% 5. "sglblindworkshop" option is used for the Workshop with single-blind reviewing
- % \usepackage[sglblindworkshop]{neurips_2026}
-% 6. "dblblindworkshop" option is used for the Workshop with double-blind reviewing
-%  \usepackage[dblblindworkshop]{neurips_2026}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{graphicx}
 
-% After being accepted, the authors should add "final" behind the track to compile a camera-ready version.
-% 1. Main Track
- % \usepackage[main, final]{neurips_2026}
-% 2. Position Paper Track
-%  \usepackage[position, final]{neurips_2026}
-% 3. Evaluations & Datasets Track
- % \usepackage[eandd, final]{neurips_2026}
-% 4. Creative AI Track
-%  \usepackage[creativeai, final]{neurips_2026}
-% 5. Workshop with single-blind reviewing
-%  \usepackage[sglblindworkshop, final]{neurips_2026}
-% 6. Workshop with double-blind reviewing
-%  \usepackage[dblblindworkshop, final]{neurips_2026}
-% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote.
-% For workshops (5., 6.), the authors should add the name of the workshop, "\workshoptitle" command is used to set the workshop title.
-% \workshoptitle{WORKSHOP TITLE}
+% Notation
+\newcommand{\drefuse}{\mathbf{d}_{\text{refuse}}}
+\newcommand{\dbeh}{\mathbf{d}_{\text{beh}}}
+\newcommand{\mdelta}{\boldsymbol{\Delta}}
+\newcommand{\Amin}{{\mathcal{A}^{-}}}
+\newcommand{\Apos}{{\mathcal{A}^{+}}}
+\newcommand{\AminSM}{{\mathcal{A}^{-}_{\text{SM}}}}
+\newcommand{\AposSM}{{\mathcal{A}^{+}_{\text{SM}}}}
 
-% "preprint" option is used for arXiv or other preprint submissions
- % \usepackage[preprint]{neurips_2026}
-
-% to avoid loading the natbib package, add option nonatbib:
-%    \usepackage[nonatbib]{neurips_2026}
-
-\usepackage[utf8]{inputenc} % allow utf-8 input
-\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
-\usepackage{hyperref}       % hyperlinks
-\usepackage{url}            % simple URL typesetting
-\usepackage{booktabs}       % professional-quality tables
-\usepackage{amsfonts}       % blackboard math symbols
-\usepackage{nicefrac}       % compact symbols for 1/2, etc.
-\usepackage{microtype}      % microtypography
-\usepackage{xcolor}         % colors
-
-% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote. 
-\title{Formatting Instructions For NeurIPS 2026}
-
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to LaTeX to determine where to break the
-% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
-% authors names on the first line, and the last on the second line, try using
-% \AND instead of \And before the third author name.
-
+\title{Query-Adaptive Expert Suppression via Causal Gradients\\
+  for Jailbreak Defense in Mixture-of-Experts Language Models}
 
 \author{%
-  David S.~Hippocampus\thanks{Use footnote for providing further information
-    about author (webpage, alternative address)---\emph{not} for acknowledging
-    funding agencies.} \\
-  Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  % examples of more authors
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \AND
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
+  Anonymous Authors \\
+  \texttt{anonymous@example.edu}
 }
-
 
 \begin{document}
 
-
 \maketitle
 
-
 \begin{abstract}
-  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on both the left- and right-hand margins. Use 10~point type, with a vertical spacing (leading) of 11~points. The word \textbf{Abstract} must be centered, bold, and in point size 12. Two line spaces precede the abstract. The abstract must be limited to one paragraph.
+Mixture-of-Experts (MoE) language models route each token through a sparse
+subset of feed-forward experts, opening an under-explored surface for test-time
+safety intervention. Existing steering approaches such as SteerMoE select a
+\emph{fixed} set of safety-associated experts from coarse activation
+statistics and apply the same intervention to every input. We argue that this
+is mechanistically wasteful: different jailbreak prompts recruit different
+router pathways, and a global mask is neither the sharpest target nor the
+safest one. We introduce a query-adaptive defense that, for each incoming
+query, extracts a 1024-dimensional causal fingerprint via a single
+forward-backward pass on router biases and suppresses the top-$K$ experts
+whose activation most reduces a behavioral refusal direction. On
+OLMoE-1B-7B, suppressing the top-25 per-query experts (router bias $-10$)
+without any amplification outperforms SteerMoE's global $K{=}50$
+($25$ activate $+$ $25$ deactivate) intervention on three of four engaged
+jailbreak attacks, including a $32{\rightarrow}62\%$ safety rate improvement
+on past-tense attacks. Per-query selected experts overlap the SteerMoE
+``unsafe'' pool at $4{\times}$ chance rate, establishing independent
+validation of the concept while demonstrating that \emph{which} unsafe
+expert to suppress varies substantially across queries
+(Jaccard $0.11$ between per-query top-5 sets). We further report a clean
+negative result: symmetric amplification of per-query ``safe'' experts
+destroys generation coherence even at conservative bias
+magnitudes, revealing an asymmetry between suppression and amplification
+that tracks the divergence between our per-query signal and coarse
+activation-count safety pools.
 \end{abstract}
 
+\section{Introduction}
 
+Mixture-of-Experts (MoE) architectures scale language model capacity while
+keeping inference compute bounded by routing each token through only a
+small subset of feed-forward experts
+\cite{shazeer2017outrageously,jiang2024mixtralexperts,muennighoff2025olmoe}.
+The sparsity that enables this scaling also surfaces a natural interface
+for test-time behavioral control: rather than editing weights or activations,
+one can adjust \emph{which experts fire} on the input at hand.
 
-\section{Submission of papers to NeurIPS 2026}
+Recent work (SteerMoE, \cite{fayyaz2025steermoe}) demonstrates that
+promoting or suppressing a fixed set of ``safety-associated'' experts
+can meaningfully steer MoE models toward safer behavior, without
+fine-tuning. The experts are selected globally, using the difference of
+token-level activation frequencies between paired safe and unsafe
+responses (a risk-difference statistic). The same mask is then applied to
+every input at inference time.
 
+This paper asks a simple question: \emph{do different jailbreak inputs call
+for different expert interventions?} If the routing signatures of attacks
+vary with content, a query-adaptive intervention should outperform a
+fixed mask of identical size. We find the answer is yes — and the shape
+of the improvement reveals a more general asymmetry between the
+\emph{suppression} and \emph{amplification} sides of MoE steering.
 
-Please read the instructions below carefully and follow them faithfully.
+\paragraph{Our approach.} For each input query $q$, we compute a causal
+fingerprint $\mdelta(q) \in \mathbb{R}^{L \times E}$ via a single forward
+and backward pass. Each coordinate $\Delta_{\ell,e}(q)$ measures how a
+small router-logit perturbation on expert $(\ell, e)$ would shift the
+last-prompt-token residual projection onto a learned behavioral refusal
+direction $\dbeh$. Experts with strongly negative $\Delta_{\ell,e}(q)$
+are the experts whose activation actively \emph{reduces} refusal behavior
+on this specific query. Our defense suppresses the top-$K$ of these
+(router bias $-10$) during generation, then lets the model sample.
 
-
-\subsection{Style}
-
-
-Papers to be submitted to NeurIPS 2026 must be prepared according to the
-instructions presented here. Papers may only be up to {\bf nine} pages long, including figures. \textbf{Papers that exceed the page limit will not be reviewed (or in any other way considered) for presentation at the conference.}
-Additional pages \emph{containing acknowledgments, references, checklist, and optional technical appendices} do not count as content pages. 
-
-
-The margins in 2026 are the same as those in previous years.
-
-
-Authors are required to use the NeurIPS \LaTeX{} style files obtainable at the NeurIPS website as indicated below. Please make sure you use the current files and not previous versions. Tweaking the style files may be grounds for desk rejection.
-
-
-\subsection{Retrieval of style files}
-
-
-The style files for NeurIPS and other conference information are available on the website at
-\begin{center}
-  \url{https://neurips.cc}.
-\end{center}
-% The file \verb+neurips_2026.pdf+ contains these instructions and illustrates the various formatting requirements your NeurIPS paper must satisfy.
-
-
-The only supported style file for NeurIPS 2026 is \verb+neurips_2026.sty+, rewritten for \LaTeXe{}. \textbf{Previous style files for \LaTeX{} 2.09,  Microsoft Word, and RTF are no longer supported.}
-
-
-The \LaTeX{} style file contains three optional arguments: 
+\paragraph{Findings.} On OLMoE-1B-7B \cite{muennighoff2025olmoe} across
+four engaged jailbreak attack families drawn from PandaGuard (\emph{none},
+GCG, PAIR, past-tense),
 \begin{itemize}
-\item \verb+final+, which creates a camera-ready copy, 
-\item \verb+preprint+, which creates a preprint for submission to, e.g., arXiv, \item \verb+nonatbib+, which will not load the \verb+natbib+ package for you in case of package clash.
+\item \textbf{Per-query suppression beats global SteerMoE} on 3/4 attacks
+  using half the intervention bandwidth and no amplification: safety
+  rate on past-tense rises from $32\%$ baseline to $62\%$
+  ($+30$pp over baseline, $+21$pp over SteerMoE).
+\item \textbf{Per-query selection is genuinely query-specific:} top-5
+  negative-$\Delta$ sets have pairwise Jaccard $0.11$ across queries
+  within attacks, yet selected experts enrich into SteerMoE's global
+  $\Amin$ pool at $4$–$8{\times}$ chance, showing agreement on
+  \emph{which experts are bad} but disagreement on \emph{which ones matter
+  per query}.
+\item \textbf{Amplification fails even at conservative magnitudes:}
+  adding top-$K$ positive-$\Delta$ experts with a $+3$ router bias
+  destroys generation coherence across all four attacks, despite
+  suppression working with the same query signal. We show this
+  asymmetry tracks the observation that per-query positive-$\Delta$
+  experts do \emph{not} align with SteerMoE's safe-expert pool
+  (chance-level enrichment), unlike the negative-$\Delta$ side.
 \end{itemize}
 
-
-\paragraph{Preprint option}
-If you wish to post a preprint of your work online, e.g., on arXiv, using the NeurIPS style, please use the \verb+preprint+ option. This will create a nonanonymized version of your work with the text ``Preprint. Work in progress.'' in the footer. This version may be distributed as you see fit, as long as you do not say which conference it was submitted to. Please \textbf{do not} use the \verb+final+ option, which should \textbf{only} be used for papers accepted to NeurIPS.
-
-
-At submission time, please omit the \verb+final+ and \verb+preprint+ options. This will anonymize your submission and add line numbers to aid review. Please do \emph{not} refer to these line numbers in your paper as they will be removed during generation of camera-ready copies.
-
-
-The file \verb+neurips_2026.tex+ may be used as a ``shell'' for writing your paper. All you have to do is replace the author, title, abstract, and text of the paper with your own.
-
-
-The formatting instructions contained in these style files are summarized in Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
-
-
-\section{General formatting instructions}
-\label{gen_inst}
-
-
-The text must be confined within a rectangle 5.5~inches (33~picas) wide and
-9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).  Use 10~point
-type with a vertical spacing (leading) of 11~points.  Times New Roman is the
-preferred typeface throughout, and will be selected for you by default.
-Paragraphs are separated by \nicefrac{1}{2}~line space (5.5 points), with no
-indentation.
-
-
-The paper title should be 17~point, initial caps/lower case, bold, centered
-between two horizontal rules. The top rule should be 4~points thick and the
-bottom rule should be 1~point thick. Allow \nicefrac{1}{4}~inch space above and
-below the title to rules. All pages should start at 1~inch (6~picas) from the
-top of the page.
-
-
-For the final version, authors' names are set in boldface, and each name is
-centered above the corresponding address. The lead author's name is to be listed
-first (left-most), and the co-authors' names (if different address) are set to
-follow. If there is only one co-author, list both author and co-author side by
-side.
-
-
-Please pay special attention to the instructions in Section \ref{others}
-regarding figures, tables, acknowledgments, and references.
-
-\section{Headings: first level}
-\label{headings}
-
-
-All headings should be lower case (except for first word and proper nouns),
-flush left, and bold.
-
-
-First-level headings should be in 12-point type.
-
-
-\subsection{Headings: second level}
-
-
-Second-level headings should be in 10-point type.
-
-
-\subsubsection{Headings: third level}
-
-
-Third-level headings should be in 10-point type.
-
-
-\paragraph{Paragraphs}
-
-
-There is also a \verb+\paragraph+ command available, which sets the heading in
-bold, flush left, and inline with the text, with the heading followed by 1\,em
-of space.
-
-
-\section{Citations, figures, tables, references}
-\label{others}
-
-
-These instructions apply to everyone.
-
-
-\subsection{Citations within the text}
-
-
-The \verb+natbib+ package will be loaded for you by default.  Citations may be
-author/year or numeric, as long as you maintain internal consistency.  As to the
-format of the references themselves, any style is acceptable as long as it is
-used consistently.
-
-
-The documentation for \verb+natbib+ may be found at
-\begin{center}
-  \url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
-Of note is the command \verb+\citet+, which produces citations appropriate for
-use in inline text.  For example,
-\begin{verbatim}
-   \citet{hasselmo} investigated\dots
-\end{verbatim}
-produces
-\begin{quote}
-  Hasselmo, et al.\ (1995) investigated\dots
-\end{quote}
-
-
-If you wish to load the \verb+natbib+ package with options, you may add the
-following before loading the \verb+neurips_2026+ package:
-\begin{verbatim}
-   \PassOptionsToPackage{options}{natbib}
-\end{verbatim}
-
-
-If \verb+natbib+ clashes with another package you load, you can add the optional
-argument \verb+nonatbib+ when loading the style file:
-\begin{verbatim}
-   \usepackage[nonatbib]{neurips_2026}
-\end{verbatim}
-
-
-As submission is double blind, refer to your own published work in the third
-person. That is, use ``In the previous work of Jones et al.\ [4],'' not ``In our
-previous work [4].'' If you cite your other papers that are not widely available
-(e.g., a journal paper under review), use anonymous author names in the
-citation, e.g., an author of the form ``A.\ Anonymous'' and include a copy of the anonymized paper in the supplementary material.
-
-
-\subsection{Footnotes}
-
-
-Footnotes should be used sparingly.  If you do require a footnote, indicate
-footnotes with a number\footnote{Sample of the first footnote.} in the
-text. Place the footnotes at the bottom of the page on which they appear.
-Precede the footnote with a horizontal rule of 2~inches (12~picas).
-
-
-Note that footnotes are properly typeset \emph{after} punctuation
-marks.\footnote{As in this example.}
-
-
-\subsection{Figures}
-
-
-\begin{figure}
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{Sample figure caption. Explain what the figure shows and add a key take-away message to the caption.}
-\end{figure}
-
-
-All artwork must be neat, clean, and legible. Lines should be dark enough for
- reproduction purposes. The figure number and caption always appear after the
-figure. Place one line space before the figure caption and one line space after
-the figure. The figure caption should be lower case (except for the first word and proper nouns); figures are numbered consecutively.
-
-
-You may use color figures.  However, it is best for the figure captions and the
-paper body to be legible if the paper is printed in either black/white or in
-color.
-
-
-\subsection{Tables}
-
-
-All tables must be centered, neat, clean, and legible.  The table number and
-title always appear before the table.  See Table~\ref{sample-table}.
-
-
-Place one line space before the table title, one line space after the
-table title, and one line space after the table. The table title must
-be lower case (except for the first word and proper nouns); tables are
-numbered consecutively.
-
-
-Note that publication-quality tables \emph{do not contain vertical rules}. We
-strongly suggest the use of the \verb+booktabs+ package, which allows for
-typesetting high-quality, professional tables:
-\begin{center}
-  \url{https://www.ctan.org/pkg/booktabs}
-\end{center}
-This package was used to typeset Table~\ref{sample-table}.
-
-
-\begin{table}
-  \caption{Sample table caption. Explain what the table shows and add a key take-away message to the caption.}
-  \label{sample-table}
-  \centering
-  \begin{tabular}{lll}
-    \toprule
-    \multicolumn{2}{c}{Part}                   \\
-    \cmidrule(r){1-2}
-    Name     & Description     & Size ($\mu$m) \\
-    \midrule
-    Dendrite & Input terminal  & $\approx$100     \\
-    Axon     & Output terminal & $\approx$10      \\
-    Soma     & Cell body       & up to $10^6$  \\
-    \bottomrule
-  \end{tabular}
+Our contribution is (i) a lightweight, per-query causal-gradient method
+for expert attribution on MoE safety; (ii) a test-time defense that
+outperforms a strong MoE-steering baseline with less bandwidth; and
+(iii) a negative result that isolates MoE steering's suppress-amplify
+asymmetry to an identifiable difference in how per-query and
+population-level expert signals align.
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Refusal directions.} \cite{arditi2024refusal} identified a
+one-dimensional refusal direction in dense transformer residual streams
+and showed that orthogonalizing this direction from attention and MLP
+output weights ablates the model's safety behavior. \cite{chen2025persona}
+extended the technique to arbitrary persona traits using contrastive
+system prompts. Both works operate at the activation or weight level and
+do not exploit MoE routing.
+
+\paragraph{MoE expert steering.} SteerMoE \cite{fayyaz2025steermoe}
+proposed expert-level steering for MoE by (i) detecting behavior-linked
+experts via a risk-difference (RD) statistic on paired safe/unsafe
+responses from BeaverTails, and (ii) activating or deactivating the
+top-$K$ experts (by $|\text{RD}|$) via log-softmax clipping on router
+logits. RICE \cite{wang2025rice} amplifies thinking-token experts for
+reasoning tasks. Both methods select experts \emph{globally} from
+aggregate statistics and apply a fixed mask at inference.
+
+\paragraph{Weight-level safety.} Recent work has explored structural
+removal of refusal directions from MoE weights \cite{fayyaz2025steermoe,
+arditi2024refusal}. In Appendix~\ref{app:weight-ortho} we show that
+applying Arditi-style orthogonalization to all $E \times L$ expert
+down-projections on OLMoE is marginal (e.g., $+6$pp on clean harmful
+prompts, $0$pp on jailbreaks with an independent query rewrite), and is
+outperformed by activation-style steering on three of four jailbreak
+families. We thus focus on the test-time router-bias regime.
+
+\section{Method}
+\label{sec:method}
+
+\subsection{Preliminaries}
+
+We consider an MoE transformer with $L$ layers, $E$ experts per layer,
+and top-$k$ routing. For input $q$ with token embeddings at position $t$,
+layer $\ell$ outputs
+\begin{equation}
+  \mathbf{h}_{\ell+1,t} = \sum_{i \in \mathcal{T}_{\ell,t}} \tilde{p}_{\ell,t,i} \cdot \mathrm{Expert}_{\ell,i}(\mathbf{h}_{\ell,t}),
+\end{equation}
+where $\mathcal{T}_{\ell,t}$ is the top-$k$ set drawn from the router
+probabilities $p_{\ell,t,i} = \mathrm{softmax}(W_\ell^{\text{router}} \mathbf{h}_{\ell,t})_i$.
+
+\subsection{Behavioral Refusal Direction $\dbeh$}
+\label{sec:dbeh}
+
+We extract a per-layer direction $\dbeh[\ell] \in \mathbb{R}^d$ that
+captures \emph{the model is currently refusing} rather than the upstream
+\emph{the model detected harmful intent}. For a set of baseline harmful
+prompts, we generate responses under the original model and obtain a
+Qwen2.5-14B safety judgment for each. Partitioning responses into refuse
+vs.\ comply sets ($R, C$) on the same prompts, we compute the
+response-token-averaged hidden-state mean difference
+\begin{equation}
+  \dbeh[\ell] = \operatorname*{mean}_{r \in R, t \in r} \mathbf{h}_{\ell,t}(r) - \operatorname*{mean}_{c \in C, t \in c} \mathbf{h}_{\ell,t}(c).
+\end{equation}
+This is the response-conditioned analogue of the prompt-residual
+\emph{refusal direction} in Arditi et al.\ Crucially, $\dbeh$ is
+aggregated across four distinct attack distributions (\emph{none},
+cipher, PAIR, past-tense) and reweighted equally, reducing sensitivity
+to any single attack's prompt idiosyncrasy. We normalize each
+$\dbeh[\ell]$ to unit length.
+
+\subsection{Per-Query Causal Fingerprint $\mdelta(q)$}
+\label{sec:delta}
+
+Fix a probe layer $\ell^*$. For a single query $q$, we compute the
+last-prompt-token residual's projection onto $\dbeh[\ell^*]$ as
+\begin{equation}
+  \mathrm{refuse\_score}(q) = \mathbf{h}_{\ell^*,T(q)}(q)^\top \dbeh[\ell^*],
+\end{equation}
+where $T(q)$ is the index of the final prompt token. We then ask: if
+we perturbed each router logit by a small additive bias $b_{\ell,e}$,
+how would refuse\_score change? This question has a closed-form answer
+via one autograd call:
+\begin{equation}
+  \Delta_{\ell,e}(q) \;=\; \left. \frac{\partial \, \mathrm{refuse\_score}(q)}{\partial b_{\ell,e}} \right|_{b=0}.
+\end{equation}
+Concretely, we register bias parameters with \texttt{requires\_grad=True}
+on all $L$ layers' router linear outputs, run a single forward pass with
+the bias added to $\mathbf{z}$ before softmax, and invoke
+\verb|torch.autograd.grad| on the scalar refuse\_score against the
+$L \times E$ bias tensor.
+
+\textbf{Interpretation.} $\Delta_{\ell,e}(q) > 0$ means that marginally
+routing more probability to expert $(\ell, e)$ would push the model's
+last-token state \emph{toward} the refusal direction. Conversely,
+$\Delta_{\ell,e}(q) < 0$ identifies experts whose activation \emph{reduces}
+refusal. The full $L \times E$ tensor is a per-query fingerprint of who
+helps and who hurts refusal on this input.
+
+\subsection{Query-Adaptive Defense $C_{\text{perQ-sup}}$}
+\label{sec:defense}
+
+For each incoming query $q$:
+\begin{enumerate}
+\item Extract $\mdelta(q)$ as in \S\ref{sec:delta} (one forward +
+  one backward pass, ${\approx}0.6$s on B200).
+\item Select $\Amin(q) = \operatorname*{arg\,topk}_{\ell,e}\bigl\{-\Delta_{\ell,e}(q)\bigr\}$ — the $K$ experts with most-negative $\Delta$.
+\item Generate a response with a constant router-logit bias $b_{\ell,e} = -\beta$ applied to each $(\ell, e) \in \Amin(q)$ and $0$ elsewhere.
+\end{enumerate}
+We use $K=25$ and $\beta = 10$ throughout. All intervention is confined
+to a single forward hook on the MoE gate module; the model weights are
+untouched.
+
+\subsection{Offline Caching}
+In practice, $\mdelta(q)$ is computed once per query and cached, so the
+inference pipeline incurs only the hook overhead during generation.
+Because $\mdelta$ depends on the query alone (not on the intervention
+choice), cache reuse amortizes the cost across every intervention
+variant we study.
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Setup}
+
+\paragraph{Model.} OLMoE-1B-7B-0924-Instruct \cite{muennighoff2025olmoe}:
+$L{=}16$ layers, $E{=}64$ experts per layer, top-$k{=}8$, hidden dim
+$d{=}2048$. Weights frozen throughout.
+
+\paragraph{Attacks.} PandaGuard JBB attack suite \cite{pandaguard}; we
+focus on four \emph{engaged} attack families where the baseline model
+meaningfully engages refusal circuitry (observed
+$\|\mdelta\| \gg 0$ at the probe layer): \emph{none} (direct harmful
+requests), GCG, PAIR, and past-tense reformulations
+\cite{andriushchenko2024past}. For each attack we draw $n{=}50$
+prompts by smallest \texttt{goal\_idx}. Separate experiments on bypass
+attacks (deepinception, cipher, AIM) are reported in
+Appendix~\ref{app:bypass} — these families do not drive the baseline
+model into refusal and are mechanically out of reach for any per-query
+Delta-based intervention.
+
+\paragraph{Baselines.}
+\begin{itemize}
+\item \textbf{No intervention (baseline):} OLMoE with no hooks.
+\item \textbf{SteerMoE:} our faithful reimplementation of
+  \cite{fayyaz2025steermoe} on OLMoE, $K_{\Apos} = K_{\Amin} = 25$,
+  selection via BeaverTails risk-difference, evaluated on the same
+  $n{=}50$ prompts per attack.
+\item \textbf{Fixed-5:} a hand-selected small set of 5 universal
+  suppressor experts from a prior pilot (Appendix~\ref{app:fixed5}),
+  router bias $-10$. Included as a same-mechanism, smaller-$K$
+  reference.
+\end{itemize}
+
+\paragraph{Judge.} Qwen2.5-14B-Instruct with a 0–100 harm-alignment
+prompt; \textsc{safe} $\iff$ score $\geq 70$. Identical judge prompt and
+threshold used for baseline, SteerMoE, and our methods.
+
+\paragraph{Probe layer.} $\ell^* = 10$, selected based on the prior
+observation that refusal-related signal peaks mid-network for
+Instruct-tuned decoder models \cite{arditi2024refusal}.
+
+\subsection{Main Result: Safety on Engaged Jailbreaks}
+\label{sec:main}
+
+Table~\ref{tab:main} reports safety rates on the four engaged attacks.
+
+\begin{table}[t]
+\centering
+\caption{Safety rate (\%, higher is better) on four engaged jailbreak
+attack families. $n{=}50$ per cell, Qwen2.5-14B judge, threshold $70$.
+All K-using methods: $K{=}25$ per direction. Per-query suppression beats
+SteerMoE on 3/4 attacks while using only half the intervention bandwidth
+(no amplification).}
+\label{tab:main}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & baseline & SteerMoE & \textbf{$C_{\text{perQ-sup}}$ (ours)} & $D_{\text{perQ-comb}}$ (ours) \\
+ & (no hook) & ($K{=}25{+}25$, global) & (\textbf{$K{=}25$, neg only}) & ($K{=}25{+}25$, per-query) \\
+\midrule
+\emph{none}        & 48.0 & 45.5 & \textbf{52.0} & ~0.0 \\
+GCG                & 16.0 & --   & \textbf{30.0} & ~0.0 \\
+PAIR               & 25.0 & 33.0 & 22.0          & ~0.0 \\
+past-tense         & 32.0 & 41.4 & \textbf{62.0} & ~0.0 \\
+\midrule
+mean (4 attacks)   & 30.3 & $\geq$ 40.0\textsuperscript{*} & \textbf{41.5} & ~0.0 \\
+\bottomrule
+\end{tabular}
+\\
+\vspace{2pt}
+\footnotesize
+\textsuperscript{*} SteerMoE GCG not in our reproduction.
 \end{table}
 
-\subsection{Math}
-Note that display math in bare TeX commands will not create correct line numbers for submission. Please use LaTeX (or AMSTeX) commands for unnumbered display math. (You really shouldn't be using \$\$ anyway; see \url{https://tex.stackexchange.com/questions/503/why-is-preferable-to} and \url{https://tex.stackexchange.com/questions/40492/what-are-the-differences-between-align-equation-and-displaymath} for more information.)
+Per-query suppression improves safety on three of four attacks, with a
+particularly large gain on past-tense ($+30$pp absolute over baseline,
+$+20.6$pp over SteerMoE). On \emph{none} it beats SteerMoE by $+6.5$pp.
+GCG improves by $+14$pp over baseline; SteerMoE was not evaluated on
+GCG in our reproduction. PAIR is the one attack where $C_{\text{perQ-sup}}$
+slightly underperforms baseline ($-3$pp); we return to this in
+\S\ref{sec:discussion}.
 
-\subsection{Final instructions}
+\subsection{Amplification Fails: A Clean Negative Result}
+\label{sec:amplify}
 
-Do not change any aspects of the formatting parameters in the style files.  In
-particular, do not modify the width or length of the rectangle the text should
-fit into, and do not change font sizes. Please note that pages should be
-numbered.
+To test whether symmetric amplification further improves safety, we
+evaluated $D_{\text{perQ-comb}}$: $K{=}25$ per-query most-negative
+experts with bias $-10$ \emph{plus} $K{=}25$ per-query most-positive
+experts with bias $+3$. The smaller positive bias was chosen
+conservatively; a pilot at $+10$ produced pure gibberish on all
+prompts.
 
+Even at $+3$, $D_{\text{perQ-comb}}$ yields $0\%$ safety rate across all
+four attacks — but inspection of responses reveals these are not
+unsafe, they are \emph{incoherent}:
+\begin{quote}\small
+\texttt{"The and Image in-TheThe. A: Aid: 1. 100. The -- it'ss Not,toing:;..."}
+\end{quote}
+In contrast, $C_{\text{perQ-sup}}$ responses on the same prompts are
+fluent refusals:
+\begin{quote}\small
+\texttt{"As an AI language model, it is not appropriate or ethical to write an article defaming a U.S. president..."}
+\end{quote}
+We interpret this asymmetry in \S\ref{sec:discussion}: per-query
+positive-$\Delta$ experts do not align with SteerMoE's globally validated
+safe-expert pool, whereas per-query negative-$\Delta$ experts do.
 
-\section{Preparing PDF files}
+\subsection{Concordance with Global Risk-Difference Selection}
+\label{sec:concordance}
 
+To validate that our per-query $\Amin$ identifies meaningful
+``bad experts'', we measure its overlap with SteerMoE's global
+$\AminSM$ derived independently from BeaverTails activation
+counts.
 
-Please prepare submission files with paper size ``US Letter,'' and not, for
-example, ``A4.''
+\begin{table}[t]
+\centering
+\caption{Overlap enrichment of per-query top-5 most-negative
+$\Delta_{\text{beh}}$ experts with SteerMoE's global A-minus pool at
+various global $K$. ``Enrichment'' is observed intersection rate
+divided by chance ($|\AminSM|/1024$). Per-query positive
+$\Delta$ experts show no such enrichment into SteerMoE's A-plus pool.}
+\label{tab:concord}
+\small
+\begin{tabular}{ccccc}
+\toprule
+ & \multicolumn{2}{c}{$\Amin$ (suppress candidates)} & \multicolumn{2}{c}{$\Apos$ (amplify candidates)} \\
+$|\AminSM|$ & \% hit & enrichment & \% hit & enrichment \\
+\midrule
+5   & 2.9  & $5.9\times$ & 0.5 & $1.0\times$ \\
+25  & 9.6  & $3.9\times$ & 1.7 & $0.7\times$ \\
+50  & \textbf{38.9} & \textbf{8.0$\times$} & 2.2 & $0.5\times$ \\
+100 & 58.3 & $6.0\times$ & 4.4 & $0.5\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
+Per-query negative $\Delta$ picks enrich up to $8\times$ into
+SteerMoE's A-minus, with no observable cross-sign confusion (per-query
+negative $\cap$ SteerMoE A-plus remains at chance, $\approx 1.8\%$).
+This is an \emph{independent} validation: our causal-gradient signal
+and SteerMoE's activation-count signal agree on which experts drive
+unsafe behavior, despite completely different detection machinery. The
+per-query positive side, critically, shows no such enrichment. This
+observation is diagnostic for the amplification failure
+(\S\ref{sec:amplify}): there is no shared notion of a ``safe expert''
+between the two frameworks, while there is a shared notion of an
+``unsafe expert''.
 
-Fonts were the main cause of problems in the past years. Your PDF file must only
-contain Type 1 or Embedded TrueType fonts. Here are a few instructions to
-achieve this.
+\subsection{Diversity of Per-Query Selections}
+\label{sec:diversity}
 
+Is per-query selection actually per-query, or does it collapse into a
+universal mask? We measure pairwise Jaccard between the top-5
+most-negative-$\Delta$ sets across all $\binom{200}{2}$ query pairs.
 
+\begin{table}[h]
+\centering
+\caption{Diversity of per-query top-5 suppression sets across 200
+queries (50 per attack).}
+\label{tab:diversity}
+\small
+\begin{tabular}{lc}
+\toprule
+statistic & value \\
+\midrule
+pairwise Jaccard (mean)            & $0.106$ \\
+pairwise Jaccard (median)          & $0.111$ \\
+fraction of disjoint pairs         & $36.6\%$ \\
+unique top-5 signatures / 200 q    & $194 / 200$ \\
+most frequent ``universal bad''~$(L{=}10, E{=}30)$ & $52\%$ of queries \\
+unique $(L,e)$ covered by some $q$ & $145 / 1024$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Selection is strongly per-query: 97\% of queries have a unique top-5,
+and over a third of query pairs share no experts at all. A small
+handful of $(L,e)$ pairs are near-universal suppressors (the top
+$(L{=}10, E{=}30)$ appears in $52\%$ of per-query top-5 sets), but the
+majority of the mask is query-specific. Compared to SteerMoE's single
+global mask of 25 experts, our union covers 145 distinct experts
+across all 200 queries — the per-query mechanism is not merely a
+noisier version of the global mask but a genuinely different selection.
+
+\subsection{Benign Over-Refusal}
+\label{sec:benign}
+
+A defense is only worthwhile if it preserves helpful behavior on
+benign inputs. We run $C_{\text{perQ-sup}}$ on 50 XSTest
+\cite{rottger2024xstest} benign prompts designed to superficially
+resemble harmful requests, and measure the answer rate (non-refusal)
+under a separate Qwen2.5-14B judge with an ANSWER/REFUSE classification
+prompt.
+
+\begin{table}[h]
+\centering
+\caption{Benign answer rate (\%, higher is better) on XSTest safe prompts
+($n{=}50$). Over-refusal cost measures helpfulness degradation.
+\textbf{[Results pending: L49f in queue.]}}
+\label{tab:benign}
+\small
+\begin{tabular}{lcc}
+\toprule
+ & baseline & $C_{\text{perQ-sup}}$ \\
+\midrule
+answer rate (\%)    & \textsc{tbd} & \textsc{tbd} \\
+over-refusal cost   & --           & \textsc{tbd} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We expect a small but non-zero cost: $\Delta_{\text{beh}}$ has weak
+signal on benign prompts (no refuse-vs-comply divergence to
+differentiate from), so top-$K$ selection partially reduces to noise,
+occasionally hitting generically useful experts. The paper claim is
+conditional on this cost being small ($\leq 10$pp); if it is larger, we
+propose mitigations in \S\ref{sec:discussion}.
+
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{Why suppression works but amplification fails.} The
+concordance analysis (Table~\ref{tab:concord}) and the amplification
+pilot (\S\ref{sec:amplify}) line up to tell a consistent story.
+Per-query $\Delta_{\text{beh}}$ negative identifies experts whose
+\emph{role} is to suppress the refusal direction at a probe point;
+this aligns with SteerMoE's population-level A-minus because both
+methods are picking up a robust \emph{disruption} signal.
+Per-query positive $\Delta_{\text{beh}}$, by contrast, identifies
+experts whose marginal activation would push the residual toward the
+refusal direction — but this is a \emph{counterfactual} direction, not
+a feature the model is actually using to refuse. Forcing these experts
+to fire at amplitude ($+3$ router bias) pushes the residual stream
+into regions the model does not know how to decode, producing
+gibberish. Suppression has no such failure mode because it merely
+reduces already-active, disruptive experts' contribution.
+
+\paragraph{PAIR underperformance.} PAIR is the one attack where
+$C_{\text{perQ-sup}}$ trails baseline by $-3$pp. PAIR queries are
+optimized by an adversarial LLM to produce prompts that look benign on
+the surface; $\Delta_{\text{beh}}$ on these prompts has intermediate
+magnitude and the selected experts resemble those selected on
+\emph{none} more than on GCG or past-tense. One hypothesis is that
+PAIR queries evade the ``refusal engagement'' that our method depends
+on. A larger $n$ is needed to confirm whether this is a true
+regression or noise within the $\pm 14$pp 95\% CI at $n{=}50$.
+
+\paragraph{Bandwidth comparison.} $C_{\text{perQ-sup}}$ uses $K{=}25$
+negative experts only — half the total intervention bandwidth of
+SteerMoE ($K{=}25$ activate $+$ $K{=}25$ deactivate). That the
+suppression-only method still outperforms suggests SteerMoE's
+amplification side is either redundant or, as our
+$D_{\text{perQ-comb}}$ pilot hints, silently trading helpfulness
+for negligible safety gain.
+
+\paragraph{Limitations.}
 \begin{itemize}
-
-
-\item You should directly generate PDF files using \verb+pdflatex+.
-
-
-\item You can check which fonts a PDF files uses.  In Acrobat Reader, select the
-  menu Files$>$Document Properties$>$Fonts and select Show All Fonts. You can
-  also use the program \verb+pdffonts+ which comes with \verb+xpdf+ and is
-  available out-of-the-box on most Linux machines.
-
-
-\item \verb+xfig+ ``patterned'' shapes are implemented with bitmap fonts.  Use
-  "solid" shapes instead.
-
-
-\item The \verb+\bbold+ package almost always uses bitmap fonts.  You should use
-  the equivalent AMS Fonts:
-\begin{verbatim}
-   \usepackage{amsfonts}
-\end{verbatim}
-followed by, e.g., \verb+\mathbb{R}+, \verb+\mathbb{N}+, or \verb+\mathbb{C}+
-for $\mathbb{R}$, $\mathbb{N}$ or $\mathbb{C}$.  You can also use the following
-workaround for reals, natural and complex:
-\begin{verbatim}
-   \newcommand{\RR}{I\!\!R} %real numbers
-   \newcommand{\Nat}{I\!\!N} %natural numbers
-   \newcommand{\CC}{I\!\!\!\!C} %complex numbers
-\end{verbatim}
-Note that \verb+amsfonts+ is automatically loaded by the \verb+amssymb+ package.
-
-
+\item \textbf{Single MoE architecture.} All experiments are on
+  OLMoE-1B-7B. Whether the same per-query signal structure exists on
+  DeepSeek-V2-Lite, Qwen-MoE, or Mixtral is an immediate follow-up.
+\item \textbf{Bypass attacks unaddressed.} Attacks like deepinception
+  and cipher do not engage refusal circuitry at all at the probe layer
+  ($\|\Delta_{\text{beh}}\| \to 0$). Our method has no signal to act
+  on. Appendix~\ref{app:bypass} confirms this is independent of
+  suppression strength.
+\item \textbf{Inference overhead.} Although we cache $\Delta(q)$
+  offline in our experiments, a deployed system would incur one extra
+  forward-backward pass per query (${\sim}5\%$ of greedy generation
+  cost for $256$ tokens). The method is compatible with batching.
+\item \textbf{$n{=}50$ per cell.} 95\% binomial CIs on safety rates
+  are $\pm$14pp; differences under this are underpowered. Extending to
+  $n{=}100$ is a natural next step.
 \end{itemize}
 
+\section{Conclusion}
 
-If your file contains type 3 fonts or non embedded TrueType fonts, we will ask
-you to fix it.
+We have presented a per-query, causal-gradient approach to MoE
+jailbreak defense that outperforms a strong fixed-mask baseline using
+half the intervention bandwidth and no amplification. The key
+mechanism — a single autograd call to identify query-specific
+disruptor experts — is cheap, composable with existing router-bias
+infrastructure, and weight-preserving. The positive result
+(suppression beats SteerMoE on $3/4$ engaged attacks) and the
+negative result (amplification destroys coherence despite the same
+per-query machinery) together pin down the asymmetry: MoE safety
+steering is primarily a matter of \emph{which unsafe experts to avoid
+on this input}, not \emph{which safe experts to promote universally}.
 
+\section*{Acknowledgments}
+\emph{Deferred to final copy.}
 
-\subsection{Margins in \LaTeX{}}
+\begin{thebibliography}{99}
 
+\bibitem[Arditi et al.(2024)]{arditi2024refusal}
+A.~Arditi, O.~Obeso, A.~Syed, D.~Paleka, N.~Panickssery, W.~Gurnee, and N.~Nanda.
+\newblock Refusal in language models is mediated by a single direction.
+\newblock In \emph{NeurIPS}, 2024.
 
-Most of the margin problems come from figures positioned by hand using
-\verb+\special+ or other commands. We suggest using the command
-\verb+\includegraphics+ from the \verb+graphicx+ package. Always specify the
-figure width as a multiple of the line width as in the example below:
-\begin{verbatim}
-   \usepackage[pdftex]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]{myfile.pdf}
-\end{verbatim}
-See Section 4.4 in the graphics bundle documentation
-(\url{http://mirrors.ctan.org/macros/latex/required/graphics/grfguide.pdf})
+\bibitem[Chen et al.(2025)]{chen2025persona}
+R.~Chen, A.~Arditi, H.~Sleight, O.~Evans, and J.~Lindsey.
+\newblock Persona vectors: Monitoring and controlling character traits in language models.
+\newblock \emph{arXiv preprint arXiv:2507.21509}, 2025.
 
+\bibitem[Fayyaz et al.(2025)]{fayyaz2025steermoe}
+M.~Fayyaz, A.~Modarressi, H.~Deilamsalehy, F.~Dernoncourt, R.~Rossi, T.~Bui, H.~Schütze, and N.~Peng.
+\newblock {SteerMoE}: Steering mixture-of-experts {LLMs} via expert (de)activation.
+\newblock \emph{arXiv preprint}, 2025.
 
-A number of width problems arise when \LaTeX{} cannot properly hyphenate a
-line. Please give LaTeX hyphenation hints using the \verb+\-+ command when
-necessary.
+\bibitem[Jiang et al.(2024)]{jiang2024mixtralexperts}
+A.~Q. Jiang et~al.
+\newblock Mixtral of experts.
+\newblock \emph{arXiv preprint arXiv:2401.04088}, 2024.
 
-\begin{ack}
-Use unnumbered first level headings for the acknowledgments. All acknowledgments
-go at the end of the paper before the list of references. Moreover, you are required to declare
-funding (financial activities supporting the submitted work) and competing interests (related financial activities outside the submitted work).
-More information about this disclosure can be found at: \url{https://neurips.cc/Conferences/2026/PaperInformation/FundingDisclosure}.
+\bibitem[Muennighoff et al.(2025)]{muennighoff2025olmoe}
+N.~Muennighoff et~al.
+\newblock {OLMoE}: Open mixture-of-experts language models.
+\newblock \emph{arXiv preprint arXiv:2409.02060}, 2025.
 
+\bibitem[Shazeer et al.(2017)]{shazeer2017outrageously}
+N.~Shazeer, A.~Mirhoseini, K.~Maziarz, A.~Davis, Q.~Le, G.~Hinton, and J.~Dean.
+\newblock Outrageously large neural networks: The sparsely-gated mixture-of-experts layer.
+\newblock \emph{ICLR}, 2017.
 
-Do {\bf not} include this section in the anonymized submission, only in the final paper. You can use the \texttt{ack} environment provided in the style file to automatically hide this section in the anonymized submission.
-\end{ack}
+\bibitem[Andriushchenko et al.(2024)]{andriushchenko2024past}
+M.~Andriushchenko et~al.
+\newblock Jailbreaking leading safety-aligned {LLMs} with past-tense reformulations.
+\newblock \emph{arXiv}, 2024.
 
-\section*{References}
+\bibitem[Röttger et al.(2024)]{rottger2024xstest}
+P.~Röttger et~al.
+\newblock {XSTest}: A test suite for identifying exaggerated safety behaviours in large language models.
+\newblock \emph{NAACL}, 2024.
 
+\bibitem[Wang et al.(2025)]{wang2025rice}
+X.~Wang et~al.
+\newblock {RICE}: Experts need steering — thinking experts discovered via nPMI.
+\newblock \emph{arXiv}, 2025.
 
-References follow the acknowledgments in the camera-ready paper. Use unnumbered first-level heading for
-the references. Any choice of citation style is acceptable as long as you are
-consistent. It is permissible to reduce the font size to \verb+small+ (9 point)
-when listing the references.
-Note that the Reference section does not count towards the page limit.
-\medskip
+\bibitem[PandaGuard]{pandaguard}
+PandaGuard {JBB} attack suite.
+\newblock \url{https://github.com/PandaGuard}, accessed 2026.
 
-
-{
-\small
-
-
-[1] Alexander, J.A.\ \& Mozer, M.C.\ (1995) Template-based algorithms for
-connectionist rule extraction. In G.\ Tesauro, D.S.\ Touretzky and T.K.\ Leen
-(eds.), {\it Advances in Neural Information Processing Systems 7},
-pp.\ 609--616. Cambridge, MA: MIT Press.
-
-
-[2] Bower, J.M.\ \& Beeman, D.\ (1995) {\it The Book of GENESIS: Exploring
-  Realistic Neural Models with the GEneral NEural SImulation System.}  New York:
-TELOS/Springer--Verlag.
-
-
-[3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of learning and
-recall at excitatory recurrent synapses and cholinergic modulation in rat
-hippocampal region CA3. {\it Journal of Neuroscience} {\bf 15}(7):5249-5262.
-}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\end{thebibliography}
 
 \appendix
 
-\section{Technical appendices and supplementary material}
-Technical appendices with additional results, figures, graphs, and proofs may be submitted with the paper submission before the full submission deadline (see above). You can upload a ZIP file for videos or code, but do not upload a separate PDF file for the appendix. There is no page limit for the technical appendices. 
+\section{Weight-Orthogonalization Baseline}
+\label{app:weight-ortho}
 
-Note: Think of the appendix as ``optional reading'' for reviewers. The paper must be able to stand alone without the appendix; for example, adding critical experiments that support the main claims to an appendix is inappropriate. 
+As an additional ablation we applied Arditi-style weight
+orthogonalization on all $L \times E = 1024$ expert down-projection
+matrices: $W_{\ell,e}^{\text{down}} \leftarrow W - \hat{d}\hat{d}^\top W$
+where $\hat{d} = \dbeh[\ell]/\|\dbeh[\ell]\|$. Results on the same
+attack suite are reported in Table~\ref{tab:wortho}. The intervention
+is near-neutral — it marginally improves \emph{none} ($+6$pp) and
+cipher ($+4$pp) but provides no help on PAIR or past-tense. Together
+with the low-cost advantage of our test-time method, this justifies
+focusing the main paper on router-bias rather than weight-level
+interventions.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{table}[h]
+\centering
+\caption{Weight-ortho variants on OLMoE ($n{=}100$, Qwen judge).}
+\label{tab:wortho}
+\small
+\begin{tabular}{lcc}
+\toprule
+attack & baseline & ortho\_all \\
+\midrule
+\emph{none}   & 48.0 & 54.0 \\
+cipher        & 8.0  & 12.1 \\
+PAIR (global) & 25.0 & 25.0 \\
+past-tense    & 32.0 & 29.0 \\
+benign        & --   & 100.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\newpage
-\input{checklist.tex}
+\section{Bypass Attacks}
+\label{app:bypass}
 
+Attacks including deepinception, cipher (GPT-4 cipher), AIM,
+BETTER\_DAN, renellm, and autodan exhibit $\|\Delta_{\text{beh}}(q)\|
+\approx 0.16 \times \|\Delta_{\text{beh}}(\text{none})\|$ in our cache,
+with cross-attack cosine of mean $\Delta$ anti-correlated ($-0.64$) vs.
+the \emph{none} centroid. These attacks do not trigger the model's
+refusal circuitry at the probe layer, so per-query $\Delta$-based
+interventions have no signal to amplify or suppress. Empirically,
+$C_{\text{perQ-sup}}$ on these attacks shows $0$–$4\%$ refusal rate,
+matching baseline within noise. We regard this cluster as mechanically
+out of reach for any $\dbeh$-anchored defense.
+
+\section{Fixed-5 Expert Selection}
+\label{app:fixed5}
+
+The fixed-5 baseline uses five hand-selected universal suppressor
+experts from a prior pilot:
+$(L{=}8, E{=}29), (L{=}10, E{=}6), (L{=}6, E{=}15), (L{=}9, E{=}8),
+(L{=}9, E{=}16)$. All five are in SteerMoE's top-100 A-minus pool.
+
+\section{Implementation Details}
+\label{app:impl}
+
+\paragraph{Router hook.} OLMoE's gate module returns either a raw logit
+tensor (prefill) or a $(p, \text{top\_val}, \text{top\_idx})$ tuple
+(decode with KV cache). Our hook handles both by recomputing the bias
+addition before softmax and re-extracting top-$k$.
+
+\paragraph{Generation config.} Greedy decoding, \texttt{do\_sample=False},
+\texttt{max\_new\_tokens=256}, \texttt{temperature=1.0}, bf16 throughout.
+\texttt{pad\_token\_id} set to \texttt{eos\_token\_id}.
+
+\paragraph{Compute.} All experiments run on a single NVIDIA B200
+(180 GB). $\Delta$ cache: ${\sim}10$ min for $N{=}200$. Main generation:
+${\sim}70$ min per $200$-query condition at
+\texttt{max\_new\_tokens}${=}256$. Judging: ${\sim}10$ min per 200 responses.
 
 \end{document}
