@@ -1,0 +1,439 @@
+<mxfile host="app.diagrams.net" modified="2026-04-16T16:30:00.000Z" agent="Mozilla/5.0" version="22.1.16" type="device">
+  <diagram name="SteerMoE Motivation" id="steermoe-motiv">
+    <mxGraphModel dx="1600" dy="1000" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== PANEL A: SteerMoE Method ===== -->
+        <mxCell id="pA-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#BDBDBD;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1320" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-title" value="(a) SteerMoE: Global Static Expert Deactivation" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="50" width="600" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-sub" value="Offline: identify top-K experts with highest unsigned refuse-capacity  ||d_refuse · W_down,e||  →  fix mask, apply to every query" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="78" width="1100" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Harmful query box -->
+        <mxCell id="pA-q1" value="Harmful Query&#10;&quot;How to build a bomb?&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;strokeWidth=1.5;fontSize=12;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="80" y="130" width="180" height="60" as="geometry" />
+        </mxCell>
+        <!-- Benign query box -->
+        <mxCell id="pA-q2" value="Benign Query&#10;&quot;What are the 14 words?&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;strokeWidth=1.5;fontSize=12;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="180" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Router (shared) -->
+        <mxCell id="pA-router" value="Router&#10;(shared)" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;fixedSize=1;fillColor=#FFE0B2;strokeColor=#E65100;strokeWidth=1.5;fontSize=12;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="320" y="210" width="110" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Arrows q1 → router, q2 → router -->
+        <mxCell id="pA-arr1" style="endArrow=classic;html=1;strokeColor=#C62828;strokeWidth=1.5;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.35;entryDx=0;entryDy=0;" edge="1" parent="1" source="pA-q1" target="pA-router">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-arr2" style="endArrow=classic;html=1;strokeColor=#2E7D32;strokeWidth=1.5;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.65;entryDx=0;entryDy=0;" edge="1" parent="1" source="pA-q2" target="pA-router">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Fixed mask label -->
+        <mxCell id="pA-mask-label" value="Fixed mask:&#10;deactivate {E2, E5, E7}" style="text;html=1;strokeColor=#757575;fillColor=#FFF3E0;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=1;fontSize=11;fontStyle=2;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="460" y="225" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-arr-mask" style="endArrow=classic;html=1;strokeColor=#E65100;strokeWidth=1.5;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="pA-router" target="pA-mask-label">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Experts for harmful row -->
+        <mxCell id="pA-exp-h-label" value="Experts (harmful)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#757575;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="640" y="115" width="120" height="18" as="geometry" />
+        </mxCell>
+        <!-- 8 experts for harmful row: E2, E5, E7 struck out -->
+        <mxCell id="pA-h-E1" value="E1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="630" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E2" value="E2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#9E9E9E;fontSize=11;fontStyle=1;fontColor=#9E9E9E;fontFamily=Helvetica;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="690" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E3" value="E3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="750" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E4" value="E4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="810" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E5" value="E5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#9E9E9E;fontSize=11;fontStyle=1;fontColor=#9E9E9E;fontFamily=Helvetica;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="870" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E6" value="E6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="930" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E7" value="E7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#9E9E9E;fontSize=11;fontStyle=1;fontColor=#9E9E9E;fontFamily=Helvetica;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="990" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-E8" value="E8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- Red X overlays on E2, E5, E7 (harmful row) -->
+        <mxCell id="pA-h-x2" value="✕" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#C62828;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="690" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-x5" value="✕" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#C62828;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="870" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-h-x7" value="✕" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#C62828;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="990" y="140" width="48" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- Outcome harmful: safe -->
+        <mxCell id="pA-out-h" value="✓ Safe refusal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;strokeWidth=1.5;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="150" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Experts for benign row -->
+        <mxCell id="pA-exp-b-label" value="Experts (benign) — same mask!" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#757575;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="630" y="260" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E1" value="E1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="630" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E2" value="E2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#9E9E9E;fontSize=11;fontStyle=1;fontColor=#9E9E9E;fontFamily=Helvetica;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="690" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E3" value="E3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="750" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E4" value="E4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="810" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E5" value="E5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#9E9E9E;fontSize=11;fontStyle=1;fontColor=#9E9E9E;fontFamily=Helvetica;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="870" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E6" value="E6" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="930" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E7" value="E7" style="ellipse;whiteSpace=wrap;html=1;fillColor=#EEEEEE;strokeColor=#9E9E9E;fontSize=11;fontStyle=1;fontColor=#9E9E9E;fontFamily=Helvetica;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="990" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-E8" value="E8" style="ellipse;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <!-- Red X overlays on benign row -->
+        <mxCell id="pA-b-x2" value="✕" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#C62828;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="690" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-x5" value="✕" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#C62828;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="870" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="pA-b-x7" value="✕" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=30;fontStyle=1;fontColor=#C62828;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="990" y="285" width="48" height="48" as="geometry" />
+        </mxCell>
+
+        <!-- Outcome benign: degraded -->
+        <mxCell id="pA-out-b" value="✗ Quality drops&#10;(score 85 → 20)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;strokeWidth=1.5;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="293" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Legend for panel A -->
+        <mxCell id="pA-leg" value="Legend:  ● active expert    ⊗ deactivated expert" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="630" y="350" width="400" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ===== PANEL B: Limitation 1 ===== -->
+        <mxCell id="pB-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#BDBDBD;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="410" width="640" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-title" value="(b) Limitation 1: Global mask hurts benign queries" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="420" width="600" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-sub" value="Same mask applies even when λ(q) ≈ 0 (benign) → unnecessary capacity loss on benign queries" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="446" width="600" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Bar chart: per-query vs global, benign mean score -->
+        <mxCell id="pB-chart-title" value="Benign mean judge score (Qwen3-Next-80B, BeaverTails-130)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="60" y="475" width="600" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Y axis line + labels -->
+        <mxCell id="pB-yaxis" style="endArrow=none;html=1;strokeColor=#424242;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="505" as="sourcePoint" />
+            <mxPoint x="130" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="pB-xaxis" style="endArrow=none;html=1;strokeColor=#424242;strokeWidth=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="130" y="680" as="sourcePoint" />
+            <mxPoint x="650" y="680" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <!-- y-axis ticks -->
+        <mxCell id="pB-y80" value="80" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="95" y="600" width="30" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-y85" value="85" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="95" y="570" width="30" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-y90" value="90" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="95" y="540" width="30" height="14" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-y95" value="95" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="95" y="510" width="30" height="14" as="geometry" />
+        </mxCell>
+
+        <!-- Bars: Clean=89.3, Global=87.8, PerQuery=91.0 -->
+        <!-- baseline 80, scale: each 1pt = 6px. 89.3 → (89.3-80)*6 = 55.8px height -->
+        <!-- Clean bar -->
+        <mxCell id="pB-bar-clean" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#90A4AE;strokeColor=#546E7A;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="624" width="80" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-bar-clean-lbl" value="Clean&#10;89.3" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="180" y="686" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Global bar (red) -->
+        <mxCell id="pB-bar-global" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EF5350;strokeColor=#C62828;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="633" width="80" height="47" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-bar-global-lbl" value="SteerMoE-style&#10;Global&#10;87.8" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="300" y="686" width="120" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- Per-query bar (green) -->
+        <mxCell id="pB-bar-perq" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#66BB6A;strokeColor=#2E7D32;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="614" width="80" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-bar-perq-lbl" value="Ours (per-query)&#10;91.0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="440" y="686" width="120" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Callout: worst-case regression -->
+        <mxCell id="pB-callout" value="Worst-case benign regression:&#10;&quot;What are the 14 words?&quot;&#10;&#10;Per-query (ours):  85&#10;SteerMoE (global):  20  ▼ −65" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;strokeWidth=1.5;fontSize=11;fontFamily=Helvetica;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="80" y="760" width="560" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-callout-title" value="⚠ Concrete failure" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=12;fontStyle=1;fontColor=#F57F17;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="90" y="745" width="200" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-callout-foot" value="Global bias fires even though λ(q) ≈ 0; per-query gating avoids regression." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="80" y="880" width="560" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pB-callout-foot2" value="Mean degradation on BeaverTails-30 benign set: −3.2 pts (global vs per-query)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="80" y="900" width="560" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ===== PANEL C: Limitation 2 ===== -->
+        <mxCell id="pC-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#BDBDBD;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="410" width="640" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-title" value="(c) Limitation 2: Unsafe experts are query-dependent" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="740" y="420" width="600" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-sub" value="Different harm categories recruit different bottom-K experts; a single global mask misses category-specific ones" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="740" y="446" width="600" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Header for expert matrix -->
+        <mxCell id="pC-hdr" value="Bottom-K=5 refuse-capable experts, per harm category (OLMoE L12)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="740" y="475" width="600" height="18" as="geometry" />
+        </mxCell>
+
+        <!-- Column headers: expert indices E1..E10 (abstract / illustrative) -->
+        <mxCell id="pC-col-lbl" value="Experts (bottom-5 highlighted per category)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#757575;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="850" y="498" width="400" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Row 1: Medical -->
+        <mxCell id="pC-r1-lbl" value="Medical" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1F5FE;strokeColor=#0277BD;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="745" y="524" width="90" height="28" as="geometry" />
+        </mxCell>
+        <!-- 10 expert dots, Medical selects E1, E3, E4, E7, E9 -->
+        <mxCell id="pC-r1-e1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0277BD;strokeColor=#01579B;" vertex="1" parent="1">
+          <mxGeometry x="855" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="895" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0277BD;strokeColor=#01579B;" vertex="1" parent="1">
+          <mxGeometry x="935" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e4" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0277BD;strokeColor=#01579B;" vertex="1" parent="1">
+          <mxGeometry x="975" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e5" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e7" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0277BD;strokeColor=#01579B;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e8" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e9" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#0277BD;strokeColor=#01579B;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r1-e10" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1215" y="526" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Row 2: Violence - selects E1, E2, E6, E8, E9 -->
+        <mxCell id="pC-r2-lbl" value="Violence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="745" y="564" width="90" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C62828;strokeColor=#8B0000;" vertex="1" parent="1">
+          <mxGeometry x="855" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C62828;strokeColor=#8B0000;" vertex="1" parent="1">
+          <mxGeometry x="895" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="935" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e4" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="975" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e5" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C62828;strokeColor=#8B0000;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e7" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e8" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C62828;strokeColor=#8B0000;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e9" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C62828;strokeColor=#8B0000;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r2-e10" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1215" y="566" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Row 3: Cyber - selects E2, E5, E6, E7, E10 -->
+        <mxCell id="pC-r3-lbl" value="Cyber" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="745" y="604" width="90" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="855" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#4A148C;" vertex="1" parent="1">
+          <mxGeometry x="895" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="935" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e4" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="975" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e5" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#4A148C;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#4A148C;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e7" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#4A148C;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e8" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e9" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r3-e10" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#6A1B9A;strokeColor=#4A148C;" vertex="1" parent="1">
+          <mxGeometry x="1215" y="606" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Row 4: Financial - selects E3, E4, E5, E8, E10 -->
+        <mxCell id="pC-r4-lbl" value="Financial" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=11;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="745" y="644" width="90" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="855" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="895" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;" vertex="1" parent="1">
+          <mxGeometry x="935" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e4" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;" vertex="1" parent="1">
+          <mxGeometry x="975" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e5" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e7" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e8" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e9" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-r4-e10" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;" vertex="1" parent="1">
+          <mxGeometry x="1215" y="646" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Global mask row (highlight single static choice) -->
+        <mxCell id="pC-rG-lbl" value="Global mask&#10;(SteerMoE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#616161;fontSize=10;fontStyle=1;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="745" y="690" width="90" height="36" as="geometry" />
+        </mxCell>
+        <!-- Global picks E2, E4, E6, E8, E10 (intersection approximation) -->
+        <mxCell id="pC-rG-e1" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="855" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e2" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#424242;strokeColor=#212121;" vertex="1" parent="1">
+          <mxGeometry x="895" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e3" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="935" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e4" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#424242;strokeColor=#212121;" vertex="1" parent="1">
+          <mxGeometry x="975" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e5" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1015" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e6" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#424242;strokeColor=#212121;" vertex="1" parent="1">
+          <mxGeometry x="1055" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e7" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e8" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#424242;strokeColor=#212121;" vertex="1" parent="1">
+          <mxGeometry x="1135" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e9" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#B0BEC5;" vertex="1" parent="1">
+          <mxGeometry x="1175" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-rG-e10" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#424242;strokeColor=#212121;" vertex="1" parent="1">
+          <mxGeometry x="1215" y="694" width="24" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Callout: jaccard evidence -->
+        <mxCell id="pC-callout" value="Jaccard overlap of category-specific bottom-5 sets&#10;(OLMoE, Layer 12):&#10;&#10;   Violence  ∩  Cyber   =  0.25&#10;   Medical  ∩  Cyber   =  0.43&#10;   Mean across categories  =  0.52" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;strokeWidth=1.5;fontSize=11;fontFamily=Helvetica;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="760" y="760" width="560" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-callout-title" value="📊 Empirical evidence (L13)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=12;fontStyle=1;fontColor=#F57F17;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="770" y="745" width="260" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="pC-callout-foot" value="Low Jaccard ⇒ a single global mask must intersect all categories → misses category-specific unsafe experts." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;fontSize=10;fontStyle=2;fontColor=#616161;fontFamily=Helvetica;" vertex="1" parent="1">
+          <mxGeometry x="760" y="900" width="560" height="30" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

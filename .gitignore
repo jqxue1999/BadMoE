@@ -1,0 +1,19 @@
+.venv
+.venv/
+.codex
+
+# Local crash dumps and scheduler outputs
+core.*
+slurm-*.out
+logs/
+
+# Python and editor noise
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Large local artifacts and cloned references
+repos/
+
+# Keep Overleaf sync untouched by excluding the nested git repo entirely
+paper/
