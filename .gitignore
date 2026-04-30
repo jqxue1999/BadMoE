@@ -21,3 +21,6 @@
 
 # Local Codex metadata
 /.codex
+
+# Reference baseline paper, kept locally only
+/SteerMoE/
