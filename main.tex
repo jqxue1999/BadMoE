@@ -142,6 +142,8 @@ Knowing a prompt is risky tells us only that it looks dangerous, not which exper
 \end{equation}
 The projection $h(q) \cdot \dbeh[\ell]$ measures, in the model's own representation space, how strongly the rollout from this state pushes toward a refusal completion. Because the contrast was learned on harmful inputs only, this projection is meaningful in the harmful-input regime, which is exactly where we use it. Both directions are unit-normalized per layer and stored once; nothing in the offline stage is repeated at inference.
 
+\textbf{Token positions.} The two directions are read at different sequence positions, reflecting their different roles. The input-risk direction $\drefuse$ is computed at the prompt's last token, immediately before generation begins. The output-safety direction $\dbeh$ is computed by averaging per-token residuals across the response, since the contrast captures generation tendency rather than input perception. Both are unit-normalized per layer.
+
 \subsection{Online Stage: Per-Query Identification and Modulation}
 \label{sec:online}
 

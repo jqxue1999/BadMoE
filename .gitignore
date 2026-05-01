@@ -24,3 +24,6 @@
 
 # Reference baseline paper, kept locally only
 /SteerMoE/
+
+# Local crash dumps from compute jobs
+core.*
