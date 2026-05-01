@@ -102,7 +102,7 @@ families. We thus focus on the test-time router-bias regime.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/method.pdf}
-\caption{Adaptive Router Alignment. Top-left: the input-risk direction $\drefuse$ is the offline mean-diff between residuals on risky and benign prompts. Top-right: the output-safety direction $\dbeh$ is the offline mean-diff between residuals on safe and harmful continuations of the same risky prompts. Bottom: at inference, one mid-layer probe $h(q)$ is read for each query; its projections onto the two directions yield the risky index $\lambda(q) = h(q) \cdot \drefuse$ and the refusal score $s(q) = h(q) \cdot \dbeh$. The gradient $\nabla_{\ell,e}\, s(q)$ ranks per-(layer, expert) attribution to refusal, $\lambda(q)$ scales the resulting router-bias adjustment $\Delta b$, and benign inputs land at $\lambda(q) \approx 0$ so the bias collapses to zero and routing is left unchanged.}
+\caption{Adaptive Router Alignment. Offline (top): two probe directions are extracted, $\drefuse$ for input risk and $\dbeh$ for output safety. Online (bottom): a single mid-layer probe $h(q)$ yields a risky index $\lambda(q)$ and a refusal score $s(q)$; the gradient of $s(q)$ ranks per-(layer, expert) attribution and $\lambda(q)$ scales the resulting router-bias adjustment, so benign inputs ($\lambda(q) \approx 0$) pass through unchanged.}
 \label{fig:method}
 \end{figure}
 
@@ -111,19 +111,19 @@ Figure~\ref{fig:method} summarizes the method. The offline stage extracts two pr
 \subsection{Preliminaries}
 \label{sec:prelim}
 
-Routing is the lever. Because an MoE forward pass commits the per-token compute budget through one router decision at each layer, the most direct way to reshape the model's computation on a given input is to perturb its router logits before the top-$k$ selection. Adaptive Router Alignment uses exactly this lever and leaves model weights untouched.
+Adaptive Router Alignment intervenes at the router. Because an MoE forward pass commits the per-token compute budget through one router decision at each layer, the most direct way to reshape the model's computation on a given input is to perturb its router logits before the top-$k$ selection. Adaptive Router Alignment uses exactly this lever and leaves model weights untouched.
 
 We consider an MoE transformer with $L$ layers and $E$ experts per layer, with top-$k$ routing per token. At each MoE layer $\ell$ and token position $t$, a small linear router $W_\ell^{\text{router}}$ maps the residual state $\mathbf{h}_{\ell,t}$ to one logit per expert, $z_{\ell,t,i} = (W_\ell^{\text{router}}\, \mathbf{h}_{\ell,t})_i$, applies softmax to obtain routing probabilities $p_{\ell,t,i} = \mathrm{softmax}(z_{\ell,t})_i$, and selects the top-$k$ set $\mathcal{T}_{\ell,t}$ by probability. The layer output is the gated mixture
 \begin{equation}
   \mathbf{h}_{\ell+1,t} = \sum_{i \in \mathcal{T}_{\ell,t}} \tilde{p}_{\ell,t,i} \cdot \mathrm{Expert}_{\ell,i}(\mathbf{h}_{\ell,t}),
   \label{eq:moe-layer}
 \end{equation}
-where $\tilde{p}_{\ell,t,i}$ are the renormalized top-$k$ probabilities. The routing decision is fully determined by $z_{\ell,t}$, so adding a per-expert bias $b_{\ell,e}$ to the logit, $z'_{\ell,t,i} = z_{\ell,t,i} + b_{\ell,e}$ before softmax, redirects probability mass from one expert to another with no change to the experts themselves. Adaptive Router Alignment computes a per-query bias vector $b_{\ell,e}(q)$ and injects it at this point.
+where $\tilde{p}_{\ell,t,i}$ are the renormalized top-$k$ probabilities. The routing decision is fully determined by $z_{\ell,t}$, so adding a per-expert bias $b_{\ell,e}$ to the logit, $z'_{\ell,t,i} = z_{\ell,t,i} + b_{\ell,e}$ before softmax, redirects probability mass from one expert to another with no change to the experts themselves. Adaptive Router Alignment computes a per-query bias vector $b_{\ell,e}(q)$ and injects it at this point. We instantiate this on multiple MoE backbones; the specific models tested are listed in Section~\ref{sec:experiments}.
 
 \subsection{Offline Stage: Two Probe Directions}
 \label{sec:directions}
 
-The defense needs two complementary signals: one to recognize that an incoming prompt is risk-shaped, and one to attribute, on a risky prompt, which experts pull the response toward harm versus toward refusal. These two roles correspond to two different contrasts in the model's residual stream, each captured as a per-layer mean-difference direction (Figure~\ref{fig:method}, top).
+Adaptive Router Alignment needs two complementary signals: one to recognize that an incoming prompt is risk-shaped, and one to attribute, on a risky prompt, which experts pull the response toward harm versus toward refusal. These two roles correspond to two different contrasts in the model's residual stream, each captured as a per-layer mean-difference direction (Figure~\ref{fig:method}, top).
 
 \paragraph{Input-risk direction $\drefuse$.}
 A prompt is risky to the extent that its activation pattern resembles known risky prompts and not benign ones; the simplest summary of this is a single per-layer direction along which the two distributions are linearly separable. We collect a set of risky prompts and a set of benign prompts, forward each through the model, and take the residual at layer $\ell$ at the prompt's last token. Letting $\mu^{\text{risk}}_\ell$ and $\mu^{\text{benign}}_\ell$ denote the corresponding means,
@@ -139,17 +139,17 @@ Knowing a prompt is risky tells us only that it looks dangerous, not which exper
   \dbeh[\ell] = \mu^{\text{safe}}_\ell - \mu^{\text{harm}}_\ell.
   \label{eq:dsafe}
 \end{equation}
-The projection $h(q) \cdot \dbeh[\ell]$ measures, in the model's own representation space, how strongly the rollout from this state pushes toward a refusal completion. Because the contrast was learned on harmful inputs only, this projection is meaningful in the harmful-input regime, which is exactly where the defense uses it. Both directions are unit-normalized per layer and stored once; nothing in the offline stage is repeated at inference.
+The projection $h(q) \cdot \dbeh[\ell]$ measures, in the model's own representation space, how strongly the rollout from this state pushes toward a refusal completion. Because the contrast was learned on harmful inputs only, this projection is meaningful in the harmful-input regime, which is exactly where we use it. Both directions are unit-normalized per layer and stored once; nothing in the offline stage is repeated at inference.
 
 \subsection{Online Stage: Per-Query Identification and Modulation}
 \label{sec:online}
 
-For each query $q$, we forward through layers $\{0, \ldots, \ell^*\}$ and read the residual at the prompt's last token, $h(q) = \mathbf{h}_{\ell^*, T(q)}(q)$. From this single state, two scalars are read by projection onto the offline directions (Figure~\ref{fig:method}, bottom):
+Both challenges are met by a single forward-backward pass on the input: from one mid-layer probe we read the modulation signal directly, and the per-expert identification gradient is obtained by one shared backward through the same probe, regardless of how many experts are scored. Concretely, for each query $q$, we forward through layers $\{0, \ldots, \ell^*\}$ and read the residual at the prompt's last token, $h(q) = \mathbf{h}_{\ell^*, T(q)}(q)$. From this single state, two scalars are obtained by projection onto the offline directions (Figure~\ref{fig:method}, bottom):
 \begin{align}
   \lambda(q) &= h(q) \cdot \drefuse[\ell^*] && \text{(risky index)}, \label{eq:lambda} \\
   s(q) &= h(q) \cdot \dbeh[\ell^*] && \text{(refusal score)}. \label{eq:srefuse}
 \end{align}
-$\lambda(q)$ is the modulation signal; $s(q)$ is the source from which the per-expert identification gradient is taken. Because both come from the same forward pass, the online cost is one shared forward plus one shared backward, regardless of how many experts are scored.
+$\lambda(q)$ is the modulation signal applied per query, while $s(q)$ is the source from which the per-expert identification gradient is taken in the next subsection.
 
 \subsubsection{Identification: Per-Query Risk-Amplifying Experts}
 \label{sec:identification}
@@ -173,18 +173,18 @@ This identification is causal in the sense that experts are ranked by the margin
 
 Even after the right experts are identified, applying the same bias on every query is wrong: a clearly malicious prompt warrants strong suppression, an ambiguous one less, and a truly benign one none at all. The risky index $\lambda(q)$, already available from the same forward pass, supplies the query-level magnitude.
 
-The bias on expert $(\ell,e)$ on query $q$ is the product of three factors: a global strength $\beta$, a query-level modulation $\rho(\lambda(q)) \in [0,1]$ that ramps from off to full on as the risky index grows, and a per-expert weight proportional to relative attribution magnitude:
+The bias on expert $(\ell,e)$ on query $q$ factorizes into three named components,
 \begin{equation}
-  b_{\ell,e}(q) = -\,\beta \cdot \rho\!\bigl(\lambda(q)\bigr) \cdot \frac{|\Delta_{\ell,e}(q)|}{\max_{(\ell',e') \in \Amin(q)} |\Delta_{\ell',e'}(q)|}
+  b_{\ell,e}(q) = -\,\beta \cdot \rho\!\bigl(\lambda(q)\bigr) \cdot w_{\ell,e}(q)
   \quad \text{for } (\ell,e) \in \Amin(q),
   \label{eq:bias}
 \end{equation}
-and $b_{\ell,e}(q) = 0$ otherwise. The query-level ramp is a clipped linear function of $\lambda(q)$,
+and $b_{\ell,e}(q) = 0$ otherwise. The factor $\beta$ is a global strength shared across queries. The factor $\rho(\lambda(q)) \in [0,1]$ is the query-level modulation, ramping from off to full as the risky index grows. The factor $w_{\ell,e}(q) = |\Delta_{\ell,e}(q)| / \max_{(\ell',e') \in \Amin(q)} |\Delta_{\ell',e'}(q)|$ is the per-expert relative attribution, placing the largest bias on the strongest risk-amplifying expert. The query-level ramp is a clipped linear function of $\lambda(q)$,
 \begin{equation}
   \rho(\lambda) = \operatorname{clip}\!\left(\frac{\lambda - \lambda_{\text{lo}}}{\lambda_{\text{hi}} - \lambda_{\text{lo}}},\; 0,\; 1\right),
   \label{eq:ramp}
 \end{equation}
-with $\lambda_{\text{lo}}$ and $\lambda_{\text{hi}}$ calibrated once from held-out distributions ($95$th percentile of $\lambda$ on a benign mixture and $5$th percentile on harmful queries, respectively); no per-attack or per-deployment fitting is required. Truly benign queries land below $\lambda_{\text{lo}}$ and receive $\rho = 0$, so the entire bias collapses to zero and the model's normal routing is preserved. Clearly harmful queries land above $\lambda_{\text{hi}}$ and receive the full bias on their per-query risk-amplifying experts. Ambiguous queries interpolate between the two. This is the route in Figure~\ref{fig:method} (bottom) that splits ``risky inputs: suppress risky experts'' from ``normal inputs: no intervention''.
+with $\lambda_{\text{lo}}$ set to the $95$th percentile of $\lambda$ on a held-out benign mixture, so that $95\%$ of benign queries fall below it and trigger no intervention, and $\lambda_{\text{hi}}$ set to the $5$th percentile of $\lambda$ on a held-out harmful set, so that $95\%$ of harmful queries fall above it and receive the full bias. No per-attack or per-deployment fitting is required. Truly benign queries land below $\lambda_{\text{lo}}$ and receive $\rho = 0$, so the entire bias collapses to zero and the model's normal routing is preserved. Clearly harmful queries land above $\lambda_{\text{hi}}$ and receive the full bias on their per-query risk-amplifying experts. Ambiguous queries interpolate between the two. This is the route in Figure~\ref{fig:method} (bottom) that splits ``risky inputs: suppress risky experts'' from ``normal inputs: no intervention''.
 
 \subsubsection{Generation and Inference Cost}
 \label{sec:cost}
