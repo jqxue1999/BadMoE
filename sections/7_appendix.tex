@@ -234,3 +234,56 @@ online $\Delta$ extraction \textbf{[PLACEHOLDER]} ms/query, overhead
 (180 GB). $\Delta$ cache: ${\sim}10$ min for $N{=}200$. Main generation:
 ${\sim}70$ min per $200$-query condition at
 \texttt{max\_new\_tokens}${=}256$. Judging: ${\sim}10$ min per 200 responses.
+
+\section{Per-Model Architecture and Hyperparameters}
+\label{app:model-details}
+
+Table~\ref{tab:model-details} summarizes the three MoE backbones used in the main results. The probe layer $\ell^*$ is selected per backbone by the criterion of Section~\ref{sec:online} (sparse-grid sweep on a held-out calibration set; identification saturated across mid-layers, modulation peaked at the middle). Across all three backbones the selected layer falls in a comparable depth fraction ($\sim$$0.55$--$0.65$ of $L$), consistent with the ``mid-layer plateau'' picture and supporting the architecture-agnostic reading of the criterion. All other hyperparameters ($K$, $\beta$, $(\lambda_{\text{lo}}, \lambda_{\text{hi}})$) are held fixed at the values listed in Section~\ref{sec:setup}; only $\ell^*$ is re-selected per backbone.
+
+\begin{table}[h]
+\centering
+\caption{Architecture and selected hyperparameters per backbone. Depth fraction $= \ell^* / L$.}
+\label{tab:model-details}
+\small
+\begin{tabular}{lccccccc}
+\toprule
+Model & $L$ & $E$ & top-$k$ & hidden $d$ & $\ell^*$ & depth frac. & $K$ \\
+\midrule
+OLMoE-1B-7B-0924-Instruct        & $16$ & $64$ & $8$ & $2048$ & $10$ & $0.625$ & $25$ \\
+\textcolor{red}{Qwen1.5-MoE-A2.7B-Chat} & \textcolor{red}{$24$} & \textcolor{red}{$60$} & \textcolor{red}{$4$} & \textcolor{red}{$2048$} & \textcolor{red}{$14$} & \textcolor{red}{$0.583$} & $25$ \\
+\textcolor{red}{Mixtral-8x7B-Instruct-v0.1} & \textcolor{red}{$32$} & \textcolor{red}{$8$}  & \textcolor{red}{$2$} & \textcolor{red}{$4096$} & \textcolor{red}{$20$} & \textcolor{red}{$0.625$} & \textcolor{red}{$4$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For Mixtral, $K{=}4$ is reduced from $25$ because the model has only $E{=}8$ experts per layer; preserving the same fraction of experts per layer ($K/E$) is the natural cross-architecture calibration. The bias strength $\beta$ and the calibration of $(\lambda_{\text{lo}}, \lambda_{\text{hi}})$ are unchanged.
+
+\section{Probe-Layer Sweep}
+\label{app:probe_layer}
+
+We report the full probe-layer sweep referenced in Section~\ref{sec:ablations} (probe-layer selection paragraph). The calibration set has $200$ prompts ($100$ risky drawn proportionally across the six engaged attacks, $100$ benign drawn from XSTest), all disjoint from the test prompts in Table~\ref{tab:main}. We sweep $\ell^* \in \{4, 7, 10, 13, 15\}$ on OLMoE-1B-7B (a sparse five-point grid placed at depth fractions $\{0.25, 0.44, 0.625, 0.81, 0.94\}$, chosen to cover early, mid, and late blocks while keeping the calibration cost bounded). For each $\ell^*$ we report (i) the AUROC of $\lambda(q) = h(q) \cdot \drefuse[\ell^*]$ in classifying risky vs benign on the calibration set, (ii) the downstream safe rate (averaged over the six engaged attacks) when \name uses identification gradients taken at $\ell^*$, and (iii) the XSTest answer rate when modulation uses $\lambda(q)$ at $\ell^*$. All other hyperparameters are held fixed.
+
+\begin{table}[h]
+\centering
+\caption{Probe-layer sweep on OLMoE-1B-7B (calibration set, $n{=}200$). Identification (safe rate) saturates across mid-layers; modulation (XSTest, $\lambda$-AUROC) is peaked at $\ell^* = 10$.}
+\label{tab:probe_layer}
+\small
+\begin{tabular}{cccc}
+\toprule
+$\ell^*$ & $\lambda$-AUROC & Safe rate ($\uparrow$) & XSTest ($\uparrow$) \\
+\midrule
+$4$  & $0.42$ & $52$ & $85$ \\
+$7$  & $0.55$ & $58$ & $93$ \\
+$10$ & $0.61$ & $62$ & $98$ \\
+$13$ & $0.49$ & $62$ & $94$ \\
+$15$ & $0.38$ & $58$ & $88$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The two columns ``safe rate'' and ``XSTest'' isolate the two channels through which $\ell^*$ enters the method. Safe rate captures the quality of the identification gradient (independent of the modulation signal, since $\rho(\lambda)$ saturates to $1$ on risky calibration prompts). XSTest captures the quality of $\lambda(q)$ as a benign-vs-risky gauge, since on benign prompts the identified set is irrelevant once $\lambda(q)$ falls below $\lambda_{\text{lo}}$. Identification saturates over a wide mid-layer plateau ($\ell^* \in \{10, 13\}$), while modulation is sharply peaked at the middle. This dissociation is what motivates ``select where modulation peaks within the identification plateau,'' giving $\ell^* = 10$.
+
+\section{Domain Labelling Protocol}
+\label{app:domain-labelling}
+
+The five sensitive-content domains used in Table~\ref{tab:main} (drugs, cybercrime, violence, financial, sexual) are obtained by coarsening the JailbreakBench taxonomy. Each of the $100$ JBB harmful goals is labelled once with a Qwen2.5-14B-Instruct classification prompt, asking the judge to assign a single domain from the five-class set. The judge sees only the goal text, not the attack wrapper, so each goal receives one label that is shared across all six attack variants of that goal. Per-domain safety in Table~\ref{tab:main} averages the safe rate over (goals in domain) $\times$ (six attacks). The classification prompt and goal-to-domain mapping are released with the code release. Class balance is approximate: drugs $24$, cybercrime $26$, violence $19$, financial $14$, sexual $17$ (one goal can be re-labelled into the closest class when the original JBB category did not match any of the five).

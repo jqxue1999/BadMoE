@@ -18,7 +18,7 @@ To address the two challenges of identification and modulation, MoARA needs two 
   \mathbf{h}_{\ell+1,t} = \sum_{i \in \mathcal{T}_{\ell,t}} \tilde{p}_{\ell,t,i} \cdot \mathrm{Expert}_{\ell,i}(\mathbf{h}_{\ell,t}),
   \label{eq:moe-layer}
 \end{equation}
-where $\tilde{p}_{\ell,t,i}$ are the renormalized top-$k$ probabilities. The routing decision is fully determined by $z_{\ell,t}$, so adding a per-expert bias $b_{\ell,e}$ to the logit, $z'_{\ell,t,i} = z_{\ell,t,i} + b_{\ell,e}$ before softmax, redirects probability mass from one expert to another with no change to the experts themselves. \name computes a per-query bias vector $b_{\ell,e}(q)$ and injects it at this point. We instantiate this on multiple MoE backbones; the specific models tested are listed in Section~\ref{sec:experiments}.
+where $\tilde{p}_{\ell,t,i}$ are the renormalized top-$k$ probabilities. The routing decision is fully determined by $z_{\ell,t}$, so adding a per-expert bias $b_{\ell,e}$ to the logit, $z'_{\ell,t,i} = z_{\ell,t,i} + b_{\ell,e}$ before softmax, redirects probability mass from one expert to another with no change to the experts themselves. \name computes a per-query bias vector $b_{\ell,e}(q)$ and injects it at this point. We instantiate this on multiple MoE backbones; the specific models tested are listed in Section~\ref{sec:setup}.
 
 \subsection{Offline Stage: Two Probe Directions}
 \label{sec:directions}
@@ -49,7 +49,7 @@ Both challenges are met by a single forward-backward pass on the input: from one
   \lambda(q) &= h(q) \cdot \drefuse[\ell^*] && \text{(risky index)}, \label{eq:lambda} \\
   s(q) &= h(q) \cdot \dbeh[\ell^*] && \text{(refusal score)}. \label{eq:srefuse}
 \end{align}
-$\lambda(q)$ is the modulation signal applied per query, while $s(q)$ is the source from which the per-expert identification gradient is taken in the next subsection. We set $\ell^*$ to maximize $\lambda$'s harmful-vs-benign AUROC, since identification is robust across mid-layers but $\lambda$ is not (Appendix~\ref{app:layer_ablation}).
+$\lambda(q)$ is the modulation signal applied per query, while $s(q)$ is the source from which the per-expert identification gradient is taken in the next subsection. We set $\ell^*$ to maximize $\lambda$'s harmful-vs-benign AUROC, since identification is robust across mid-layers but $\lambda$ is not (Appendix~\ref{app:probe_layer}).
 
 \subsubsection{Identification: Per-Query Risk-Amplifying Experts}
 \label{sec:identification}
