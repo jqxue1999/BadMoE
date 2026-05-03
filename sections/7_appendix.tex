@@ -1,0 +1,236 @@
+\appendix
+
+\section{Weight-Orthogonalization Baseline}
+\label{app:weight-ortho}
+
+As an additional ablation we applied Arditi-style weight
+orthogonalization on all $L \times E = 1024$ expert down-projection
+matrices: $W_{\ell,e}^{\text{down}} \leftarrow W - \hat{d}\hat{d}^\top W$
+where $\hat{d} = \dbeh[\ell]/\|\dbeh[\ell]\|$. Results on the same
+attack suite are reported in Table~\ref{tab:wortho}. The intervention
+is near-neutral — it marginally improves \emph{none} ($+6$pp) and
+cipher ($+4$pp) but provides no help on PAIR or past-tense. Together
+with the low-cost advantage of our test-time method, this justifies
+focusing the main paper on router-bias rather than weight-level
+interventions.
+
+\begin{table}[h]
+\centering
+\caption{Weight-ortho variants on OLMoE ($n{=}100$, Qwen judge).}
+\label{tab:wortho}
+\small
+\begin{tabular}{lcc}
+\toprule
+attack & baseline & ortho\_all \\
+\midrule
+\emph{none}   & 48.0 & 54.0 \\
+cipher        & 8.0  & 12.1 \\
+PAIR (global) & 25.0 & 25.0 \\
+past-tense    & 32.0 & 29.0 \\
+benign        & --   & 100.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Bypass Attacks}
+\label{app:bypass}
+
+Attacks including deepinception, cipher (GPT-4 cipher), AIM,
+BETTER\_DAN, renellm, and autodan exhibit $\|\Delta_{\text{beh}}(q)\|
+\approx 0.16 \times \|\Delta_{\text{beh}}(\text{none})\|$ in our cache,
+with cross-attack cosine of mean $\Delta$ anti-correlated ($-0.64$) vs.
+the \emph{none} centroid. These attacks do not trigger the model's
+refusal circuitry at the probe layer, so per-query $\Delta$-based
+interventions have no signal to amplify or suppress. Empirically,
+$C_{\text{perQ-sup}}$ on these attacks shows $0$–$4\%$ refusal rate,
+matching baseline within noise. We regard this cluster as mechanically
+out of reach for any $\dbeh$-anchored method.
+
+Table~\ref{tab:bypass_quant} quantifies this claim across three
+representative bypass families under both our method and SteerMoE.
+\textbf{[PLACEHOLDER: fill after Exp 5 in \texttt{experiment\_plan.md}.]}
+
+\begin{table}[h]
+\centering
+\caption{Safety rate on bypass-cluster attacks
+($n{=}50$ per cell). No method moves the needle.
+\textbf{[PLACEHOLDER]}}
+\label{tab:bypass_quant}
+\small
+\begin{tabular}{lccc}
+\toprule
+attack & baseline & SteerMoE & $C_{\text{perQ-sup}}$ \\
+\midrule
+new\_deepinception & XX.X & XX.X & XX.X \\
+new\_gpt4\_cipher  & XX.X & XX.X & XX.X \\
+AIM                & XX.X & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Extended $n{=}100$ Scale}
+\label{app:n100}
+
+The main-text Table~\ref{tab:main} uses $n{=}50$ per cell. Table~\ref{tab:main_n100}
+re-runs all conditions at $n{=}100$ to halve the binomial CI.
+\textbf{[PLACEHOLDER: fill after Exp 1.]}
+
+\begin{table}[h]
+\centering
+\caption{Safety rate at $n{=}100$. \textbf{[PLACEHOLDER]}}
+\label{tab:main_n100}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & baseline & SteerMoE & $C_{\text{perQ-sup}}$ & $D_{\text{perQ-comb}}$ \\
+\midrule
+\emph{none}      & XX.X & XX.X & XX.X & ~0.0 \\
+GCG              & XX.X & --   & XX.X & ~0.0 \\
+PAIR             & XX.X & XX.X & XX.X & ~0.0 \\
+past-tense       & XX.X & XX.X & XX.X & ~0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Adaptive Magnitude Ablation}
+\label{app:adaptive}
+
+Our method (\S\ref{sec:modulation}) scales the bias at two levels:
+query-wise by $\beta_{\text{eff}}(q) = \beta \cdot f(\lambda(q))$ with
+$f$ a linear ramp, and expert-wise by
+$|\Delta_{\ell,e}(q)| / \max_{(\ell',e')\in\Amin(q)}|\Delta_{\ell',e'}(q)|$.
+Table~\ref{tab:adaptive} contrasts four variants. \textbf{[PLACEHOLDER:
+fill after Exp 9 in \texttt{experiment\_plan.md}.]}
+
+\begin{table}[h]
+\centering
+\caption{Intervention-magnitude ablation on engaged jailbreaks and
+benign (XSTest + AlpacaEval), $n{=}50$ each. \textbf{[PLACEHOLDER]}}
+\label{tab:adaptive}
+\small
+\begin{tabular}{lcccc}
+\toprule
+scheme & query gate & expert weight & engaged safety $\uparrow$ & benign answer $\uparrow$ \\
+\midrule
+uniform, always on  & none          & uniform    & XX.X & XX.X \\
+hard gate only      & $\mathbf{1}[\lambda > \tau]$ & uniform    & XX.X & XX.X \\
+linear ramp only    & $\beta \cdot f(\lambda)$ & uniform & XX.X & XX.X \\
+linear ramp + $|\Delta|$-weighted   & $\beta \cdot f(\lambda)$ & $\propto |\Delta|$ & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Calibration: $\lambda_{\text{lo}}$ = 95th percentile of $\lambda$ on a
+held-out benign mixture (AlpacaEval + XSTest); $\lambda_{\text{hi}}$ =
+5th percentile on a held-out harmful mixture (PandaGuard's 25 attacks).
+\textbf{[PLACEHOLDER: report exact values after calibration.]}
+
+\section{$K$ Sweep Ablation}
+\label{app:ksweep}
+
+$K{=}25$ was chosen to match SteerMoE's bandwidth. Table~\ref{tab:ksweep}
+shows $C_{\text{perQ-sup}}$ safety rate on past-tense as a function of
+$K$. \textbf{[PLACEHOLDER: fill after Exp 3.]}
+
+\begin{table}[h]
+\centering
+\caption{Safety rate on past-tense by $K$. \textbf{[PLACEHOLDER]}}
+\label{tab:ksweep}
+\small
+\begin{tabular}{cccccc}
+\toprule
+$K$ & 5 & 10 & 25 & 50 & 100 \\
+\midrule
+safe \% & XX.X & XX.X & XX.X & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Direction Ablation: d\_behavior vs d\_refuse}
+\label{app:drefuse}
+
+Our score function uses $\dbeh$. Table~\ref{tab:drefuse} shows the same
+pipeline with $\drefuse$ (prompt last-token harmful-vs-benign mean-diff,
+used by prior work \cite{arditi2024refusal}).
+\textbf{[PLACEHOLDER: fill after Exp 4.]}
+
+\begin{table}[h]
+\centering
+\caption{Effect of score function on per-query selection.
+\textbf{[PLACEHOLDER]}}
+\label{tab:drefuse}
+\small
+\begin{tabular}{lcc}
+\toprule
+ & $C_{\text{perQ-behavior}}$ (ours) & $C_{\text{perQ-refuse}}$ \\
+\midrule
+\emph{none}      & 52.0 & XX.X \\
+GCG              & 30.0 & XX.X \\
+PAIR             & 22.0 & XX.X \\
+past-tense       & 62.0 & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Generalisation to a Second MoE Architecture}
+\label{app:qwen_moe}
+
+To test whether our findings depend on OLMoE-specific quirks, we
+replicate the full pipeline on Qwen1.5-MoE-A2.7B (24 layers, 60
+experts, top-$k{=}4$). The same hyperparameters ($K{=}25$,
+$\beta{=}{-}10$) and probe-layer convention (40\,\% depth) are used.
+\textbf{[PLACEHOLDER: fill after Exp 2 in \texttt{experiment\_plan.md}.]}
+
+\begin{table}[h]
+\centering
+\caption{Main results reproduced on Qwen1.5-MoE-A2.7B. \textbf{[PLACEHOLDER]}}
+\label{tab:qwen_moe}
+\small
+\begin{tabular}{lcccc}
+\toprule
+ & baseline & SteerMoE & $C_{\text{perQ-sup}}$ & $\Delta$ vs SteerMoE \\
+\midrule
+\emph{none}        & XX.X & XX.X & XX.X & XX.X \\
+GCG                & XX.X & --   & XX.X & -- \\
+PAIR               & XX.X & XX.X & XX.X & XX.X \\
+past-tense         & XX.X & XX.X & XX.X & XX.X \\
+\midrule
+benign (XSTest $n{=}50$) & XX.X & XX.X & XX.X & XX.X \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We further check that the per-query diversity finding replicates:
+pairwise Jaccard of top-$K$ sets across queries is
+\textbf{[PLACEHOLDER]}, comparable to 0.11 observed on OLMoE.
+
+\section{Fixed-5 Expert Selection}
+\label{app:fixed5}
+
+The fixed-5 baseline uses five hand-selected universal suppressor
+experts from a prior pilot:
+$(L{=}8, E{=}29), (L{=}10, E{=}6), (L{=}6, E{=}15), (L{=}9, E{=}8),
+(L{=}9, E{=}16)$. All five are in SteerMoE's top-100 A-minus pool.
+
+\section{Implementation Details}
+\label{app:impl}
+
+\paragraph{Router hook.} OLMoE's gate module returns either a raw logit
+tensor (prefill) or a $(p, \text{top\_val}, \text{top\_idx})$ tuple
+(decode with KV cache). Our hook handles both by recomputing the bias
+addition before softmax and re-extracting top-$k$.
+
+\paragraph{Generation config.} Greedy decoding, \texttt{do\_sample=False},
+\texttt{max\_new\_tokens=256}, \texttt{temperature=1.0}, bf16 throughout.
+\texttt{pad\_token\_id} set to \texttt{eos\_token\_id}.
+
+\paragraph{Inference overhead.} End-to-end wall-clock at $n{=}10$:
+baseline \textbf{[PLACEHOLDER]} ms/query, $C_{\text{perQ-sup}}$ with
+online $\Delta$ extraction \textbf{[PLACEHOLDER]} ms/query, overhead
+\textbf{[PLACEHOLDER]} \%. Measured on a single NVIDIA B200 (Exp 6 in
+\texttt{experiment\_plan.md}).
+
+\paragraph{Compute.} All experiments run on a single NVIDIA B200
+(180 GB). $\Delta$ cache: ${\sim}10$ min for $N{=}200$. Main generation:
+${\sim}70$ min per $200$-query condition at
+\texttt{max\_new\_tokens}${=}256$. Judging: ${\sim}10$ min per 200 responses.

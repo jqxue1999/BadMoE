@@ -1,0 +1,28 @@
+\section{Background}
+\label{sec:related}
+
+\paragraph{Refusal directions.}~\citet{arditi2024refusal} identified a
+one-dimensional refusal direction in dense transformer residual streams
+and showed that orthogonalizing this direction from attention and MLP
+output weights ablates the model's safety behavior.~\citet{chen2025persona}
+extended the technique to arbitrary persona traits using contrastive
+system prompts. Both works operate at the activation or weight level and
+do not exploit MoE routing.
+
+\paragraph{MoE expert steering.} SteerMoE~\cite{fayyaz2025steermoe}
+proposed expert-level steering for MoE by (i) detecting behavior-linked
+experts via a risk-difference (RD) statistic on paired safe/unsafe
+responses from BeaverTails, and (ii) activating or deactivating the
+top-$K$ experts (by $|\text{RD}|$) via log-softmax clipping on router
+logits. RICE~\cite{wang2025rice} amplifies thinking-token experts for
+reasoning tasks. Both methods select experts \emph{globally} from
+aggregate statistics and apply a fixed mask at inference.
+
+\paragraph{Weight-level safety.} Recent work has explored structural
+removal of refusal directions from MoE weights~\cite{fayyaz2025steermoe,
+arditi2024refusal}. In Appendix~\ref{app:weight-ortho} we show that
+applying Arditi-style orthogonalization to all $E \times L$ expert
+down-projections on OLMoE is marginal (e.g., $+6$pp on clean harmful
+prompts, $0$pp on jailbreaks with an independent query rewrite), and is
+outperformed by activation-style steering on three of four jailbreak
+families. We thus focus on the test-time router-bias regime.

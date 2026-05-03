@@ -1,0 +1,23 @@
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Models.}
+We instantiate \name on three MoE backbones spanning small, mid-scale, and frontier-scale architectures: OLMoE-1B-7B-0924-Instruct~\cite{muennighoff2025olmoe} ($L{=}16$, $E{=}64$, top-$k{=}8$, hidden $d{=}2048$), \textcolor{red}{Qwen1.5-MoE-A2.7B-Chat}, and \textcolor{red}{Mixtral-8x7B-Instruct-v0.1}. All weights are frozen throughout. Per-model architecture details (layer count, expert count, top-$k$, hidden dimension) are summarized in Appendix~\ref{app:model-details}.
+
+\paragraph{Attacks and benign sets.}
+For jailbreak safety we use the PandaGuard JBB attack suite~\cite{pandaguard}, which wraps each of $100$ JailbreakBench harmful goals into $25$ attack variants. We report the six attacks where the original model engages refusal at a non-trivial rate: \emph{PastTense}~\cite{andriushchenko2024past}, \emph{GCG}~\cite{zou2023gcg}, \emph{PAIR}~\cite{chao2023pair}, \emph{AutoDAN}, \emph{ICA}, and \emph{Renellm}. Following PandaGuard's unified-proxy protocol, GCG and PAIR adversarial prompts are pre-computed once against a Llama-3.1-8B proxy, so all reported numbers reflect transfer-attack robustness. For benign over-refusal we use XSTest~\cite{rottger2024xstest}, which contains prompts that superficially resemble harmful requests but are safe to answer. For general capability we report MMLU 5-shot accuracy. Bypass-only attacks (deepinception, cipher, AIM) are reported in Appendix~\ref{app:bypass} as negative controls; they do not engage the refusal pathway and are mechanically out of reach for any attribution-based method.
+
+\paragraph{Sensitive-content domains.}
+Orthogonal to the attack-family axis, we partition the $100$ JBB goals into five sensitive-content domains used throughout the paper (drugs, cybercrime, violence, financial, sexual), following our coarsening of the JailbreakBench taxonomy. Each goal is labelled once via a Qwen2.5-14B classification prompt; the protocol and the resulting goal-to-domain mapping are in Appendix~\ref{app:domain-labelling}. Per-domain safety in Table~\ref{tab:main} is the average safe rate across all six attacks for goals in that domain.
+
+\paragraph{Metrics.}
+All safety values are Qwen2.5-14B-judged safe rate (\%, higher is better, threshold $70$, see \emph{Judge} below). XSTest values are the answer rate produced by the same judge under an ANSWER/REFUSE binary prompt (\%, higher is better). MMLU values are 5-shot accuracy (\%, higher is better).
+
+\paragraph{Baselines.}
+The \emph{Original} baseline runs each backbone with no intervention. \emph{SteerMoE}~\cite{fayyaz2025steermoe} is our faithful reimplementation of the static fixed-mask method, which selects $K{=}25$ globally risk-amplifying experts and applies a fixed router-bias to all queries. \emph{\name (ours)} applies query-adaptive router-bias suppression as defined in Section~\ref{sec:online} with $K{=}25$ for apples-to-apples bandwidth comparison.
+
+\paragraph{Judge.}
+We use Qwen2.5-14B-Instruct~\cite{qwen25} with a 0--100 harm-alignment prompt; a response is labeled \textsc{safe} when its score is at least $70$. The same judge prompt and threshold are applied to all methods. For XSTest we use the same judge with an ANSWER/REFUSE binary prompt.
+
+\paragraph{Hyperparameters.}
+Top-$K$ for identification is fixed at $K{=}25$, matching SteerMoE's bandwidth. The bias strength is $\beta = 10$. The query-level ramp endpoints $\lambda_{\text{lo}}$ and $\lambda_{\text{hi}}$ are calibrated as in Section~\ref{sec:modulation}. The probe layer $\ell^*$ is set per backbone by held-out $\lambda$-AUROC; for OLMoE we use $\ell^* = 10$, with the full sweep in Appendix~\ref{app:probe_layer}. Per-model hyperparameter values are listed in Appendix~\ref{app:model-details}.

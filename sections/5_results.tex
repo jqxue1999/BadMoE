@@ -1,0 +1,85 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Main Results}
+\label{sec:main}
+
+We test \name on three MoE LLMs, OLMoE-1B-7B, Qwen1.5-MoE-A2.7B and Mixtral-8x7B, against six risky inputs from PandaGuard JBB and two helpfulness benchmarks XSTest and MMLU, comparing to the no-intervention \textit{Original} and the static \textit{SteerMoE}~\cite{fayyaz2025steermoe} with both methods intervening on $K=25$ experts. Table~\ref{tab:main} illustrates that \name improves safety substantially while preserving helpfulness, whereas \textit{SteerMoE}'s safety gains come at a $12$\,pp average XSTest cost. The two-sided improvement traces back to the two design choices of Section~\ref{sec:method}. On the safety side, per-query identification targets the experts that actually amplify risk on the current input, while \textit{SteerMoE}'s fixed pool inherits aggregate statistics that miss the per-query culprits. On the helpfulness side, per-query modulation collapses the bias to zero on benign inputs where $\lambda(q)$ falls below the calibrated threshold, while static \textit{SteerMoE} applies the same suppression to benign and risky queries alike.
+
+\input{tables/1_main_results.tex}
+
+The gain is broad across sensitive-content domains, with cybercrime and financial showing the largest absolute lifts. These two domains also exhibit the strongest $\drefuse$ separation at the probe layer. Figure~\ref{fig:ablations-overview}~(a) measures, within each domain, how strongly $\lambda(q) = h(q) \cdot \drefuse$ at $\ell^*$ separates risky prompts from benign ones; cybercrime and financial show the strongest separation. Since a sharper benign-vs-risky separation makes $\lambda(q)$ a more reliable risk gauge in these domains and lets the modulation factor $\rho(\lambda)$ in Equation~\ref{eq:bias} commit the full bias precisely where it is warranted, the result translates into the largest absolute safety lifts.
+
+\begin{figure}[!h]
+\centering
+\begin{minipage}[t]{0.32\linewidth}
+\centering
+\includegraphics[width=\linewidth]{figures/fig_domain_separation.pdf}
+\subcaption{Per-domain $\drefuse$ separation.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\linewidth}
+\centering
+\includegraphics[width=\linewidth]{figures/fig_identification_jaccard.pdf}
+\subcaption{Per-query, not static.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.32\linewidth}
+\centering
+\includegraphics[width=\linewidth]{figures/fig_gradient_vs_ablation.pdf}
+\subcaption{Causally correct.}
+\end{minipage}
+\caption{(a) AUROC of $\lambda(q) = h(q) \cdot \drefuse$ in classifying benign vs risky prompts within each of five sensitive-content domains. (b) Pairwise-Jaccard distributions across 200 risky inputs: dark = intra-\name, light = \name vs SteerMoE static pool ($K{=}25$ over $1024$ experts). (c) Gradient rank ($1$ = most negative $\Delta$) versus ASR drop after ablating that single expert. Spearman $\rho = -0.81$ over $1{,}250$ pairs ($50$ queries $\times$ top-$25$); negative because rank $1$ corresponds to the largest drop.}
+\label{fig:ablations-overview}
+\end{figure}
+
+\subsection{Ablation Studies}
+\noindent\textbf{Identification is per-query and causal.}
+We test these two properties: whether the identified set differs from any static pool, and whether its experts are the ones whose ablation reduces attack success.
+Figure~\ref{fig:ablations-overview}~(b) reports two pairwise-Jaccard distributions across 200 jailbreak prompts. 
+The intra-\name distribution has mean $0.12$, far below $1.0$. The set varies substantially across queries, ruling out the possibility that \name secretly returns a fixed pool.
+The MoARA-vs-SteerMoE distribution has mean $0.03$, close to chance. The per-query sets do not even overlap with SteerMoE's static pool, ruling out the possibility that \name's "per-query" attribution is just a noisy reading of the same global safety-relevant experts. Together, these distributions establish that the identified set is genuinely input-dependent and not equivalent to any single static pool. Additionally, in Figure~\ref{fig:ablations-overview}~(c), ablating each top-$K$ expert in turn across $1{,}250$ (query, expert) pairs gives Spearman $\rho = -0.81$ between gradient rank and post-ablation ASR drop, confirming that the gradient ranking is faithful to actual causal effect on attack success.
+
+\begin{wraptable}{r}{0.45\linewidth}
+\vspace{-1em}
+\input{tables/2_ablation.tex}
+\vspace{-1em}
+\end{wraptable}
+\noindent\textbf{On the importance of modulation.} Identification picks the right experts but cannot say how strongly to suppress them. A flat $-\beta$ applies the same suppression on every query, over-correcting borderline-harmful prompts that warrant mild intervention and benign queries that warrant none. The $\rho(\lambda)$ ramp scales the bias proportionally to query risk, collapsing to zero on benign queries and ramping up only as $\lambda$ crosses the harmful regime.
+We test this by setting $\rho \equiv 1$ and $w \equiv 1$ in Equation~\ref{eq:bias}, reducing \name to a flat $-\beta$ on each identified expert. Table~\ref{tab:modulation} shows that XSTest drops $7$\,pp, leaving \name close to SteerMoE on helpfulness despite per-query identification. Safety also drops $3.3$\,pp on average and MMLU $1$\,pp. Identification and modulation are complementary by design, and neither alone is sufficient.
+
+\begin{wraptable}{r}{0.4\linewidth}
+\vspace{-1em}
+\input{tables/3_ood_generalization.tex}
+\vspace{-1em}
+\end{wraptable}
+
+\noindent\textbf{Generalization to unseen risky prompts.} 
+A practical concern is whether \name's offline directions $\drefuse$ and $\dbeh$ generalize beyond the risky-prompt distributions used to extract them, since at deployment new types of risky prompts appear regularly. We restrict the offline phase to $\{\emph{none}, \text{GCG}, \text{PAIR}\}$ and evaluate on held-out $\{\text{PastTense}, \text{AutoDAN}, \text{ICA}, \text{Renellm}\}$. Table~\ref{tab:lambda-ood} reports an average safety of $42.5$, about $4$\,pp below the in-distribution setting ($46.5$ in Table~\ref{tab:modulation}) and still well above SteerMoE's $31.7$. The drop is small relative to the gain over SteerMoE, suggesting the offline directions encode a generic risky-vs-benign distinction rather than features specific to particular risky-prompt patterns.
+
+
+\label{sec:ablations-impl}
+
+\paragraph{Probe-layer selection.}
+The probe layer $\ell^*$ controls both $\lambda(q)$ and $s(q)$ in Equations~\ref{eq:lambda}--\ref{eq:srefuse}. We sweep $\ell^* \in \{4, 7, 10, 13, 15\}$ on OLMoE-1B-7B and report $\lambda$-AUROC and downstream safe rate in Appendix~\ref{app:probe_layer} (Table~\ref{tab:probe-layer}). The downstream safe rate is essentially flat across mid-network layers: identification works as long as the probe sits past the early embedding layers and before the unembedding stack. By contrast, $\lambda$'s AUROC has a clear maximum at $\ell^* = 10$ ($0.61$, vs.\ $\leq 0.42$ elsewhere). Selecting the probe by $\lambda$-AUROC is therefore the principled choice; we use the same selection criterion on Qwen1.5-MoE-A2.7B-Chat and Mixtral-8x7B-Instruct-v0.1 (per-model probe layers in Appendix~\ref{app:model-details}).
+
+\subsection{Negative Result: Amplification Fails Where Suppression Succeeds}
+\label{sec:negresult}
+
+A natural symmetric variant of \name promotes (rather than suppresses) experts that pull the response toward refusal, by selecting the top-$K$ \emph{positive}-$\Delta$ experts and applying a positive router bias of equal magnitude. Table~\ref{tab:negresult} shows that this symmetric variant fails: on the same probe and the same $K$, amplification collapses generation rather than steering it toward refusal.
+
+\begin{table}[h!]
+\centering
+\caption{Suppression vs amplification on OLMoE-1B-7B. \emph{\name (suppression)} is the method as defined in Section~\ref{sec:online}. \emph{\name (amplification variant)} replaces $\Amin(q)$ with the top-$K$ positive-$\Delta$ experts and uses a positive bias of equal magnitude. Generation quality is measured by perplexity under \textcolor{red}{Llama-3.1-8B} on the responses; lower is better for fluent text, divergent values indicate degenerate generation.}
+\label{tab:negresult}
+\small
+\begin{tabular}{lccc}
+\toprule
+Variant & Jailbreak Safety $\uparrow$ & XSTest Answer $\uparrow$ & Generation Quality \\
+\midrule
+Original                        & 32.0 & 98.0 & \textcolor{red}{$\approx 12$} \\
+\name (suppression, ours)       & 62.0 & 98.0 & \textcolor{red}{$\approx 12$} \\
+\name (amplification variant)   & 0.0 & \textcolor{red}{0.0} & \textcolor{red}{$>10^{3}$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We find that the amplification variant achieves jailbreak safety of 0.0\%, comparable to or below \textit{Original}, while collapsing generation quality (perplexity \textcolor{red}{$>10^{3}$} under \textcolor{red}{Llama-3.1-8B} as a fluency proxy, far above \textit{Original}'s \textcolor{red}{$\approx 12$}; the relevant signal is the order-of-magnitude jump rather than the absolute value, which is sensitive to the choice of cross-model scorer). The asymmetry indicates that positive-$\Delta$ experts do not correspond to a coherent ``safe-expert pool''; they are merely the experts whose router upweighting most depresses the refusal score in a small neighborhood around the current routing, and pushing them up does not interpolate toward refusal but instead toward generation collapse. This finding rules out a naive ``promote good experts'' interpretation of \name and pins the method's success to suppression of risk-amplifying experts specifically.
