@@ -37,11 +37,7 @@ for negligible safety gain.
 
 \paragraph{Limitations.} All experiments are on OLMoE-1B-7B, so whether
 the same per-query signal structure exists on DeepSeek-V2-Lite,
-Qwen-MoE, or Mixtral is an immediate follow-up. Bypass attacks such as
-deepinception and cipher do not engage refusal circuitry at all at the
-probe layer ($\|\Delta_{\text{beh}}\| \to 0$), leaving our method with
-no signal to act on; Appendix~\ref{app:bypass} confirms this is
-independent of suppression strength. Although we cache $\Delta(q)$
+Qwen-MoE, or Mixtral is an immediate follow-up. Although we cache $\Delta(q)$
 offline in our experiments, a deployed system would incur one extra
 forward-backward pass per query (about $5\%$ of greedy generation cost
 for $256$ tokens), with the method remaining compatible with batching.

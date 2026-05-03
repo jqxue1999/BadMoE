@@ -24,6 +24,7 @@
 
 # Reference baseline paper, kept locally only
 /SteerMoE/
+/R2-Router/
 
 # Local crash dumps from compute jobs
 core.*

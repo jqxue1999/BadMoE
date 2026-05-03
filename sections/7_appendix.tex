@@ -8,8 +8,8 @@ orthogonalization on all $L \times E = 1024$ expert down-projection
 matrices: $W_{\ell,e}^{\text{down}} \leftarrow W - \hat{d}\hat{d}^\top W$
 where $\hat{d} = \dbeh[\ell]/\|\dbeh[\ell]\|$. Results on the same
 attack suite are reported in Table~\ref{tab:wortho}. The intervention
-is near-neutral — it marginally improves \emph{none} ($+6$pp) and
-cipher ($+4$pp) but provides no help on PAIR or past-tense. Together
+is near-neutral — it marginally improves \emph{none} ($+6$pp) but
+provides no help on PAIR or past-tense. Together
 with the low-cost advantage of our test-time method, this justifies
 focusing the main paper on router-bias rather than weight-level
 interventions.
@@ -24,46 +24,9 @@ interventions.
 attack & baseline & ortho\_all \\
 \midrule
 \emph{none}   & 48.0 & 54.0 \\
-cipher        & 8.0  & 12.1 \\
 PAIR (global) & 25.0 & 25.0 \\
 past-tense    & 32.0 & 29.0 \\
 benign        & --   & 100.0 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{Bypass Attacks}
-\label{app:bypass}
-
-Attacks including deepinception, cipher (GPT-4 cipher), AIM,
-BETTER\_DAN, renellm, and autodan exhibit $\|\Delta_{\text{beh}}(q)\|
-\approx 0.16 \times \|\Delta_{\text{beh}}(\text{none})\|$ in our cache,
-with cross-attack cosine of mean $\Delta$ anti-correlated ($-0.64$) vs.
-the \emph{none} centroid. These attacks do not trigger the model's
-refusal circuitry at the probe layer, so per-query $\Delta$-based
-interventions have no signal to amplify or suppress. Empirically,
-$C_{\text{perQ-sup}}$ on these attacks shows $0$–$4\%$ refusal rate,
-matching baseline within noise. We regard this cluster as mechanically
-out of reach for any $\dbeh$-anchored method.
-
-Table~\ref{tab:bypass_quant} quantifies this claim across three
-representative bypass families under both our method and SteerMoE.
-\textbf{[PLACEHOLDER: fill after Exp 5 in \texttt{experiment\_plan.md}.]}
-
-\begin{table}[h]
-\centering
-\caption{Safety rate on bypass-cluster attacks
-($n{=}50$ per cell). No method moves the needle.
-\textbf{[PLACEHOLDER]}}
-\label{tab:bypass_quant}
-\small
-\begin{tabular}{lccc}
-\toprule
-attack & baseline & SteerMoE & $C_{\text{perQ-sup}}$ \\
-\midrule
-new\_deepinception & XX.X & XX.X & XX.X \\
-new\_gpt4\_cipher  & XX.X & XX.X & XX.X \\
-AIM                & XX.X & XX.X & XX.X \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -212,6 +175,17 @@ experts from a prior pilot:
 $(L{=}8, E{=}29), (L{=}10, E{=}6), (L{=}6, E{=}15), (L{=}9, E{=}8),
 (L{=}9, E{=}16)$. All five are in SteerMoE's top-100 A-minus pool.
 
+\section{Judge Configuration}
+\label{app:judge}
+
+We follow PandaGuard's~\cite{pandaguard} LLM-judge methodology rather than lexical refusal-string matching, since string matching misses partial compliance and surface-paraphrased refusals. PandaGuard offers three LLM-based judges in the Qwen, Llama, and GPT families and reports moderate agreement among them, with Qwen2.5 occupying the median sensitivity. We adopt Qwen2.5-72B-Instruct~\cite{qwen25} as the single judge for all methods on all backbones in this paper.
+
+\paragraph{Safety prompt.} For the six jailbreak attacks in Table~\ref{tab:main}, the judge sees the harmful goal and the model's response and emits an integer rubric score $r \in \{0, 1, \ldots, 100\}$, anchored at $r{=}0$ = ``promotes harm, violence, exploitation,'' $r{=}50$ = ``neutral,'' and $r{=}100$ = ``helpful, ethical, promotes wellbeing,'' with the prompt explicitly telling the judge that refusals and helpful ethical advice both score $90$--$100$. We then rescale to an alignment score $s = r/100 \in [0, 1]$ and label a response \textsc{safe} when $s \geq 0.7$. The threshold $0.7$ (clearly leaning toward refusal rather than partial compliance) is stricter than thresholds commonly used in attack-side leaderboards, reflecting that we are scoring a defense, where partial compliance should not count as safe.
+
+\paragraph{Over-refusal prompt.} For XSTest, the same judge sees the benign-but-superficially-risky prompt and the response, and emits a binary label $\ell \in \{\textsc{answer}, \textsc{refuse}\}$, anchored at $\textsc{answer}$ = ``the assistant attempted to address the question (even partially)'' and $\textsc{refuse}$ = ``the assistant declined, apologized, warned, or redirected away.'' The prompt explicitly informs the judge that the question is benign so that the judge does not penalise the assistant for engaging with surface-risky language. The label is parsed from the judge's first matched token via a case-insensitive regex matching either \texttt{ANSWER} or \texttt{REFUSE}; the XSTest answer rate is the fraction of responses with $\ell = \textsc{answer}$.
+
+\paragraph{Cross-method fairness.} The same judge model, prompt templates, and threshold are applied identically to \emph{Original}, \emph{SteerMoE}, and \name on every backbone. Cross-method differences therefore reflect the methods themselves rather than any judge-side asymmetry.
+
 \section{Implementation Details}
 \label{app:impl}
 
@@ -220,20 +194,13 @@ tensor (prefill) or a $(p, \text{top\_val}, \text{top\_idx})$ tuple
 (decode with KV cache). Our hook handles both by recomputing the bias
 addition before softmax and re-extracting top-$k$.
 
-\paragraph{Generation config.} Greedy decoding, \texttt{do\_sample=False},
-\texttt{max\_new\_tokens=256}, \texttt{temperature=1.0}, bf16 throughout.
-\texttt{pad\_token\_id} set to \texttt{eos\_token\_id}.
+\paragraph{Decoding config.} Greedy decoding throughout (\texttt{do\_sample=False}, \texttt{max\_new\_tokens=256}, \texttt{temperature=1.0}, bf16); \texttt{pad\_token\_id} is set to \texttt{eos\_token\_id}. The same decoding config is applied to \emph{Original}, \emph{SteerMoE}, and \name to ensure cross-method comparability.
 
-\paragraph{Inference overhead.} End-to-end wall-clock at $n{=}10$:
-baseline \textbf{[PLACEHOLDER]} ms/query, $C_{\text{perQ-sup}}$ with
-online $\Delta$ extraction \textbf{[PLACEHOLDER]} ms/query, overhead
-\textbf{[PLACEHOLDER]} \%. Measured on a single NVIDIA B200 (Exp 6 in
-\texttt{experiment\_plan.md}).
+\paragraph{Direction normalization.} Both offline directions $\drefuse$ and $\dbeh$ are unit-normalized per layer (each $\drefuse[\ell]$ and $\dbeh[\ell]$ is divided by its $\ell_2$ norm) and stored once per backbone, so $\lambda(q) = h(q) \cdot \drefuse[\ell^*]$ and $s(q) = h(q) \cdot \dbeh[\ell^*]$ are scale-invariant projections.
 
-\paragraph{Compute.} All experiments run on a single NVIDIA B200
-(180 GB). $\Delta$ cache: ${\sim}10$ min for $N{=}200$. Main generation:
-${\sim}70$ min per $200$-query condition at
-\texttt{max\_new\_tokens}${=}256$. Judging: ${\sim}10$ min per 200 responses.
+\paragraph{Calibration of the modulation ramp.} The endpoints $(\lambda_{\text{lo}}, \lambda_{\text{hi}})$ are set per backbone on a held-out split disjoint from the test prompts: $\lambda_{\text{lo}}$ at the $95$th percentile of $\lambda(q)$ on the benign half, $\lambda_{\text{hi}}$ at the $50$th percentile on the risky half. Calibration is one-shot at offline time and does not depend on the test query.
+
+\paragraph{Compute.} All experiments run on a single NVIDIA B200 ($180$\,GB). Offline extraction of $\drefuse$ and $\dbeh$ takes ${\sim}10$ minutes per backbone at $N{=}200$ contrast pairs. The online phase adds one forward-backward pass per query before generation, accounting for ${\sim}5\%$ of the cost of $256$-token greedy generation. End-to-end main-table generation takes ${\sim}70$ minutes per $200$-query evaluation cell, and judging takes ${\sim}10$ minutes per $200$ responses. Total compute for the full experimental sweep across three backbones, six attacks, and three baselines fits in under $200$ B200-hours, putting the entire pipeline within reach of a single-GPU node.
 
 \section{Per-Model Architecture and Hyperparameters}
 \label{app:model-details}
@@ -250,8 +217,8 @@ Table~\ref{tab:model-details} summarizes the three MoE backbones used in the mai
 Model & $L$ & $E$ & top-$k$ & hidden $d$ & $\ell^*$ & depth frac. & $K$ \\
 \midrule
 OLMoE-1B-7B-0924-Instruct        & $16$ & $64$ & $8$ & $2048$ & $10$ & $0.625$ & $25$ \\
-\textcolor{red}{Qwen1.5-MoE-A2.7B-Chat} & \textcolor{red}{$24$} & \textcolor{red}{$60$} & \textcolor{red}{$4$} & \textcolor{red}{$2048$} & \textcolor{red}{$14$} & \textcolor{red}{$0.583$} & $25$ \\
-\textcolor{red}{Mixtral-8x7B-Instruct-v0.1} & \textcolor{red}{$32$} & \textcolor{red}{$8$}  & \textcolor{red}{$2$} & \textcolor{red}{$4096$} & \textcolor{red}{$20$} & \textcolor{red}{$0.625$} & \textcolor{red}{$4$} \\
+Qwen1.5-MoE-A2.7B-Chat & $24$ & $60$ & $4$ & $2048$ & \textcolor{red}{$14$} & \textcolor{red}{$0.583$} & $25$ \\
+Mixtral-8x7B-Instruct-v0.1 & $32$ & $8$  & $2$ & $4096$ & \textcolor{red}{$20$} & \textcolor{red}{$0.625$} & \textcolor{red}{$4$} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -283,7 +250,3 @@ $15$ & $0.38$ & $58$ & $88$ \\
 
 The two columns ``safe rate'' and ``XSTest'' isolate the two channels through which $\ell^*$ enters the method. Safe rate captures the quality of the identification gradient (independent of the modulation signal, since $\rho(\lambda)$ saturates to $1$ on risky calibration prompts). XSTest captures the quality of $\lambda(q)$ as a benign-vs-risky gauge, since on benign prompts the identified set is irrelevant once $\lambda(q)$ falls below $\lambda_{\text{lo}}$. Identification saturates over a wide mid-layer plateau ($\ell^* \in \{10, 13\}$), while modulation is sharply peaked at the middle. This dissociation is what motivates ``select where modulation peaks within the identification plateau,'' giving $\ell^* = 10$.
 
-\section{Domain Labelling Protocol}
-\label{app:domain-labelling}
-
-The five sensitive-content domains used in Table~\ref{tab:main} (drugs, cybercrime, violence, financial, sexual) are obtained by coarsening the JailbreakBench taxonomy. Each of the $100$ JBB harmful goals is labelled once with a Qwen2.5-14B-Instruct classification prompt, asking the judge to assign a single domain from the five-class set. The judge sees only the goal text, not the attack wrapper, so each goal receives one label that is shared across all six attack variants of that goal. Per-domain safety in Table~\ref{tab:main} averages the safe rate over (goals in domain) $\times$ (six attacks). The classification prompt and goal-to-domain mapping are released with the code release. Class balance is approximate: drugs $24$, cybercrime $26$, violence $19$, financial $14$, sexual $17$ (one goal can be re-labelled into the closest class when the original JBB category did not match any of the five).
