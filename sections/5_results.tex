@@ -12,22 +12,8 @@ The gain is also broad across the five JBB harmful-behavior categories, with \em
 
 \begin{figure}[!h]
 \centering
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{figures/fig_domain_separation.pdf}
-\subcaption{Per-domain $\drefuse$ separation.}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{figures/fig_identification_jaccard.pdf}
-\subcaption{Per-query, not static.}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.32\linewidth}
-\centering
-\includegraphics[width=\linewidth]{figures/fig_gradient_vs_ablation.pdf}
-\subcaption{Causally correct.}
-\end{minipage}
-\caption{(a) AUROC of $\lambda(q) = h(q) \cdot \drefuse$ in classifying benign vs risky prompts within each of the five JBB harmful-behavior categories (\emph{Harassment/Discrimination}, \emph{Malware/Hacking}, \emph{Physical harm}, \emph{Economic harm}, \emph{Fraud/Deception}; bars left-to-right). (b) Pairwise-Jaccard distributions across 200 risky inputs ($K{=}25$ over $1024$ experts): dark = intra-\name, light = \name vs SteerMoE static pool, dotted gray = chance. (c) Gradient rank ($1$ = most negative $\Delta$) versus safe-rate increase after ablating that single expert. Spearman $\rho = -0.81$ over $1{,}250$ pairs ($50$ queries $\times$ top-$25$); negative because rank $1$ corresponds to the largest increase.}
+\includegraphics[width=\linewidth]{figures/fig_ablations_overview.pdf}
+\caption{(a) AUROC of $\lambda(q) = h(q) \cdot \drefuse$ in classifying benign vs risky prompts within each of the five JBB harmful-behavior categories (H/D = Harassment/Discrimination, M/H = Malware/Hacking, PH = Physical harm, EH = Economic harm, F/D = Fraud/Deception). (b) Pairwise-Jaccard distributions across 200 risky inputs ($K{=}25$ over $1024$ experts): dark = intra-\name, light = \name vs SteerMoE static pool, dotted gray = chance. (c) Gradient rank ($1$ = most negative $\Delta$) versus safe-rate increase after ablating that single expert. Spearman $\rho = -0.81$ over $1{,}250$ pairs ($50$ queries $\times$ top-$25$); negative because rank $1$ corresponds to the largest increase.}
 \label{fig:ablations-overview}
 \end{figure}
 
@@ -72,4 +58,4 @@ Since identification has saturated across mid-layers, we select the mid-layer wi
 \end{wraptable}
 
 \noindent\textbf{Suppression vs amplification.}
-A natural symmetric variant of \name amplifies $\Apos(q)$, the top-$K$ \emph{positive}-$\Delta$ experts, instead of suppressing $\Amin(q)$, applying a positive router bias of equal magnitude. Table~\ref{tab:negresult} shows this collapses: average safety drops to $0\%$ and generation perplexity under Llama-3.1-8B jumps from $12.0$ on \textit{Original} to $>10^{3}$, while \name's suppression variant stays at $12.3$. The order-of-magnitude jump (rather than the absolute number, which depends on the cross-model scorer) is the relevant signal. $\Apos(q)$ does not form a coherent ``safe-expert pool''; its members are merely the experts whose upweighting most depresses the refusal score in a small neighborhood of the current routing, and pushing them up interpolates toward generation collapse rather than refusal. \name's success is therefore tied to suppressing $\Amin(q)$ specifically, not to symmetric routing intervention.
+A natural symmetric variant of \name promotes the top-$K$ \emph{positive}-$\Delta$ experts (denoted $\Apos(q)$) instead of suppressing $\Amin(q)$, applying a positive router bias of equal magnitude. Table~\ref{tab:negresult} shows this collapses across all metrics. Average safety drops to $0\%$, XSTest answer rate also collapses to $0\%$, and generation perplexity under Llama-3.1-8B reaches $>10^{3}$ on the amplification variant, compared to $12.0$ on \textit{Original} and $12.3$ on \name's suppression variant. The asymmetry comes from MoE's top-$k$ routing structure. Suppression with $\beta=-10$ removes $K{=}25$ experts from contention, leaving the remaining $E-K$ experts to fill the top-$k$ slots through normal input-conditioned competition. Amplification with $\beta=+10$ instead forces the router to draw all top-$k$ choices from a fixed pool of $K{=}25$ experts regardless of token, replacing the input-conditioned selection over $E$ experts with a near-fixed selection over $K$. This collapses the per-input specialization that gives MoE its capability, and generation degenerates rather than steering toward refusal. $\Apos(q)$ is therefore not a coherent ``safe-expert pool'' that can be amplified into; it is a set of experts whose marginal contribution to $s$ is positive at the current routing, and forcing them into the active set destroys the very routing mechanism that the gradient was computed against.

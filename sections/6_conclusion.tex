@@ -1,3 +1,6 @@
+\section{Conclusion}
+We presented \name{}, an alignment-enhancing technique inspired by MoE's per-input routing principle. The same mechanism through which MoE achieves capability efficiency, the input-conditioned selection of a sparse expert subset, can be repurposed to enhance alignment at no training cost, by deriving per-query identification of risk-amplifying experts and a risk-modulated suppression bias from a single shared probe. Across three MoE backbones, \name{} improves average safety by $21.2$, $21.7$, and $23.0$ percentage points respectively, while preserving XSTest helpfulness within $0$\,pp of the unmodified backbone. The suppress-amplify asymmetry we report further suggests that alignment in MoE is not a question of choosing between safe and unsafe experts on equal footing, but of selectively muting the experts that, on this specific input, push the model toward unsafe behavior.
+
 % \section{Discussion}
 % \label{sec:discussion}
 
@@ -45,21 +48,3 @@
 % $\pm14$pp on safety rates, so differences under this gap are
 % underpowered; extending to $n{=}100$ is a natural next step.
 
-\section{Conclusion}
-
-Different inputs recruit different adversarial experts in
-Mixture-of-Experts language models. We quantified this input-specificity
-(Jaccard $0.11$ between per-query top-5 sets on $200$ queries), and
-designed a two-step alignment enhancement that respects it: locate per-query
-adversarial experts with a single causal autograd through router
-biases, then suppress them with a constant router-bias shift at
-generation. The method is weight-preserving, adds only a single
-forward-backward pass per query, and at identical intervention
-bandwidth outperforms the strong SteerMoE baseline on jailbreak safety
-while incurring zero over-refusal cost on XSTest benign prompts. The
-suppress-amplify asymmetry we report closes the loop. The ``unsafe''
-direction of our per-query signal has concordant evidence from a
-population-level pool (SteerMoE's $\mathcal{A}^{-}$), the ``safe''
-direction does not, and amplification accordingly fails. MoE safety
-steering is, at bottom, a question of which adversarial experts to
-silence on this input.
