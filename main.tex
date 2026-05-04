@@ -44,8 +44,7 @@
 \maketitle
 
 \begin{abstract}
-Mixture-of-Experts (MoE) language models route each input to a sparse subset of experts because different inputs are best handled by different experts. We observe that experts also differ along a second dimension: for the same input, some experts amplify unsafe behavior while others suppress it, and the split depends on the query. This suggests that the router, which already selects experts based on capability, should also select based on safety. If achievable, this would yield an alignment enhancement that is per-input adaptive and weight-preserving. This raises two coupled challenges. First, the identity of risk-amplifying experts shifts from query to query, because different risk domains (e.g., drugs, cybercrime, violence) expose different harmful surfaces of the model and engage largely disjoint expert subsets; a defense must therefore identify which experts amplify risk for each individual query. Second, queries themselves vary in risk level, with clearly malicious prompts demanding strong correction while benign ones should remain untouched; a defense must calibrate the intervention strength to each query's risk level, since uniformly strong bias degrades utility on benign inputs while uniformly weak bias fails to defend against truly harmful ones. We address both with a single forward-backward pass per input: gradients of a harmfulness signal with respect to router logits localize each query's risk-amplifying experts, and the magnitude of the same signal sets the strength of the router-level bias applied to suppress them. Across three MoE LLMs (OLMoE-1B-7B, Qwen1.5-MoE-A2.7B, Mixtral-8x7B) and a diverse set of risky inputs, this yields a query-adaptive alignment enhancement that raises average safety by over $20\%$ relative to the unintervened MoE while preserving benign helpfulness within $0$\,pp of the original model.
-
+\input{sections/0_abstract.tex}
 \end{abstract}
 
 \input{sections/1_intro.tex}
