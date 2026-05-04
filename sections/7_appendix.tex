@@ -31,30 +31,6 @@ benign        & --   & 100.0 \\
 \end{tabular}
 \end{table}
 
-\section{Extended $n{=}100$ Scale}
-\label{app:n100}
-
-The main-text Table~\ref{tab:main} uses $n{=}50$ per cell. Table~\ref{tab:main_n100}
-re-runs all conditions at $n{=}100$ to halve the binomial CI.
-\textbf{[PLACEHOLDER: fill after Exp 1.]}
-
-\begin{table}[h]
-\centering
-\caption{Safety rate at $n{=}100$. \textbf{[PLACEHOLDER]}}
-\label{tab:main_n100}
-\small
-\begin{tabular}{lcccc}
-\toprule
- & baseline & SteerMoE & $C_{\text{perQ-sup}}$ & $D_{\text{perQ-comb}}$ \\
-\midrule
-\emph{none}      & XX.X & XX.X & XX.X & ~0.0 \\
-GCG              & XX.X & --   & XX.X & ~0.0 \\
-PAIR             & XX.X & XX.X & XX.X & ~0.0 \\
-past-tense       & XX.X & XX.X & XX.X & ~0.0 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
 \section{Adaptive Magnitude Ablation}
 \label{app:adaptive}
 
@@ -198,7 +174,7 @@ addition before softmax and re-extracting top-$k$.
 
 \paragraph{Direction normalization.} Both offline directions $\drefuse$ and $\dbeh$ are unit-normalized per layer (each $\drefuse[\ell]$ and $\dbeh[\ell]$ is divided by its $\ell_2$ norm) and stored once per backbone, so $\lambda(q) = h(q) \cdot \drefuse[\ell^*]$ and $s(q) = h(q) \cdot \dbeh[\ell^*]$ are scale-invariant projections.
 
-\paragraph{Calibration of the modulation ramp.} The endpoints $(\lambda_{\text{lo}}, \lambda_{\text{hi}})$ are set per backbone on a held-out split disjoint from the test prompts: $\lambda_{\text{lo}}$ at the $95$th percentile of $\lambda(q)$ on the benign half, $\lambda_{\text{hi}}$ at the $50$th percentile on the risky half. Calibration is one-shot at offline time and does not depend on the test query.
+\paragraph{Calibration of the modulation ramp.} The endpoints $(\lambda_{\text{lo}}, \lambda_{\text{hi}})$ are set per backbone on a held-out split disjoint from the test prompts: $\lambda_{\text{lo}}$ at the $95$th percentile of $\lambda(q)$ on the benign half (so $95\%$ of benign queries fall below it and trigger no intervention), $\lambda_{\text{hi}}$ at the $5$th percentile on the risky half (so $95\%$ of risky queries fall above it and receive the full bias). Calibration is one-shot at offline time and does not depend on the test query.
 
 \paragraph{Compute.} All experiments run on a single NVIDIA B200 ($180$\,GB). Offline extraction of $\drefuse$ and $\dbeh$ takes ${\sim}10$ minutes per backbone at $N{=}200$ contrast pairs. The online phase adds one forward-backward pass per query before generation, accounting for ${\sim}5\%$ of the cost of $256$-token greedy generation. End-to-end main-table generation takes ${\sim}70$ minutes per $200$-query evaluation cell, and judging takes ${\sim}10$ minutes per $200$ responses. Total compute for the full experimental sweep across three backbones, six attacks, and three baselines fits in under $200$ B200-hours, putting the entire pipeline within reach of a single-GPU node.
 
