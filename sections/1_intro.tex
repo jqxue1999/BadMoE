@@ -8,7 +8,7 @@ A natural way to leverage this is to add a bias to the router that suppresses ex
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/motivation.pdf}
-\caption{(a) \name: for each query, a per-query bias is added to the router logits to suppress experts driving unsafe behavior and promote those pulling toward refusal. (b) Different risk categories engage disjoint expert subsets. (c) \name escapes the safety-helpfulness trade-off incurred by the static design.}
+\caption{(a) \name: for each query, a per-query bias is added to the router logits to suppress experts driving unsafe behavior and promote those pulling toward refusal. (b) Different risky categories engage disjoint expert subsets, while benign inputs require no intervention. (c) \name escapes the safety-helpfulness trade-off, while Original underperforms on safety and SteerMoE on helpfulness.}
 \label{fig:motivation}
 \end{figure}
 
@@ -16,7 +16,7 @@ The first challenge is \textbf{identification}. To compute an alignment router b
 
 The second challenge is \textbf{modulation}. Even when the right experts are identified, the strength of the intervention should not be uniform across inputs. A clearly malicious prompt warrants a strong push toward refusal, an ambiguous prompt warrants less, and a benign prompt warrants none at all. The static design above takes a single fixed bias magnitude and applies it everywhere, which is mismatched to the distribution of inputs encountered at deployment. Tuned high enough to defend against the malicious prompt, it needlessly refuses benign queries. Tuned low enough to leave benign queries alone, it lets malicious prompts through.
 
-Both challenges have visible consequences at deployment. Figure~\ref{fig:motivation}~(c) illustrates them simultaneously by plotting refusal rate on risky inputs against quality on benign inputs. The static design~\citep{fayyaz2025steermoe} lands in the lower-left region: identification fails per-query, refusing too few risky inputs, and modulation fails per-query, refusing too many benign ones. In numbers, a static design refuses $14$ out of $100$ benign-lookalikes on XSTest while answering $68$ out of $100$ risky inputs, because it cannot tell which experts to suppress nor how strongly to push the bias on a given query. The following is a concrete example of how it fails on both fronts.
+Both challenges have visible consequences at deployment. Figure~\ref{fig:motivation}~(c) illustrates them simultaneously by plotting refusal rate on risky inputs against helpfulness on benign inputs. The static design~\citep{fayyaz2025steermoe} pays for partial safety with a substantial helpfulness cost. Identification fails per-query, refusing too few risky inputs, and modulation fails per-query, refusing too many benign ones. In numbers, a static design refuses $14$ out of $100$ benign-lookalikes on XSTest while answering $68$ out of $100$ risky inputs, because it cannot tell which experts to suppress nor how strongly to push the bias on a given query. The following is a concrete example of how it fails on both fronts.
 
 \begin{tcolorbox}[
   enhanced,

@@ -1,49 +1,49 @@
-\section{Discussion}
-\label{sec:discussion}
+% \section{Discussion}
+% \label{sec:discussion}
 
-\paragraph{Why suppression works but amplification fails.} The
-concordance analysis (Figure~\ref{fig:ablations-overview}~(b)) and the amplification
-pilot (\S\ref{sec:negresult}) line up to tell a consistent story.
-Per-query $\Delta_{\text{beh}}$ negative identifies experts whose role
-is to suppress the refusal direction at a probe point, which aligns
-with SteerMoE's population-level A-minus because both methods are
-picking up a robust disruption signal. Per-query positive
-$\Delta_{\text{beh}}$, in contrast, identifies experts whose marginal
-activation would push the residual toward the refusal direction, but
-this is a counterfactual direction rather than a feature the model is
-actually using to refuse. Forcing these experts to fire at amplitude
-($+3$ router bias) pushes the residual stream into regions the model
-does not know how to decode, producing gibberish. Suppression has no
-such failure mode because it merely reduces already-active disruptive
-experts' contribution.
+% \paragraph{Why suppression works but amplification fails.} The
+% concordance analysis (Figure~\ref{fig:ablations-overview}~(b)) and the amplification
+% pilot (\S\ref{sec:negresult}) line up to tell a consistent story.
+% Per-query $\Delta_{\text{beh}}$ negative identifies experts whose role
+% is to suppress the refusal direction at a probe point, which aligns
+% with SteerMoE's population-level A-minus because both methods are
+% picking up a robust disruption signal. Per-query positive
+% $\Delta_{\text{beh}}$, in contrast, identifies experts whose marginal
+% activation would push the residual toward the refusal direction, but
+% this is a counterfactual direction rather than a feature the model is
+% actually using to refuse. Forcing these experts to fire at amplitude
+% ($+3$ router bias) pushes the residual stream into regions the model
+% does not know how to decode, producing gibberish. Suppression has no
+% such failure mode because it merely reduces already-active disruptive
+% experts' contribution.
 
-\paragraph{PAIR underperformance.} PAIR is the one attack where
-$C_{\text{perQ-sup}}$ trails baseline by $-3$pp. PAIR queries are
-optimized by an adversarial LLM to produce prompts that look benign on
-the surface; $\Delta_{\text{beh}}$ on these prompts has intermediate
-magnitude and the selected experts resemble those selected on
-\emph{none} more than on GCG or past-tense. One hypothesis is that
-PAIR queries evade the ``refusal engagement'' that our method depends
-on. A larger $n$ is needed to confirm whether this is a true
-regression or noise within the $\pm 14$pp 95\% CI at $n{=}50$.
+% \paragraph{PAIR underperformance.} PAIR is the one attack where
+% $C_{\text{perQ-sup}}$ trails baseline by $-3$pp. PAIR queries are
+% optimized by an adversarial LLM to produce prompts that look benign on
+% the surface; $\Delta_{\text{beh}}$ on these prompts has intermediate
+% magnitude and the selected experts resemble those selected on
+% \emph{none} more than on GCG or past-tense. One hypothesis is that
+% PAIR queries evade the ``refusal engagement'' that our method depends
+% on. A larger $n$ is needed to confirm whether this is a true
+% regression or noise within the $\pm 14$pp 95\% CI at $n{=}50$.
 
-\paragraph{Bandwidth comparison.} $C_{\text{perQ-sup}}$ uses $K{=}25$
-negative experts only — half the total intervention bandwidth of
-SteerMoE ($K{=}25$ activate $+$ $K{=}25$ deactivate). That the
-suppression-only method still outperforms suggests SteerMoE's
-amplification side is either redundant or, as our
-$D_{\text{perQ-comb}}$ pilot hints, silently trading helpfulness
-for negligible safety gain.
+% \paragraph{Bandwidth comparison.} $C_{\text{perQ-sup}}$ uses $K{=}25$
+% negative experts only — half the total intervention bandwidth of
+% SteerMoE ($K{=}25$ activate $+$ $K{=}25$ deactivate). That the
+% suppression-only method still outperforms suggests SteerMoE's
+% amplification side is either redundant or, as our
+% $D_{\text{perQ-comb}}$ pilot hints, silently trading helpfulness
+% for negligible safety gain.
 
-\paragraph{Limitations.} All experiments are on OLMoE-1B-7B, so whether
-the same per-query signal structure exists on DeepSeek-V2-Lite,
-Qwen-MoE, or Mixtral is an immediate follow-up. Although we cache $\Delta(q)$
-offline in our experiments, a deployed system would incur one extra
-forward-backward pass per query (about $5\%$ of greedy generation cost
-for $256$ tokens), with the method remaining compatible with batching.
-Finally, our $n{=}50$ per cell yields 95\% binomial CIs of about
-$\pm14$pp on safety rates, so differences under this gap are
-underpowered; extending to $n{=}100$ is a natural next step.
+% \paragraph{Limitations.} All experiments are on OLMoE-1B-7B, so whether
+% the same per-query signal structure exists on DeepSeek-V2-Lite,
+% Qwen-MoE, or Mixtral is an immediate follow-up. Although we cache $\Delta(q)$
+% offline in our experiments, a deployed system would incur one extra
+% forward-backward pass per query (about $5\%$ of greedy generation cost
+% for $256$ tokens), with the method remaining compatible with batching.
+% Finally, our $n{=}50$ per cell yields 95\% binomial CIs of about
+% $\pm14$pp on safety rates, so differences under this gap are
+% underpowered; extending to $n{=}100$ is a natural next step.
 
 \section{Conclusion}
 
