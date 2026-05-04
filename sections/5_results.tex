@@ -65,26 +65,11 @@ Identification benefits from a deeper probe: safe rate rises from $52\%$ at $\el
 
 Since identification has saturated across mid-layers, we select the mid-layer with the highest XSTest, giving $\ell^* = 10$ on OLMoE. The same criterion selects layers at comparable depth fractions on Qwen1.5-MoE-A2.7B-Chat and Mixtral-8x7B-Instruct-v0.1 (Appendix~\ref{app:model-details}), suggesting the principle is architecture-agnostic.
 
+\begin{wraptable}{r}{0.45\linewidth}
+\vspace{-1em}
+\input{tables/4_negresult.tex}
+\vspace{-1em}
+\end{wraptable}
 
-\subsection{Negative Result: Amplification Fails Where Suppression Succeeds}
-\label{sec:negresult}
-
-A natural symmetric variant of \name promotes (rather than suppresses) experts that pull the response toward refusal, by selecting the top-$K$ \emph{positive}-$\Delta$ experts and applying a positive router bias of equal magnitude. Table~\ref{tab:negresult} shows that this symmetric variant fails: on the same probe and the same $K$, amplification collapses generation rather than steering it toward refusal.
-
-\begin{table}[h!]
-\centering
-\caption{Suppression vs amplification on OLMoE-1B-7B. \emph{\name (suppression)} is the method as defined in Section~\ref{sec:online}. \emph{\name (amplification variant)} replaces $\Amin(q)$ with the top-$K$ positive-$\Delta$ experts and uses a positive bias of equal magnitude. Generation quality is measured by perplexity under \textcolor{red}{Llama-3.1-8B} on the responses; lower is better for fluent text, divergent values indicate degenerate generation.}
-\label{tab:negresult}
-\small
-\begin{tabular}{lccc}
-\toprule
-Variant & Avg.\ Safety $\uparrow$ & XSTest Answer $\uparrow$ & Generation Quality \\
-\midrule
-Original                        & 32.0 & 98.0 & \textcolor{red}{$12.0$} \\
-\name (suppression, ours)       & 62.0 & 98.0 & \textcolor{red}{$12.3$} \\
-\name (amplification variant)   & 0.0 & \textcolor{red}{0.0} & \textcolor{red}{$>10^{3}$} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-We find that the amplification variant achieves an average safety of $0.0\%$, comparable to or below \textit{Original}, while collapsing generation quality (perplexity \textcolor{red}{$>10^{3}$} under \textcolor{red}{Llama-3.1-8B} as a fluency proxy, far above \textit{Original}'s \textcolor{red}{$12.0$}). The relevant signal is the order-of-magnitude jump, since absolute values depend on the cross-model scorer; \name's own suppression variant stays at \textcolor{red}{$12.3$}, essentially unchanged from \textit{Original}. The asymmetry indicates that positive-$\Delta$ experts do not correspond to a coherent ``safe-expert pool''; they are merely the experts whose router upweighting most depresses the refusal score in a small neighborhood around the current routing, and pushing them up does not interpolate toward refusal but instead toward generation collapse. This finding rules out a naive ``promote good experts'' interpretation of \name and pins the method's success to suppression of risk-amplifying experts specifically.
+\noindent\textbf{Suppression vs amplification.}
+A natural symmetric variant of \name amplifies $\Apos(q)$, the top-$K$ \emph{positive}-$\Delta$ experts, instead of suppressing $\Amin(q)$, applying a positive router bias of equal magnitude. Table~\ref{tab:negresult} shows this collapses: average safety drops to $0\%$ and generation perplexity under Llama-3.1-8B jumps from $12.0$ on \textit{Original} to $>10^{3}$, while \name's suppression variant stays at $12.3$. The order-of-magnitude jump (rather than the absolute number, which depends on the cross-model scorer) is the relevant signal. $\Apos(q)$ does not form a coherent ``safe-expert pool''; its members are merely the experts whose upweighting most depresses the refusal score in a small neighborhood of the current routing, and pushing them up interpolates toward generation collapse rather than refusal. \name's success is therefore tied to suppressing $\Amin(q)$ specifically, not to symmetric routing intervention.
