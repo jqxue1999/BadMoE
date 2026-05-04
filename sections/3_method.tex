@@ -3,24 +3,24 @@
 
 
 
-To address the two challenges of identification and modulation, MoARA needs two complementary signals from each input query: a per-expert attribution that indicates which experts to suppress (for identification), and a risk score that scales how strongly to intervene (for modulation). Each signal is read from a different probe direction. The input-risk direction, shown in Figure~\ref{fig:method}~(a), is built offline by contrasting risky vs benign prompts, so that projection onto it measures how risk-shaped the input is. The output-safety direction, shown in Figure~\ref{fig:method}~(b), is built offline by contrasting safe vs harmful continuations on risky prompts, so that projection onto it measures how strongly the model is inclined toward a safe response. As shown in Figure~\ref{fig:method}~(c), at inference, the hidden state of an input query is projected onto both directions: the input-risk projection serves as the risk score that scales the bias, and the gradient of the output-safety projection serves as the per-expert attribution that selects which experts to suppress, and together they drive a router-bias adjustment in a single shared forward-backward pass.
+To address the two challenges of identification and modulation, \name needs two complementary signals from each input query: a per-expert attribution that indicates which experts to suppress (for identification), and a risk score that scales how strongly to intervene (for modulation). Each signal is read from a different probe direction. The input-risk direction, shown in Figure~\ref{fig:method}~(a), is built offline by contrasting risky vs benign prompts, so that projection onto it measures how risk-shaped the input is. The output-safety direction, shown in Figure~\ref{fig:method}~(b), is built offline by contrasting safe vs harmful continuations on risky prompts, so that projection onto it measures how strongly the model is inclined toward a safe response. As shown in Figure~\ref{fig:method}~(c), at inference, the hidden state of an input query is projected onto both directions: the input-risk projection serves as the risk score that scales the bias, and the gradient of the output-safety projection serves as the per-expert attribution that selects which experts to suppress, and together they drive a router-bias adjustment in a single shared forward-backward pass.
 
 \begin{figure}[h!]
 \centering
 \includegraphics[width=\linewidth]{figures/method.pdf}
-\caption{\name. (a) Offline extraction of the input-risk direction $\drefuse$. (b) Offline extraction of the output-safety direction $\dbeh$. (c) Online: a single mid-layer probe $h(q)$ yields a risky index $\lambda(q)$ and a refusal score $s(q)$; the gradient of $s(q)$ ranks per-(layer, expert) attribution and $\lambda(q)$ scales the resulting router-bias adjustment, so benign inputs ($\lambda(q) \approx 0$) pass through unchanged.}
+\caption{\name. (a) Offline extraction of the input-risk direction $\drefuse$. (b) Offline extraction of the output-safety direction $\dbeh$. (c) Online: a single mid-layer probe $h(q)$ yields a risky index $\lambda(q)$ and a refusal score $s(q)$; the gradient of $s(q)$ ranks per-(layer, expert) attribution and $\lambda(q)$ scales the per-query router-bias adjustment $\dbias_{\ell,e}(q)$ added to the original router logits $\Psi_{\ell,t,i}$ before softmax, so benign inputs ($\lambda(q) \approx 0$) pass through unchanged.}
 \label{fig:method}
 \end{figure}
 
 \subsection{Preliminaries}
 \label{sec:prelim}
 
-\name perturbs the router logits at inference and leaves model weights untouched. We consider an MoE transformer with $L$ layers and $E$ experts per layer, with top-$k$ routing per token. At each MoE layer $\ell$ and token position $t$, a small linear router $W_\ell^{\text{router}}$ maps the residual state $\mathbf{h}_{\ell,t}$ to one logit per expert, $z_{\ell,t,i} = (W_\ell^{\text{router}}\, \mathbf{h}_{\ell,t})_i$, applies softmax to obtain routing probabilities $p_{\ell,t,i} = \mathrm{softmax}(z_{\ell,t})_i$, and selects the top-$k$ set $\mathcal{T}_{\ell,t}$ by probability. The layer output is the gated mixture
+\name perturbs the router logits at inference and leaves model weights untouched. We consider an MoE transformer with $L$ layers and $E$ experts per layer, with top-$k$ routing per token. At each MoE layer $\ell$ and token position $t$, a small linear router $W_\ell^{\text{router}}$ maps the residual state $\mathbf{h}_{\ell,t}$ to one logit per expert, $\Psi_{\ell,t,i} = (W_\ell^{\text{router}}\, \mathbf{h}_{\ell,t})_i$, applies softmax to obtain routing probabilities $p_{\ell,t,i} = \mathrm{softmax}(\Psi_{\ell,t})_i$, and selects the top-$k$ set $\mathcal{T}_{\ell,t}$ by probability. The layer output is the gated mixture
 \begin{equation}
   \mathbf{h}_{\ell+1,t} = \sum_{i \in \mathcal{T}_{\ell,t}} \tilde{p}_{\ell,t,i} \cdot \mathrm{Expert}_{\ell,i}(\mathbf{h}_{\ell,t}),
   \label{eq:moe-layer}
 \end{equation}
-where $\tilde{p}_{\ell,t,i}$ are the renormalized top-$k$ probabilities. The routing decision is fully determined by $z_{\ell,t}$, so adding a per-expert bias $b_{\ell,e}$ to the logit, $z'_{\ell,t,i} = z_{\ell,t,i} + b_{\ell,e}$ before softmax, redirects probability mass from one expert to another with no change to the experts themselves. \name computes a per-query bias vector $b_{\ell,e}(q)$ and injects it at this point. We instantiate this on multiple MoE backbones; the specific models tested are listed in Section~\ref{sec:setup}.
+where $\tilde{p}_{\ell,t,i}$ are the renormalized top-$k$ probabilities. The routing decision is fully determined by $\Psi_{\ell,t}$, so adding a per-expert bias $\dbias_{\ell,e}$ to the logit, $\Psi'_{\ell,t,i} = \Psi_{\ell,t,i} + \dbias_{\ell,e}$ before softmax, redirects probability mass from one expert to another with no change to the experts themselves. \name computes a per-query bias vector $\dbias_{\ell,e}(q)$ and injects it at this point. We instantiate this on multiple MoE backbones; the specific models tested are listed in Section~\ref{sec:setup}.
 
 \subsection{Offline Stage: Two Probe Directions}
 \label{sec:directions}
@@ -58,9 +58,9 @@ $\lambda(q)$ is the modulation signal applied per query, while $s(q)$ is the sou
 
 An expert is risk-amplifying on this specific query if a small upward push on its router logit at this layer would lower the refusal score. The gradient of $s(q)$ with respect to each router logit answers this question for every (layer, expert) pair simultaneously and at the cost of one backward pass.
 
-We register a zero-initialized bias $b_{\ell,e}$ on each router logit at every MoE layer, propagating gradients through the original forward path. The per-(layer, expert) sensitivity of refusal to each expert's logit is then read off as
+We register a zero-initialized bias $\dbias_{\ell,e}$ on each router logit at every MoE layer, propagating gradients through the original forward path. The per-(layer, expert) sensitivity of refusal to each expert's logit is then read off as
 \begin{equation}
-  \Delta_{\ell,e}(q) = \left. \frac{\partial s(q)}{\partial b_{\ell,e}} \right|_{b=0}.
+  \Delta_{\ell,e}(q) = \left. \frac{\partial s(q)}{\partial \dbias_{\ell,e}} \right|_{\dbias=0}.
   \label{eq:delta}
 \end{equation}
 Negative $\Delta_{\ell,e}$ marks experts whose activation reduces refusal on this query, namely, the per-query risk-amplifying experts. Taking the top-$K$ most-negative entries across all (layer, expert) pairs forms the per-query suppression set
@@ -77,11 +77,11 @@ Even after the right experts are identified, applying the same bias on every que
 
 The bias on expert $(\ell,e)$ on query $q$ factorizes into three named components,
 \begin{equation}
-  b_{\ell,e}(q) = -\,\beta \cdot \rho\!\bigl(\lambda(q)\bigr) \cdot w_{\ell,e}(q)
+  \dbias_{\ell,e}(q) = -\,\beta \cdot \rho\!\bigl(\lambda(q)\bigr) \cdot w_{\ell,e}(q)
   \quad \text{for } (\ell,e) \in \Amin(q),
   \label{eq:bias}
 \end{equation}
-and $b_{\ell,e}(q) = 0$ otherwise. The factor $\beta$ is a global strength shared across queries. The factor $\rho(\lambda(q)) \in [0,1]$ is the query-level modulation, ramping from off to full as the risky index grows. The factor $w_{\ell,e}(q) = |\Delta_{\ell,e}(q)| / \max_{(\ell',e') \in \Amin(q)} |\Delta_{\ell',e'}(q)|$ is the per-expert relative attribution, placing the largest bias on the strongest risk-amplifying expert. The query-level ramp is a clipped linear function of $\lambda(q)$,
+and $\dbias_{\ell,e}(q) = 0$ otherwise. The factor $\beta$ is a global strength shared across queries. The factor $\rho(\lambda(q)) \in [0,1]$ is the query-level modulation, ramping from off to full as the risky index grows. The factor $w_{\ell,e}(q) = |\Delta_{\ell,e}(q)| / \max_{(\ell',e') \in \Amin(q)} |\Delta_{\ell',e'}(q)|$ is the per-expert relative attribution, placing the largest bias on the strongest risk-amplifying expert. The query-level ramp is a clipped linear function of $\lambda(q)$,
 \begin{equation}
   \rho(\lambda) = \operatorname{clip}\!\left(\frac{\lambda - \lambda_{\text{lo}}}{\lambda_{\text{hi}} - \lambda_{\text{lo}}},\; 0,\; 1\right),
   \label{eq:ramp}
@@ -91,8 +91,8 @@ with $\lambda_{\text{lo}}$ set to the $95$th percentile of $\lambda$ on a held-o
 \subsubsection{Generation and Inference Cost}
 \label{sec:cost}
 
-$b_{\ell,e}(q)$ is computed once per query, at the prompt's last position $T(q)$, before generation begins. A single forward through layers $\{0,\dots,\ell^*\}$ yields the probe state $h(q) = \mathbf{h}_{\ell^*, T(q)}(q)$, from which $\lambda(q)$ and $s(q)$ are read by Equations~\ref{eq:lambda}--\ref{eq:srefuse}; one backward through the same layers yields all $\Delta_{\ell,e}(q)$ simultaneously; Equations~\ref{eq:Aminus} and \ref{eq:bias} then assemble $b_{\ell,e}(q)$.
+$\dbias_{\ell,e}(q)$ is computed once per query, at the prompt's last position $T(q)$, before generation begins. A single forward through layers $\{0,\dots,\ell^*\}$ yields the probe state $h(q) = \mathbf{h}_{\ell^*, T(q)}(q)$, from which $\lambda(q)$ and $s(q)$ are read by Equations~\ref{eq:lambda}--\ref{eq:srefuse}; one backward through the same layers yields all $\Delta_{\ell,e}(q)$ simultaneously; Equations~\ref{eq:Aminus} and \ref{eq:bias} then assemble $\dbias_{\ell,e}(q)$.
 
-Once assembled, $b_{\ell,e}(q)$ is \emph{held constant} for the entire generation. A forward hook on each MoE gate module adds the same $b_{\ell,e}(q)$ to the router logits before softmax at every layer and every generated token. The router itself remains per-token: at each generated position $t$, the model recomputes $z_{\ell,t}$ from the running residual and reselects the top-$k$, so different tokens of the same query can still recruit different experts; only the additive logit offset $b_{\ell,e}(q)$ is shared across positions of the query. Model weights are never touched.
+Once assembled, $\dbias_{\ell,e}(q)$ is \emph{held constant} for the entire generation. A forward hook on each MoE gate module adds the same $\dbias_{\ell,e}(q)$ to the router logits before softmax at every layer and every generated token. The router itself remains per-token: at each generated position $t$, the model recomputes $\Psi_{\ell,t}$ from the running residual and reselects the top-$k$, so different tokens of the same query can still recruit different experts; only the additive logit offset $\dbias_{\ell,e}(q)$ is shared across positions of the query. Model weights are never touched.
 
 Under the $\rho$-gate, truly benign queries with $\lambda(q) \le \lambda_{\text{lo}}$ skip the backward entirely after reading $\lambda(q)$. On B200, the pre-generation overhead is $\sim 0.6$\,s; amortized over a $256$-token completion, the wall-clock cost is $5{-}10\%$ above plain generation (Appendix~\ref{app:impl}).
