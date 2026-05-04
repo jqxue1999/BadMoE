@@ -1,14 +1,16 @@
 \section{Method}
 \label{sec:method}
 
-\begin{figure}[t]
+
+
+To address the two challenges of identification and modulation, MoARA needs two complementary signals from each input query: a per-expert attribution that indicates which experts to suppress (for identification), and a risk score that scales how strongly to intervene (for modulation). Each signal is read from a different probe direction. The input-risk direction, shown in Figure~\ref{fig:method}~(a), is built offline by contrasting risky vs benign prompts, so that projection onto it measures how risk-shaped the input is. The output-safety direction, shown in Figure~\ref{fig:method}~(b), is built offline by contrasting safe vs harmful continuations on risky prompts, so that projection onto it measures how strongly the model is inclined toward a safe response. As shown in Figure~\ref{fig:method}~(c), at inference, the hidden state of an input query is projected onto both directions: the input-risk projection serves as the risk score that scales the bias, and the gradient of the output-safety projection serves as the per-expert attribution that selects which experts to suppress, and together they drive a router-bias adjustment in a single shared forward-backward pass.
+
+\begin{figure}[h!]
 \centering
 \includegraphics[width=\linewidth]{figures/method.pdf}
 \caption{\name. (a) Offline extraction of the input-risk direction $\drefuse$. (b) Offline extraction of the output-safety direction $\dbeh$. (c) Online: a single mid-layer probe $h(q)$ yields a risky index $\lambda(q)$ and a refusal score $s(q)$; the gradient of $s(q)$ ranks per-(layer, expert) attribution and $\lambda(q)$ scales the resulting router-bias adjustment, so benign inputs ($\lambda(q) \approx 0$) pass through unchanged.}
 \label{fig:method}
 \end{figure}
-
-To address the two challenges of identification and modulation, MoARA needs two complementary signals from each input query: a per-expert attribution that indicates which experts to suppress (for identification), and a risk score that scales how strongly to intervene (for modulation). Each signal is read from a different probe direction. The input-risk direction, shown in Figure~\ref{fig:method}~(a), is built offline by contrasting risky vs benign prompts, so that projection onto it measures how risk-shaped the input is. The output-safety direction, shown in Figure~\ref{fig:method}~(b), is built offline by contrasting safe vs harmful continuations on risky prompts, so that projection onto it measures how strongly the model is inclined toward a safe response. As shown in Figure~\ref{fig:method}~(c), at inference, the hidden state of an input query is projected onto both directions: the input-risk projection serves as the risk score that scales the bias, and the gradient of the output-safety projection serves as the per-expert attribution that selects which experts to suppress, and together they drive a router-bias adjustment in a single shared forward-backward pass.
 
 \subsection{Preliminaries}
 \label{sec:prelim}
