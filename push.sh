@@ -18,10 +18,16 @@ cd "$(dirname "$0")"
 
 MSG="${1:-update paper}"
 
-# Stage modifications to tracked files + any new figures.
-# (`-u` skips new untracked files like core dumps, slurm logs, etc.)
+# Stage modifications to tracked files (-u) plus paper content directories.
+# .gitignore filters generated junk (.aux/.log/.out/etc.) and reference-only
+# baselines (SteerMoE/, R2-Router/), so it is safe to add the content dirs
+# wholesale; this captures new .tex files like sections/0_*.tex without
+# manual `git add`.
 git add -u
-git add figures/ 2>/dev/null || true
+git add sections/ tables/ figures/ 2>/dev/null || true
+for f in *.tex *.bib; do
+    [ -f "$f" ] && git add "$f"
+done
 
 if git diff --cached --quiet; then
     echo "Nothing to commit. Working tree clean relative to HEAD."
