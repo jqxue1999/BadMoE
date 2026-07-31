@@ -59,45 +59,124 @@ import torch
 # --------------------------------------------------------------------------- #
 
 
-@dataclass
 class PiraBiasState:
-    """The bias to apply for the batch currently in flight.
+    """Per-request biases, keyed by engine request id.
 
-    bias_by_layer[l] has shape [num_requests, num_experts]. request_ids gives the
-    engine-side request id for each row, so rows can be reordered to match the
-    scheduler's batch order.
+    Keyed by request id rather than by batch position on purpose. Under
+    continuous batching the scheduler admits, evicts and *reorders* rows:
+    ``InputBatch.swap_states`` physically swaps two slots, and ``condense``
+    moves rows down when a request finishes. So a row index is only meaningful
+    for one forward pass, and a bias table indexed by position would silently
+    apply request A's suppression set to request B after the first swap. That
+    would be an invisible failure -- throughput would look right while the
+    intervention landed on the wrong requests.
+
+    The engine's own mapping (``InputBatch.req_id_to_index``) is therefore
+    re-read every forward pass, and the per-token bias matrix is gathered from
+    this table accordingly.
     """
 
-    bias_by_layer: dict[int, torch.Tensor] = field(default_factory=dict)
-    request_ids: list[str] = field(default_factory=list)
-    beta: float = 10.0
+    def __init__(self, beta: float = 10.0):
+        self.beta = beta
+        # request id -> {layer index -> bias vector of shape [num_experts]}
+        self._by_request: dict[str, dict[int, torch.Tensor]] = {}
+        # Diagnostics, checked by the benchmark to prove the bias really landed.
+        self.forward_passes = 0
+        self.rows_biased = 0
+        self.rows_unbiased = 0
+        self.missing_request_ids: set[str] = set()
 
-    def row_of(self, request_id: str) -> int | None:
-        try:
-            return self.request_ids.index(request_id)
-        except ValueError:
-            return None
+    # -- registration -------------------------------------------------------
+    def add_request(self, request_id: str, bias_by_layer: dict[int, torch.Tensor]) -> None:
+        """Register one request's bias, as computed by the probe."""
+        self._by_request[request_id] = {
+            layer: vector.detach().reshape(-1).float()
+            for layer, vector in bias_by_layer.items()
+        }
+
+    def remove_request(self, request_id: str) -> None:
+        self._by_request.pop(request_id, None)
+
+    def clear(self) -> None:
+        self._by_request.clear()
 
     @property
-    def num_requests(self) -> int:
-        for tensor in self.bias_by_layer.values():
-            return tensor.shape[0]
-        return 0
+    def request_ids(self) -> list[str]:
+        return list(self._by_request)
+
+    @property
+    def layers(self) -> set[int]:
+        return {layer for entry in self._by_request.values() for layer in entry}
+
+    def __len__(self) -> int:
+        return len(self._by_request)
+
+    # -- per-forward-pass assembly -----------------------------------------
+    def matrix_for(
+        self,
+        layer: int,
+        ordered_request_ids: list[str | None],
+        num_experts: int,
+        *,
+        device,
+        dtype=torch.float32,
+    ) -> torch.Tensor:
+        """Build a [num_rows, num_experts] bias matrix in the engine's row order.
+
+        Rows whose request has no registered bias stay zero, which is exactly
+        the no-intervention case, so an unknown request degrades to the Original
+        model rather than to a wrong bias.
+        """
+        matrix = torch.zeros(
+            len(ordered_request_ids), num_experts, device=device, dtype=dtype
+        )
+        for row, request_id in enumerate(ordered_request_ids):
+            if request_id is None:
+                continue
+            entry = self._by_request.get(request_id)
+            if entry is None:
+                self.missing_request_ids.add(request_id)
+                continue
+            vector = entry.get(layer)
+            if vector is not None:
+                matrix[row] = vector.to(device=device, dtype=dtype)
+        return matrix
 
 
 class _TokenRouting:
-    """Derive the token row -> request row mapping for the current forward pass."""
+    """Resolve, for the current forward pass, which request each token belongs to."""
+
+    @staticmethod
+    def request_order(model_runner) -> list[str | None] | None:
+        """The engine's current row order as request ids, or None if unavailable.
+
+        Read fresh on every call: this order changes between steps under
+        continuous batching.
+        """
+        input_batch = getattr(model_runner, "input_batch", None)
+        if input_batch is None:
+            return None
+        ids = getattr(input_batch, "_req_ids", None)
+        if ids is None:
+            ids = getattr(input_batch, "req_ids", None)
+        if ids is None:
+            return None
+        return list(ids)
 
     @staticmethod
     def from_forward_context(num_token_rows: int) -> torch.Tensor | None:
-        """Build a [num_token_rows] int64 tensor of request indices, or None.
+        """Build a [num_token_rows] int64 tensor of batch-row indices, or None.
 
         vLLM's attention metadata carries ``query_start_loc``, a
         ``[num_requests + 1]`` prefix sum of each request's token count in the
         flattened batch. repeat_interleave over its differences turns that into
-        a per-token request index. Returns None when the context is unavailable
-        (e.g. during profiling runs or CUDA-graph capture with dummy inputs), and
-        the caller then falls back to an even split.
+        a per-token row index. These are positions in the *current* batch, which
+        is why they are only ever combined with a request order read during the
+        same forward pass.
+
+        Returns None when the context is unavailable (profiling runs, CUDA-graph
+        capture with dummy inputs), and the caller then leaves the bias off
+        rather than guessing.
         """
         try:
             from vllm.forward_context import (
@@ -133,10 +212,13 @@ class _TokenRouting:
         if mapping.numel() > num_token_rows:
             # The batch is padded (CUDA graphs round the token count up).
             return mapping[:num_token_rows]
-        # Pad rows belong to no request; point them at row 0 and rely on the
-        # engine discarding their output.
-        padding = torch.zeros(
-            num_token_rows - mapping.numel(),
+        # Trailing pad tokens belong to no request. Mark them -1 rather than 0:
+        # their output is discarded either way, but pointing them at row 0 would
+        # apply request 0's suppression set to them and inflate the "rows biased"
+        # diagnostic, hiding a genuine mapping failure.
+        padding = torch.full(
+            (num_token_rows - mapping.numel(),),
+            -1,
             device=mapping.device,
             dtype=torch.int64,
         )
@@ -170,7 +252,14 @@ def biased_select(
 
     if bias.ndim == 2:
         if tokens_to_request is not None:
-            expanded = bias.index_select(0, tokens_to_request[:rows].to(bias.device))
+            mapping = tokens_to_request[:rows].to(bias.device)
+            # -1 marks a pad token that belongs to no request. Gather with those
+            # clamped to 0, then zero the rows out, so pad tokens receive no bias
+            # instead of borrowing request 0's.
+            valid = mapping >= 0
+            expanded = bias.index_select(0, mapping.clamp_min(0))
+            if not bool(valid.all()):
+                expanded = expanded * valid.unsqueeze(-1).to(expanded.dtype)
         else:
             requests = bias.shape[0]
             if rows % requests:
@@ -225,20 +314,36 @@ def _layer_index_of(name: str) -> int | None:
 
 
 @contextlib.contextmanager
-def pira_routing(model, state: PiraBiasState, *, strict: bool = True):
-    """Install PIRA biased routing on every MoE layer that has a bias.
+def pira_routing(
+    model,
+    state: PiraBiasState,
+    *,
+    model_runner=None,
+    layers: set[int] | None = None,
+    strict: bool = True,
+):
+    """Install PIRA biased routing on the model's MoE layers.
+
+    model_runner is the vLLM GPUModelRunner (or anything exposing
+    ``.input_batch``). It is required for correct behaviour under continuous
+    batching, because the request order has to be re-read every forward pass;
+    without it the bias can only be applied when the batch is a single request.
+
+    layers restricts which decoder layers are intervened on. Defaults to the
+    layers present in the state, which is normally 0..probe_layer.
 
     strict=True raises if a MoE layer would bypass select_experts (monolithic
     kernel), because silently running unbiased there would report PIRA's latency
     while delivering none of its behaviour.
     """
+    target_layers = layers if layers is not None else state.layers
     patched: list[tuple[object, object]] = []
     installed: list[int] = []
     skipped: list[str] = []
 
     for name, runner in _iter_moe_runners(model):
         layer_index = _layer_index_of(name)
-        if layer_index is None or layer_index not in state.bias_by_layer:
+        if layer_index is None or layer_index not in target_layers:
             continue
 
         monolithic = getattr(runner, "_is_monolithic", None)
@@ -274,8 +379,7 @@ def pira_routing(model, state: PiraBiasState, *, strict: bool = True):
             _scoring=scoring,
             **kwargs,
         ):
-            bias = state.bias_by_layer.get(_layer)
-            if bias is None:
+            def unbiased():
                 return original(
                     hidden_states,
                     router_logits,
@@ -283,7 +387,57 @@ def pira_routing(model, state: PiraBiasState, *, strict: bool = True):
                     input_ids=input_ids,
                     **kwargs,
                 )
-            mapping = _TokenRouting.from_forward_context(router_logits.shape[0])
+
+            if len(state) == 0:
+                return unbiased()
+
+            num_rows = router_logits.shape[0]
+            mapping = _TokenRouting.from_forward_context(num_rows)
+
+            # Re-read the request order for THIS forward pass. Cached order is
+            # unsafe: continuous batching swaps and condenses rows between steps.
+            order = (
+                _TokenRouting.request_order(model_runner)
+                if model_runner is not None
+                else None
+            )
+            if order is None:
+                # Without the engine's row order the only safe cases are a
+                # single registered request, or none at all.
+                if len(state) != 1:
+                    if strict:
+                        raise RuntimeError(
+                            "PIRA routing needs the engine request order to map "
+                            f"biases to rows, but {len(state)} requests are "
+                            "registered and no model_runner was supplied. Pass "
+                            "model_runner=..., or run one request at a time."
+                        )
+                    return unbiased()
+                order = state.request_ids
+
+            num_experts = router_logits.shape[-1]
+            bias = state.matrix_for(
+                _layer,
+                order,
+                num_experts,
+                device=router_logits.device,
+            )
+            if not bool(bias.any()):
+                return unbiased()
+
+            if _layer == min(target_layers):
+                # Count once per forward pass, at the first intervened layer.
+                state.forward_passes += 1
+                if mapping is not None:
+                    rows_with_bias = bias.any(dim=-1)
+                    valid = mapping[mapping >= 0]
+                    if valid.numel():
+                        hit = rows_with_bias.index_select(
+                            0, valid.clamp(max=bias.shape[0] - 1)
+                        )
+                        state.rows_biased += int(hit.sum())
+                        state.rows_unbiased += int((~hit).sum())
+
             return biased_select(
                 router_logits,
                 bias,
@@ -316,15 +470,130 @@ def pira_routing(model, state: PiraBiasState, *, strict: bool = True):
             router.select_experts = original
 
 
-def set_request_bias(
-    state: PiraBiasState,
-    bias_by_layer: dict[int, torch.Tensor],
-    request_ids: list[str] | None = None,
-) -> None:
-    """Replace the active bias. Call once per batch, before submitting it."""
-    state.bias_by_layer = bias_by_layer
-    if request_ids is not None:
-        state.request_ids = list(request_ids)
+# --------------------------------------------------------------------------- #
+# Entry point for a live vLLM V1 engine
+# --------------------------------------------------------------------------- #
+#
+# In V1 the model lives in the EngineCore worker process, so the context manager
+# cannot simply be wrapped around llm.generate() in the driver. LLM.apply_model()
+# runs a callable inside each worker with the model as its argument, which is the
+# supported way in. The state object and the installed hooks therefore live in
+# the worker; only control messages cross the process boundary.
+#
+# Because the hooks must stay installed across many engine steps (a prefill plus
+# every decode step of every request), they are installed persistently rather
+# than via `with`, and removed by a second RPC.
+
+
+_WORKER_STATE_ATTR = "_pira_state"
+_WORKER_HANDLE_ATTR = "_pira_handle"
+
+
+def _worker_install(worker, beta: float, strict: bool):
+    """Run inside a worker: install the hooks and stash the state on the worker.
+
+    collective_rpc passes the worker itself, which owns ``.model_runner`` and so
+    ``.model_runner.input_batch``. That is the supported route to the live request
+    order; deriving it any other way (e.g. walking the GC graph from the model)
+    would be both slower and dependent on internals that carry no such promise.
+    """
+    import contextlib as _contextlib
+    import sys as _sys
+    from pathlib import Path as _Path
+
+    # The worker process needs this module importable by name so the nested
+    # helpers can re-import it.
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+    from pira_vllm_routing import PiraBiasState, pira_routing
+
+    if getattr(worker, "_pira_handle", None) is not None:
+        raise RuntimeError("PIRA routing is already installed in this worker")
+
+    runner = worker.model_runner
+    model = runner.get_model()
+    state = PiraBiasState(beta=beta)
+    stack = _contextlib.ExitStack()
+    layers = stack.enter_context(
+        pira_routing(model, state, model_runner=runner, strict=strict)
+    )
+    worker._pira_state = state
+    worker._pira_handle = stack
+    return layers
+
+
+def _worker_uninstall(worker):
+    stack = getattr(worker, "_pira_handle", None)
+    if stack is not None:
+        stack.close()
+        worker._pira_handle = None
+    worker._pira_state = None
+
+
+def _worker_register(worker, biases):
+    import torch as _torch
+
+    state = getattr(worker, "_pira_state", None)
+    if state is None:
+        raise RuntimeError("PIRA routing is not installed in this worker")
+    for request_id, per_layer in biases.items():
+        state.add_request(
+            request_id,
+            {
+                int(layer): _torch.tensor(values, dtype=_torch.float32)
+                for layer, values in per_layer.items()
+            },
+        )
+    return len(state)
+
+
+def _worker_diagnostics(worker):
+    state = getattr(worker, "_pira_state", None)
+    if state is None:
+        return {}
+    return {
+        "registered_requests": len(state),
+        "forward_passes": state.forward_passes,
+        "rows_biased": state.rows_biased,
+        "rows_unbiased": state.rows_unbiased,
+        "missing_request_ids": sorted(state.missing_request_ids),
+    }
+
+
+def install_in_worker(llm, *, beta: float = 10.0, strict: bool = True) -> list[int]:
+    """Install PIRA routing inside every vLLM worker. Returns the layers hooked.
+
+    Call once, after the engine is built and before submitting requests. The
+    hooks stay installed across every engine step, which is required: a request's
+    bias must apply to its prefill and to each of its decode steps.
+    """
+    results = llm.collective_rpc(_worker_install, args=(beta, strict))
+    return results[0] if results else []
+
+
+def uninstall_in_worker(llm) -> None:
+    """Remove PIRA routing from every worker."""
+    llm.collective_rpc(_worker_uninstall)
+
+
+def register_biases_in_worker(llm, biases: dict[str, dict[int, list[float]]]) -> int:
+    """Send per-request biases to the workers, keyed by engine request id.
+
+    Biases cross the process boundary as plain lists rather than tensors, which
+    keeps the RPC payload serializable. They are small (K nonzero entries per
+    layer); a sparse index/value form would be smaller still if this ever mattered.
+
+    The request ids must be the ids the engine itself uses, so that the worker can
+    match them against InputBatch.req_ids. See rebuttal_vllm_pira_benchmark.py for
+    how those are obtained.
+    """
+    results = llm.collective_rpc(_worker_register, args=(biases,))
+    return results[0] if results else 0
+
+
+def worker_diagnostics(llm) -> dict:
+    """Read back proof that the bias actually reached the router."""
+    results = llm.collective_rpc(_worker_diagnostics)
+    return results[0] if results else {}
 
 
 # --------------------------------------------------------------------------- #
@@ -409,9 +678,87 @@ def verify_against_reference(
     }
 
 
+def verify_reordering(
+    *,
+    num_experts: int = 32,
+    top_k: int = 4,
+    beta: float = 10.0,
+    suppressed_per_request: int = 8,
+    device: str = "cpu",
+    seed: int = 0,
+) -> dict:
+    """Check that biases follow their request when the engine reorders rows.
+
+    This is the continuous-batching hazard: InputBatch.swap_states physically
+    swaps two slots and condense() moves rows down when a request finishes, so a
+    bias table indexed by batch position would start applying request A's
+    suppression set to request B. Keying by request id must make the assembled
+    bias matrix follow the permutation exactly.
+
+    The check builds a bias matrix for one row order, then for a permuted and a
+    shrunken order, and requires each row to carry its own request's bias.
+    """
+    generator = torch.Generator(device=device).manual_seed(seed)
+    state = PiraBiasState(beta=beta)
+    request_ids = ["req-a", "req-b", "req-c", "req-d"]
+    expected: dict[str, torch.Tensor] = {}
+    for request_id in request_ids:
+        vector = torch.zeros(num_experts, device=device)
+        victims = torch.randperm(num_experts, generator=generator, device=device)[
+            :suppressed_per_request
+        ]
+        vector[victims] = -abs(beta)
+        expected[request_id] = vector
+        state.add_request(request_id, {0: vector})
+
+    scenarios = {
+        "identity": request_ids,
+        "swapped": [request_ids[2], request_ids[1], request_ids[0], request_ids[3]],
+        "reversed": list(reversed(request_ids)),
+        # A finished request leaves a None hole before condense runs.
+        "with_hole": [request_ids[1], None, request_ids[3]],
+        # Shrunken batch after two requests completed.
+        "condensed": [request_ids[3], request_ids[0]],
+        # An id the worker never received: must stay zero, not borrow a neighbour.
+        "unknown": [request_ids[0], "req-unregistered"],
+    }
+
+    failures = []
+    for name, order in scenarios.items():
+        matrix = state.matrix_for(0, order, num_experts, device=device)
+        for row, request_id in enumerate(order):
+            actual = matrix[row]
+            if request_id is None or request_id not in expected:
+                if bool(actual.any()):
+                    failures.append(f"{name}: row {row} ({request_id}) should be zero")
+            elif not torch.equal(actual, expected[request_id]):
+                failures.append(f"{name}: row {row} carries the wrong bias")
+
+    # A position-indexed implementation would pass "identity" and fail the rest;
+    # confirm the scenarios are actually discriminating.
+    identity = state.matrix_for(0, scenarios["identity"], num_experts, device=device)
+    swapped = state.matrix_for(0, scenarios["swapped"], num_experts, device=device)
+    discriminating = not torch.equal(identity, swapped)
+
+    return {
+        "scenarios_checked": len(scenarios),
+        "failures": failures,
+        "reordering_changes_matrix": discriminating,
+        "unregistered_requests_seen": sorted(state.missing_request_ids),
+        "passed": not failures and discriminating,
+    }
+
+
 if __name__ == "__main__":
-    report = verify_against_reference()
-    for key, value in report.items():
-        print(f"{key}: {value}")
-    print("PASS" if report["passed"] else "FAIL")
-    raise SystemExit(0 if report["passed"] else 1)
+    ok = True
+    for title, report in (
+        ("biased selection vs per-row reference", verify_against_reference()),
+        ("bias follows request under reordering", verify_reordering()),
+    ):
+        print(f"--- {title} ---")
+        for key, value in report.items():
+            print(f"  {key}: {value}")
+        ok &= bool(report["passed"])
+        print()
+    print("PASS" if ok else "FAIL")
+    raise SystemExit(0 if ok else 1)

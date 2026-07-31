@@ -28,12 +28,15 @@ Measurement:
 
 - `scripts/moe/rebuttal_probe_scaling.py`: probe time and peak activation memory
   across prompt lengths and batch sizes, with and without checkpointing.
-- `scripts/moe/rebuttal_true_overhead.py`: combines a production-engine baseline
-  with the standalone probe cost into `True Total`, over an (input, output)
-  length grid.
+- `scripts/moe/rebuttal_vllm_pira_benchmark.py`: end-to-end vLLM comparison of
+  unbiased vs PIRA-biased generation, over an (input, output, concurrency) grid.
+  This measures the routing-intervention cost instead of assuming it is zero.
+- `scripts/moe/rebuttal_true_overhead.py`: combines the engine baseline, the
+  probe, and the measured routing cost into `True Total`.
 - `scripts/moe/pira_vllm_routing.py`: applies PIRA's per-request, pre-softmax
-  router bias inside vLLM's expert-selection path. Includes a CPU self-check
-  (`python scripts/moe/pira_vllm_routing.py`) that needs neither GPU nor vLLM.
+  router bias inside vLLM's expert-selection path, keyed by engine request id so
+  it stays correct under continuous batching. Includes CPU self-checks
+  (`python scripts/moe/pira_vllm_routing.py`) that need neither GPU nor vLLM.
 - `scripts/moe/rebuttal_cost_benchmark.py`: batch-1 Original/PIRA timing,
   including probe time, prefill time, TTFT, total generation time, and CUDA
   peak memory.
@@ -47,30 +50,85 @@ from `rebuttal_cost_benchmark.py`, so keep both files together.
 
 ## Cost Model
 
-All of PIRA's overhead is the probe. The biased prefill and decoding that follow
-perform the same FLOPs as ordinary generation: the router bias changes *which*
-experts a token is routed to, not how many (top-k is unchanged) and not the
-expert MLPs themselves.
+PIRA's cost has two parts, and **both are measured**:
 
-    PIRA     = [probe: forward+backward over layers 0..L] + [prefill] + [decode]
-    Original =                                              [prefill] + [decode]
+    PIRA     = [probe: forward+backward over layers 0..L] + [prefill + decode under biased routing]
+    Original =                                              [prefill + decode]
 
-So the honest accounting is the one Reviewer 7ZUn asked for:
+    True Total = Original turnaround on a serving engine at maximum GPU utilization
+               + standalone PIRA forward+backward probe
+               + measured cost of generating under biased routing
 
-    True Total = Original turnaround on a serving engine at maximum GPU
-                 utilization
-               + standalone time for PIRA's forward + backward probe
+The third term is not assumed to be zero. Biased routing leaves the FLOP count
+identical -- top-k is unchanged and the expert MLPs are untouched, only *which*
+experts a token reaches -- but identical FLOPs do not imply identical latency:
+suppressing a request's experts changes the expert-token distribution, and with it
+grouped-GEMM shapes, load balance across experts, and kernel scheduling. Whether
+that costs anything measurable is an empirical question, so
+`rebuttal_vllm_pira_benchmark.py` measures unbiased vs biased generation on the
+same engine and `rebuttal_true_overhead.py` folds the result in. Run the combiner
+without `--routing-json` and it labels its output a lower bound rather than
+quietly reporting zero.
 
-`rebuttal_true_overhead.py` computes exactly that. The overhead *ratio* depends
-on how prompt-heavy the workload is, so it is reported over a grid of input and
-output lengths rather than as one number.
+The overhead *ratio* depends on how prompt-heavy the workload is, so results are
+reported over a grid of input length, output length, and concurrency rather than
+as one number.
 
 Adding a bias to router logits before top-k is already a first-class operation in
-vLLM (`e_score_correction_bias`, used by DeepSeek-V3). PIRA needs a
-per-request, pre-softmax variant of it rather than the per-expert, post-softmax
-one, which is what `pira_vllm_routing.py` supplies; the point is that the
-mechanism itself is not exotic and costs nothing measurable beside the expert
-MLPs.
+vLLM (`e_score_correction_bias`, used by DeepSeek-V3), but it is per-expert,
+post-softmax, and selection-only. PIRA needs a per-request, pre-softmax variant
+whose gate weights come from the biased distribution, which is what
+`pira_vllm_routing.py` supplies.
+
+## Running PIRA Inside vLLM
+
+vLLM V1 runs the model in an EngineCore worker process, so the routing hooks are
+installed there via `collective_rpc`, not around `llm.generate()` in the driver:
+
+```python
+import pira_vllm_routing as pira
+
+layers = pira.install_in_worker(llm, beta=10.0, strict=True)  # once, after startup
+
+request_ids = llm.enqueue(prompts, sampling)        # real engine ids, not yet running
+pira.register_biases_in_worker(llm, biases_by_request_id)
+outputs = llm.wait_for_completion()                 # now execute
+
+print(pira.worker_diagnostics(llm))                 # rows_biased must be > 0
+pira.uninstall_in_worker(llm)
+```
+
+Two details that are easy to get wrong:
+
+- **Request ids come from `enqueue()`.** It returns the ids the engine actually
+  assigned without starting execution, so biases can be registered against them
+  before the first forward pass. Guessing the id scheme would silently leave every
+  row unbiased and make PIRA look free.
+- **Biases are keyed by request id, never by batch position.** Under continuous
+  batching the scheduler swaps and condenses rows (`InputBatch.swap_states`,
+  `condense`), so a position-indexed table would start applying one request's
+  suppression set to another. The engine's `req_ids` order is re-read every
+  forward pass. `verify_reordering()` in `pira_vllm_routing.py` tests exactly this
+  and fails a position-indexed implementation.
+
+`worker_diagnostics()` reports `rows_biased`; a run with `rows_biased == 0`
+measured the Original model, and both the benchmark and the combiner refuse it.
+
+## Binding Rebuttal Workload
+
+| Axis | Values |
+|---|---|
+| Input length | 128, 1024, 4096 (plus 8192 in `MODE=longctx`) |
+| Output length | 128, 256 |
+| Concurrency | 1, 8, 32 |
+| Requests per cell | 32 |
+| Repeats | 3, median reported |
+| Model / GPU | Qwen3-30B-A3B, BF16, one B200 |
+| Probe layer / K / beta | 24, 25, 10.0 |
+
+128/128 at concurrency 1 is the latency-sensitive corner; 4096/128 is the
+prompt-heavy corner where the probe is most expensive relative to generation;
+concurrency 32 is where routing-induced load imbalance would show up.
 
 ## Probe Optimizations
 
@@ -138,8 +196,8 @@ shown to compute the same thing as the slow one.
 
 ```bash
 # 0. No GPU needed. Seconds. Run before submitting anything.
-python scripts/moe/test_probe_equivalence_cpu.py
-python scripts/moe/pira_vllm_routing.py
+python scripts/moe/test_probe_equivalence_cpu.py   # probe gradients bitwise-exact
+python scripts/moe/pira_vllm_routing.py            # biased selection + reordering safety
 
 # 1. Equivalence on the real model. Must pass before quoting any timing.
 sbatch --partition=<p> --account=<a> --qos=<q> \
@@ -162,15 +220,27 @@ sbatch --partition=<p> --account=<a> --qos=<q> \
   --export=ALL,MODE=scaling-with-reference,PYTHON_BIN=$PWD/.venv-hf/bin/python \
   scripts/moe/rebuttal_probe_scaling.slurm
 
-# 4. Engine baseline at maximum GPU utilization (vLLM env), then combine.
+# 4. Engine baseline at maximum GPU utilization (vLLM env).
 sbatch --partition=<p> --account=<a> --qos=<q> \
   --export=ALL,MODE=long,PYTHON_BIN=$PWD/.venv-vllm/bin/python \
   scripts/moe/rebuttal_vllm_baseline.slurm
 
+# 5. Routing cost: Original vs biased generation on the same engine (vLLM env).
+#    Run MODE=smoke first and confirm rows_biased > 0 before the full grid.
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=smoke,PYTHON_BIN=$PWD/.venv-vllm/bin/python \
+  scripts/moe/rebuttal_vllm_pira_benchmark.slurm
+
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=grid,PYTHON_BIN=$PWD/.venv-vllm/bin/python \
+  scripts/moe/rebuttal_vllm_pira_benchmark.slurm
+
+# 6. Combine all three into True Total.
 python scripts/moe/rebuttal_true_overhead.py \
-  --engine-json timing_results/vllm_long_<jobid>.json \
-  --probe-json  timing_results/probe_scaling_<jobid>.json \
-  --output      timing_results/true_overhead.json
+  --engine-json  timing_results/vllm_long_<jobid>.json \
+  --probe-json   timing_results/probe_scaling_<jobid>.json \
+  --routing-json timing_results/vllm_pira_grid_<jobid>.json \
+  --output       timing_results/true_overhead.json
 ```
 
 Step 2 sweeps prompt lengths, so run it with enough walltime; the 8192-token
