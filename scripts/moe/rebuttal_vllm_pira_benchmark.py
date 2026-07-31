@@ -18,16 +18,21 @@ the probe. The probe is measured separately (rebuttal_probe_scaling.py) because 
 runs in a Hugging Face autograd context; adding the two gives the True Total that
 rebuttal_true_overhead.py reports.
 
-The biases used here are structurally faithful but not safety-derived: K experts
-per request are suppressed per layer at strength beta, chosen by a seeded
-permutation. Expert *identity* does not affect timing systematically, while the
-number of suppressed experts and the resulting load imbalance do, and those are
-matched to the real configuration. Safety numbers come from the paper's Hugging
-Face pipeline, not from here.
+The biases used here are structurally faithful but not safety-derived: per request,
+K = 25 (layer, expert) pairs are suppressed at strength beta, sampled globally
+across the probed layers. K is a GLOBAL budget, matching the probe, which takes a
+single flat top-K over [request, num_layers * num_experts]; sampling K experts
+within each layer would suppress len(layers) * K pairs (625 instead of 25 by
+default) and perturb load balance far more than the method does. Expert *identity*
+does not affect timing systematically, but the number of suppressed pairs and the
+resulting imbalance do, so those are matched exactly. Safety numbers come from the
+paper's Hugging Face pipeline, not from here.
 
-A diagnostic read back from the worker (rows_biased, forward_passes) confirms the
-bias actually reached the router. A run reporting "no overhead" with zero biased
-rows would be measuring nothing, so the script fails rather than report that.
+Worker diagnostics confirm the hook was actually live: rows_biased shows the bias
+reached the router, and forward_passes is checked against a conservative floor
+(repeats * waves * output_length) so that a compiled graph which traced the hook
+once and then replayed without it is detected rather than silently reported as
+"no overhead". Cells failing either check make the script exit nonzero.
 
 Usage (GPU node, vLLM env):
   python scripts/moe/rebuttal_vllm_pira_benchmark.py \
@@ -66,7 +71,13 @@ def parse_args() -> argparse.Namespace:
         help="Total requests per (input, output, concurrency) cell.",
     )
     parser.add_argument("--probe-layer", type=int, default=24)
-    parser.add_argument("--top-k", type=int, default=25, help="Experts suppressed per request.")
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=25,
+        help="GLOBAL budget of suppressed (layer, expert) pairs per request, "
+        "matching the probe's single flat top-K. Not a per-layer count.",
+    )
     parser.add_argument("--beta", type=float, default=10.0)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
@@ -98,25 +109,123 @@ def build_biases(
     beta: float,
     seed: int,
 ) -> dict[str, dict[int, list[float]]]:
-    """One suppression vector per (request, layer), as plain lists for the RPC.
+    """Suppression vectors per request, as plain lists for the RPC.
+
+    K is a GLOBAL budget of (layer, expert) pairs per request, not a per-layer
+    count. This matches the probe: ProbeResult.to_bias() flattens the gradients to
+    [request, num_layers * num_experts], takes ONE topk(K) over that flat axis, and
+    reshapes back, so a request suppresses exactly K pairs spread unevenly across
+    the probed layers -- and typically leaves a good fraction of layers untouched
+    entirely.
+
+    Sampling K experts inside every layer instead would suppress
+    len(layers) * K pairs (625 rather than 25 for the default configuration) and
+    would touch every layer uniformly. Since the whole point of this benchmark is
+    to measure how the intervention perturbs expert-token load balance, that
+    would time a workload 25x heavier than the method and attribute the result to
+    PIRA.
 
     Distinct per request, matching PIRA's query-specific behaviour: a shared bias
-    would let the engine settle into one routing pattern and understate any load
+    would let the engine settle into one routing pattern and understate the load
     imbalance the real method induces.
     """
     import random
 
+    positions = len(layers) * num_experts
+    budget = min(top_k, positions)
     biases: dict[str, dict[int, list[float]]] = {}
     rng = random.Random(seed)
     for request_id in request_ids:
-        per_layer: dict[int, list[float]] = {}
-        for layer in layers:
-            vector = [0.0] * num_experts
-            for expert in rng.sample(range(num_experts), min(top_k, num_experts)):
-                vector[expert] = -abs(beta)
-            per_layer[layer] = vector
+        # One global sample over flattened (layer, expert) positions, mirroring the
+        # single flat topk in ProbeResult.to_bias().
+        chosen = rng.sample(range(positions), budget)
+        per_layer: dict[int, list[float]] = {
+            layer: [0.0] * num_experts for layer in layers
+        }
+        for flat_index in chosen:
+            layer_offset, expert = divmod(flat_index, num_experts)
+            per_layer[layers[layer_offset]][expert] = -abs(beta)
         biases[request_id] = per_layer
     return biases
+
+
+def verify_bias_budget(
+    *,
+    num_layers: int = 25,
+    num_experts: int = 128,
+    beta: float = 10.0,
+) -> dict:
+    """Check the synthetic bias matches the probe's global-K suppression budget.
+
+    Runs without a GPU or vLLM. The invariant, over all layers of one request:
+
+        count(nonzero) == min(K, len(layers) * num_experts)
+
+    A per-layer interpretation of K would give len(layers) * K instead, which for
+    the default configuration is 625 rather than 25 -- a 25x heavier perturbation
+    of expert-token load balance than PIRA actually applies.
+
+    Also checks that the budget is spread non-uniformly, leaving some layers
+    untouched, which is what a single flat top-K produces and what a per-layer
+    sample cannot.
+    """
+    layers = list(range(num_layers))
+    positions = num_layers * num_experts
+    failures = []
+
+    for top_k in (1, 25, 50, positions, positions + 100):
+        expected = min(top_k, positions)
+        biases = build_biases(
+            ["a", "b"],
+            layers=layers,
+            num_experts=num_experts,
+            top_k=top_k,
+            beta=beta,
+            seed=0,
+        )
+        for request_id, per_layer in biases.items():
+            count = sum(
+                1 for layer in per_layer for value in per_layer[layer] if value != 0
+            )
+            if count != expected:
+                failures.append(
+                    f"K={top_k} request={request_id}: {count} pairs, "
+                    f"expected {expected}"
+                )
+            values = {
+                value
+                for layer in per_layer
+                for value in per_layer[layer]
+                if value != 0
+            }
+            if values - {-abs(beta)}:
+                failures.append(f"K={top_k} request={request_id}: bad values {values}")
+
+    # Non-uniformity: K=25 over 25 layers must not touch all 25 layers.
+    single = build_biases(
+        ["a"], layers=layers, num_experts=num_experts, top_k=25, beta=beta, seed=1
+    )["a"]
+    touched = sum(1 for layer in single if any(v != 0 for v in single[layer]))
+    if touched >= num_layers:
+        failures.append(
+            f"K=25 touched all {touched} layers; a global budget should leave "
+            "some layers unbiased"
+        )
+
+    # Per-request distinctness: PIRA's bias is query-specific.
+    pair = build_biases(
+        ["a", "b"], layers=layers, num_experts=num_experts, top_k=25, beta=beta, seed=2
+    )
+    if pair["a"] == pair["b"]:
+        failures.append("two requests received identical biases")
+
+    return {
+        "budget_scope": "global (layer, expert) pairs per request",
+        "layers_touched_at_k25": touched,
+        "num_layers": num_layers,
+        "failures": failures,
+        "passed": not failures,
+    }
 
 
 def run_wave(
@@ -257,7 +366,8 @@ def main() -> int:
 
     print(
         f"model={args.model} experts={num_experts} "
-        f"biased_layers=0..{args.probe_layer} suppressed_per_layer={args.top_k}"
+        f"probed_layers=0..{args.probe_layer} "
+        f"suppressed_expert_layer_pairs_per_request={args.top_k} (global)"
     )
 
     # Installed once, with the layer set passed explicitly. It cannot be derived
@@ -365,24 +475,43 @@ def main() -> int:
                         "request_throughput": total / median,
                         "output_token_throughput": total * output_length / median,
                     }
+                    suffix = ""
                     if method == "PIRA":
                         record["diagnostics"] = cell_diagnostics
                         rows = (cell_diagnostics or {}).get("rows_biased", 0)
+                        passes = (cell_diagnostics or {}).get("forward_passes", 0)
+                        waves = record["waves"]
+
+                        # rows_biased > 0 alone is weak: a compiled graph could
+                        # invoke the Python hook once while tracing and then bypass
+                        # it on every replay, which would still report a positive
+                        # count. Every decoded token needs its own forward pass, so
+                        # with exact-length generation the hook must run at least
+                        # repeats * waves * output_length times. Prefill adds more;
+                        # this is a deliberately conservative floor.
+                        expected = args.repeats * waves * output_length
                         record["rows_biased"] = rows
-                        if not rows:
+                        record["forward_passes"] = passes
+                        record["expected_min_forward_passes"] = expected
+                        live = bool(rows) and passes >= expected
+                        record["hook_live"] = live
+                        if not live:
                             unbiased_cells.append(
-                                (input_length, output_length, concurrency)
+                                (
+                                    input_length,
+                                    output_length,
+                                    concurrency,
+                                    rows,
+                                    passes,
+                                    expected,
+                                )
                             )
                         diagnostics = cell_diagnostics
-                    records.append(record)
-                    suffix = ""
-                    if method == "PIRA":
-                        rows = record.get("rows_biased", 0)
                         suffix = (
-                            f"  rows_biased={rows}"
-                            if rows
-                            else "  rows_biased=0  <-- NOT BIASED"
+                            f"  rows_biased={rows} passes={passes}/{expected}"
+                            + ("" if live else "  <-- HOOK NOT LIVE")
                         )
+                    records.append(record)
                     print(
                         f"  {method:<8} in={input_length:<5} out={output_length:<4} "
                         f"conc={concurrency:<3} {median:8.3f} s  "
@@ -430,6 +559,11 @@ def main() -> int:
                         "routing_overhead_fraction": ratio,
                         "routing_overhead_percent": 100.0 * ratio,
                         "rows_biased": biased.get("rows_biased", 0),
+                        "forward_passes": biased.get("forward_passes", 0),
+                        "expected_min_forward_passes": biased.get(
+                            "expected_min_forward_passes", 0
+                        ),
+                        "hook_live": biased.get("hook_live", False),
                     }
                 )
                 print(
@@ -437,30 +571,42 @@ def main() -> int:
                     f"{original['median_seconds']:>12.3f} "
                     f"{biased['median_seconds']:>10.3f} "
                     f"{100.0 * ratio:>8.1f}%"
-                    + ("" if biased.get("rows_biased") else "   <-- NOT BIASED")
+                    + ("" if biased.get("hook_live") else "   <-- HOOK NOT LIVE")
                 )
 
     pira_cells = [r for r in records if r["method"] == "PIRA"]
-    biased_cells = [r for r in pira_cells if r.get("rows_biased")]
+    live_cells = [r for r in pira_cells if r.get("hook_live")]
     print(
-        f"\nper-cell bias validation: {len(biased_cells)}/{len(pira_cells)} PIRA "
-        "cells actually applied a bias"
+        f"\nper-cell hook validation: {len(live_cells)}/{len(pira_cells)} PIRA cells "
+        "applied a bias on every forward pass"
     )
     if unbiased_cells:
         print(
-            "\nFAIL: these cells ran without any biased row, so their PIRA "
-            "timings are just the Original model:",
+            "\nFAIL: in these cells the hook was not live for the whole run, so "
+            "their PIRA timings are partly or wholly the Original model:",
             file=sys.stderr,
         )
         for cell in unbiased_cells:
+            input_length, output_length, concurrency, rows, passes, expected = cell
+            if not rows:
+                reason = "no biased row at all"
+            else:
+                reason = (
+                    f"only {passes} forward passes, expected at least {expected} "
+                    "-- consistent with a compiled graph that traced the hook once "
+                    "and then replayed without it"
+                )
             print(
-                f"  input={cell[0]} output={cell[1]} concurrency={cell[2]}",
+                f"  input={input_length} output={output_length} "
+                f"concurrency={concurrency}: {reason}",
                 file=sys.stderr,
             )
         print(
-            "Check that request ids match InputBatch.req_ids, that the MoE "
+            "\nCheck that request ids match InputBatch.req_ids, that the MoE "
             "backend is modular, and that the compiled/CUDA-graph path does not "
-            "bypass the Python hook.",
+            "bypass the Python hook. If forward_passes is small but nonzero, try "
+            "enforce_eager=True to confirm, then install the hook before graph "
+            "capture.",
             file=sys.stderr,
         )
 
@@ -471,7 +617,9 @@ def main() -> int:
             "biased_layers": [0, args.probe_layer],
             "hooked_layers": installed,
             "hook_verification": hook_report,
-            "suppressed_per_layer": args.top_k,
+            "suppressed_expert_layer_pairs_per_request": args.top_k,
+            "suppression_budget_scope": "global across probed layers, matching "
+                                        "ProbeResult.to_bias()",
             "beta": args.beta,
             "repeats": args.repeats,
             "requests_per_cell": args.requests_per_cell,
@@ -484,7 +632,18 @@ def main() -> int:
             "scope": "generation only; the probe is measured by "
                      "rebuttal_probe_scaling.py",
             "all_cells_biased": not unbiased_cells,
-            "unbiased_cells": unbiased_cells,
+            "all_cells_hook_live": not unbiased_cells,
+            "not_live_cells": [
+                {
+                    "input_length": cell[0],
+                    "output_length": cell[1],
+                    "concurrency": cell[2],
+                    "rows_biased": cell[3],
+                    "forward_passes": cell[4],
+                    "expected_min_forward_passes": cell[5],
+                }
+                for cell in unbiased_cells
+            ],
         },
         "measurements": records,
         "comparisons": comparisons,
@@ -499,4 +658,13 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    # --check-workload runs the workload-definition self-check only: no GPU, no
+    # vLLM, no model download. Run it before submitting a GPU job, since a wrong
+    # suppression budget would time the wrong experiment even with a perfect hook.
+    if "--check-workload" in sys.argv:
+        report = verify_bias_budget()
+        for key, value in report.items():
+            print(f"{key}: {value}")
+        print("PASS" if report["passed"] else "FAIL")
+        raise SystemExit(0 if report["passed"] else 1)
     raise SystemExit(main())

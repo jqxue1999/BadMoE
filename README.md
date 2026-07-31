@@ -126,9 +126,15 @@ Four details that are easy to get wrong:
   (layer, row order); diagnostics are counted from host-side values so they add no
   device synchronization to the timed path.
 
-`worker_diagnostics()` reports `rows_biased` **per cell**. A cell with
-`rows_biased == 0` measured the Original model twice; the benchmark exits nonzero
-and names those cells, and the combiner drops them.
+`worker_diagnostics()` reports `rows_biased` and `forward_passes` **per cell**, and
+both are checked. `rows_biased > 0` alone is weak: a compiled graph could invoke
+the hook once while tracing and then bypass it on every replay, still leaving a
+positive count. Since every decoded token needs its own forward pass, the hook must
+run at least `repeats x waves x output_length` times for this exact-length
+workload, so `forward_passes` is checked against that floor. A cell failing either
+check is named, makes the benchmark exit nonzero, and is dropped by the combiner.
+If `forward_passes` is small but nonzero, confirm with `enforce_eager=True` and
+then install the hooks before graph capture.
 
 ## Binding Rebuttal Workload
 
@@ -140,7 +146,20 @@ and names those cells, and the combiner drops them.
 | Requests per cell | 32 |
 | Repeats | 3, median reported |
 | Model / GPU | Qwen3-30B-A3B, BF16, one B200 |
-| Probe layer / K / beta | 24, 25, 10.0 |
+| Probe layer / beta | 24, 10.0 |
+| K | 25 suppressed `(layer, expert)` pairs per request, **global** |
+
+**K is a global budget, not a per-layer count.** The probe takes a single flat
+top-K over `[request, num_layers * num_experts]` (see `ProbeResult.to_bias`), so a
+request suppresses exactly 25 `(layer, expert)` pairs spread unevenly across
+layers 0..24, typically leaving a third of those layers untouched. Sampling 25
+experts *within* each layer would suppress `25 x 25 = 625` pairs uniformly — a 25x
+heavier perturbation of expert-token load balance than the method applies, which
+would invalidate exactly the quantity this benchmark measures. The invariant
+
+    count(nonzero over all layers) == min(K, len(layers) * num_experts)
+
+is enforced by `--check-workload`.
 
 128/128 at concurrency 1 is the latency-sensitive corner; 4096/128 is the
 prompt-heavy corner where the probe is most expensive relative to generation;
@@ -228,9 +247,10 @@ Correctness before timing: a speedup only means something once the fast probe is
 shown to compute the same thing as the slow one.
 
 ```bash
-# 0. No GPU needed. Seconds. Run before submitting anything.
-python scripts/moe/test_probe_equivalence_cpu.py   # probe gradients bitwise-exact
-python scripts/moe/pira_vllm_routing.py            # biased selection + reordering safety
+# 0. No GPU needed. Seconds. Run all three before submitting anything.
+python scripts/moe/test_probe_equivalence_cpu.py             # gradients bitwise-exact
+python scripts/moe/pira_vllm_routing.py                      # routing + reordering safety
+python scripts/moe/rebuttal_vllm_pira_benchmark.py --check-workload  # global-K budget
 
 # 1. Equivalence on the real model. Must pass before quoting any timing.
 sbatch --partition=<p> --account=<a> --qos=<q> \

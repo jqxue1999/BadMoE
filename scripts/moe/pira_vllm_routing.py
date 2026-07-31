@@ -306,11 +306,14 @@ def expand_bias_to_tokens(
         # -1 marks a pad token owned by no request. Gather with those clamped to
         # 0, then zero their rows, so pad tokens get no bias rather than
         # borrowing request 0's.
+        #
+        # masked_fill is applied unconditionally: guarding it with
+        # bool((mapping < 0).any()) would read a device tensor on the host and
+        # synchronize on every hooked layer of every forward pass, which is
+        # exactly the overhead this benchmark is trying to measure. The
+        # unconditional kernel is cheap and is a no-op when there are no pads.
         expanded = bias.index_select(0, mapping.clamp_min(0))
-        negatives = mapping < 0
-        if bool(negatives.any()):
-            expanded = expanded.masked_fill(negatives.unsqueeze(-1), 0.0)
-        return expanded
+        return expanded.masked_fill((mapping < 0).unsqueeze(-1), 0.0)
 
     requests = bias.shape[0]
     if requests and num_rows % requests == 0:
@@ -345,26 +348,13 @@ def biased_select(
     logits = router_logits.float()
     rows = logits.shape[0]
 
-    if bias.ndim == 2:
-        if tokens_to_request is not None:
-            mapping = tokens_to_request[:rows].to(bias.device)
-            # -1 marks a pad token that belongs to no request. Gather with those
-            # clamped to 0, then zero the rows out, so pad tokens receive no bias
-            # instead of borrowing request 0's.
-            valid = mapping >= 0
-            expanded = bias.index_select(0, mapping.clamp_min(0))
-            if not bool(valid.all()):
-                expanded = expanded * valid.unsqueeze(-1).to(expanded.dtype)
-        else:
-            requests = bias.shape[0]
-            if rows % requests:
-                raise ValueError(
-                    f"{rows} router rows are not divisible by {requests} requests "
-                    "and no token->request mapping was available"
-                )
-            expanded = bias.repeat_interleave(rows // requests, dim=0)
-    else:
-        expanded = bias
+    # Same scatter as the live hook, so the reference and the hook cannot drift.
+    expanded = expand_bias_to_tokens(bias, rows, tokens_to_request)
+    if expanded is None:
+        raise ValueError(
+            f"{rows} router rows are not divisible by {bias.shape[0]} requests "
+            "and no token->request mapping was available"
+        )
     logits = logits + expanded.to(logits.dtype)
 
     if scoring_func == "softmax":

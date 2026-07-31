@@ -127,21 +127,26 @@ def load_routing(path: Path) -> dict:
     dropped = []
     for entry in comparisons:
         key = (entry["input_length"], entry["output_length"], entry["concurrency"])
-        # Older files carry only a global diagnostic; treat a missing per-cell
-        # value as unverified rather than as verified-zero.
-        rows = entry.get("rows_biased")
-        if rows is None:
-            rows = payload.get("diagnostics", {}).get("rows_biased", 0)
-        if not rows:
+        # Prefer the strong criterion: the hook applied a bias on every forward
+        # pass, not merely at least once. Fall back to rows_biased for files
+        # written before hook_live existed, and treat a missing per-cell value as
+        # unverified rather than as verified-good.
+        live = entry.get("hook_live")
+        if live is None:
+            rows = entry.get("rows_biased")
+            if rows is None:
+                rows = payload.get("diagnostics", {}).get("rows_biased", 0)
+            live = bool(rows)
+        if not live:
             dropped.append(key)
             continue
         table[key] = entry
 
     if not table:
         raise SystemExit(
-            f"{path}: no cell applied a bias (rows_biased=0 everywhere), so its "
-            "PIRA timings are just the Original model. Fix the routing "
-            "integration before combining."
+            f"{path}: no cell had a live hook for its whole run, so its PIRA "
+            "timings are the Original model. Fix the routing integration before "
+            "combining."
         )
     return {
         "table": table,
@@ -313,8 +318,9 @@ def main() -> int:
 
     if routing and routing["dropped"]:
         print(
-            f"dropped {len(routing['dropped'])} routing cell(s) with "
-            "rows_biased=0:"
+            f"dropped {len(routing['dropped'])} routing cell(s) whose hook was not "
+            "live for the whole run (rows_biased=0, or too few forward passes, "
+            "which indicates a compiled graph that bypassed the hook on replay):"
         )
         for cell in routing["dropped"]:
             print(f"  input={cell[0]} output={cell[1]} concurrency={cell[2]}")
