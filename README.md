@@ -88,18 +88,26 @@ installed there via `collective_rpc`, not around `llm.generate()` in the driver:
 ```python
 import pira_vllm_routing as pira
 
-layers = pira.install_in_worker(llm, beta=10.0, strict=True)  # once, after startup
+# Layers are explicit and required. They cannot be inferred from registered
+# biases, because installation necessarily precedes any request existing.
+layers = pira.install_in_worker(llm, range(probe_layer + 1), beta=10.0, strict=True)
+print(pira.verify_hooks(llm))          # hooks sit on the live router objects?
 
-request_ids = llm.enqueue(prompts, sampling)        # real engine ids, not yet running
-pira.register_biases_in_worker(llm, biases_by_request_id)
-outputs = llm.wait_for_completion()                 # now execute
+for cell in cells:
+    pira.reset_counters(llm)           # per-cell, so no cell hides behind another
+    request_ids = llm.enqueue(prompts, sampling)   # real engine ids, not yet running
+    pira.register_biases_in_worker(llm, biases_by_request_id)
+    outputs = llm.wait_for_completion()            # now execute
+    assert pira.worker_diagnostics(llm)["rows_biased"] > 0
 
-print(pira.worker_diagnostics(llm))                 # rows_biased must be > 0
 pira.uninstall_in_worker(llm)
 ```
 
-Two details that are easy to get wrong:
+Four details that are easy to get wrong:
 
+- **The layer set must be passed in.** Deriving it from the registered biases
+  installs nothing: the engine assigns request ids only when requests are
+  enqueued, which is necessarily after the hooks exist.
 - **Request ids come from `enqueue()`.** It returns the ids the engine actually
   assigned without starting execution, so biases can be registered against them
   before the first forward pass. Guessing the id scheme would silently leave every
@@ -108,11 +116,19 @@ Two details that are easy to get wrong:
   batching the scheduler swaps and condenses rows (`InputBatch.swap_states`,
   `condense`), so a position-indexed table would start applying one request's
   suppression set to another. The engine's `req_ids` order is re-read every
-  forward pass. `verify_reordering()` in `pira_vllm_routing.py` tests exactly this
-  and fails a position-indexed implementation.
+  forward pass. `verify_reordering()` tests exactly this and fails a
+  position-indexed implementation.
+- **The hook delegates to vLLM's own selector.** It adds the bias to
+  `router_logits` and calls the original `select_experts`, so the engine keeps its
+  fused routing kernel, EPLB mapping, and indices-dtype handling. Reimplementing
+  softmax and top-k in Python would make the benchmark measure the prototype
+  rather than the method. Bias matrices are built on-device and cached per
+  (layer, row order); diagnostics are counted from host-side values so they add no
+  device synchronization to the timed path.
 
-`worker_diagnostics()` reports `rows_biased`; a run with `rows_biased == 0`
-measured the Original model, and both the benchmark and the combiner refuse it.
+`worker_diagnostics()` reports `rows_biased` **per cell**. A cell with
+`rows_biased == 0` measured the Original model twice; the benchmark exits nonzero
+and names those cells, and the combiner drops them.
 
 ## Binding Rebuttal Workload
 
@@ -129,6 +145,23 @@ measured the Original model, and both the benchmark and the combiner refuse it.
 128/128 at concurrency 1 is the latency-sensitive corner; 4096/128 is the
 prompt-heavy corner where the probe is most expensive relative to generation;
 concurrency 32 is where routing-induced load imbalance would show up.
+
+**Concurrency is enforced, not just labelled.** Each cell runs
+`requests_per_cell / concurrency` sequential waves of exactly `concurrency`
+requests and times the whole set. Submitting all 32 requests at once would let the
+scheduler keep up to `max_num_seqs` sequences active regardless of the label, so
+the "concurrency 1" and "concurrency 8" rows would both have measured 32.
+
+Because each routing cell measures Original and biased generation back to back on
+one engine at one concurrency, `rebuttal_true_overhead.py` prefers those
+same-cell numbers over the standalone baseline:
+
+    true_total = measured biased generation + probe
+               = Original + probe + (biased - Original)
+
+all from the same cell. The standalone `rebuttal_vllm_baseline.py` run remains
+useful as an independent check that the harness reaches the engine's normal
+throughput, but it is not needed for the equation.
 
 ## Probe Optimizations
 

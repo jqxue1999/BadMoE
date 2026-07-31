@@ -106,64 +106,49 @@ def load_engine(path: Path) -> dict:
 
 
 def load_routing(path: Path) -> dict:
-    """Read the measured routing overhead, keyed by (input, output, concurrency).
+    """Read the cell-matched Original and biased generation measurements.
 
-    Also surfaces the worker diagnostics: if the router never saw a biased row,
-    the measured "overhead" is really Original-vs-Original and must not be used.
+    Each comparison already contains both methods for the *same* input length,
+    output length and concurrency, measured back to back on one engine. That is
+    strictly better than pairing across files, so when this JSON is present it
+    supplies the generation baseline as well as the routing delta and no
+    cross-schema matching is needed.
+
+    Cells whose diagnostics show no biased row are dropped: their PIRA timing is
+    the Original model, so any "overhead" computed from them is noise.
     """
     payload = json.loads(path.read_text())
-    diagnostics = payload.get("diagnostics", {})
-    if not diagnostics.get("rows_biased"):
-        raise SystemExit(
-            f"{path} reports rows_biased=0, so its PIRA timings did not actually "
-            "apply any bias. Fix the routing integration before combining."
-        )
+    metadata = payload.get("metadata", {})
+    comparisons = payload.get("comparisons", [])
+    if not comparisons:
+        raise SystemExit(f"{path} contains no comparisons")
+
     table = {}
-    for entry in payload.get("comparisons", []):
-        key = (
-            entry["input_length"],
-            entry["output_length"],
-            entry["concurrency"],
-        )
+    dropped = []
+    for entry in comparisons:
+        key = (entry["input_length"], entry["output_length"], entry["concurrency"])
+        # Older files carry only a global diagnostic; treat a missing per-cell
+        # value as unverified rather than as verified-zero.
+        rows = entry.get("rows_biased")
+        if rows is None:
+            rows = payload.get("diagnostics", {}).get("rows_biased", 0)
+        if not rows:
+            dropped.append(key)
+            continue
         table[key] = entry
-    return {"table": table, "diagnostics": diagnostics}
 
-
-def routing_overhead_for(
-    routing: dict | None,
-    prompt_tokens: int,
-    output_tokens: int | None,
-    concurrency: int | None,
-) -> tuple[float, str]:
-    """Routing overhead as a fraction, plus how it was obtained.
-
-    Falls back progressively: exact cell, then same input length, then the worst
-    observed cell. The fallback is deliberately pessimistic -- reporting the
-    maximum rather than the mean avoids understating the cost when a cell is
-    missing.
-    """
-    if not routing:
-        return 0.0, "assumed zero (no routing measurement supplied)"
-    table = routing["table"]
-    exact = table.get((prompt_tokens, output_tokens, concurrency))
-    if exact:
-        return exact["routing_overhead_fraction"], "measured"
-    same_input = [v for k, v in table.items() if k[0] == prompt_tokens]
-    if same_input:
-        worst = max(same_input, key=lambda v: v["routing_overhead_fraction"])
-        return (
-            worst["routing_overhead_fraction"],
-            f"worst cell at input {prompt_tokens} "
-            f"(out={worst['output_length']}, conc={worst['concurrency']})",
+    if not table:
+        raise SystemExit(
+            f"{path}: no cell applied a bias (rows_biased=0 everywhere), so its "
+            "PIRA timings are just the Original model. Fix the routing "
+            "integration before combining."
         )
-    if table:
-        worst = max(table.values(), key=lambda v: v["routing_overhead_fraction"])
-        return (
-            worst["routing_overhead_fraction"],
-            f"worst observed cell (in={worst['input_length']}, "
-            f"out={worst['output_length']}, conc={worst['concurrency']})",
-        )
-    return 0.0, "assumed zero (routing table empty)"
+    return {
+        "table": table,
+        "dropped": dropped,
+        "diagnostics": payload.get("diagnostics", {}),
+        "all_cells_biased": metadata.get("all_cells_biased"),
+    }
 
 
 def load_probe(path: Path, configuration_prefix: str) -> list[dict]:
@@ -253,43 +238,90 @@ def main() -> int:
     print()
 
     combined = []
-    for row in engine["rows"]:
-        if not row["total_seconds"] or not row["num_requests"]:
-            continue
-        prompt_tokens = row["prompt_tokens"]
-        engine_per_request = row["total_seconds"] / row["num_requests"]
-        probe_per_request, probe_note = probe_seconds_per_request(
-            probe_rows, prompt_tokens, row["batch_size"]
-        )
-        routing_fraction, routing_note = routing_overhead_for(
-            routing, prompt_tokens, row["output_tokens"], row["batch_size"]
-        )
-        routing_per_request = engine_per_request * routing_fraction
-        true_total = engine_per_request + probe_per_request + routing_per_request
-        extra = probe_per_request + routing_per_request
-        combined.append(
-            {
-                "engine": engine["backend"],
-                "batch_size": row["batch_size"],
-                "prompt_tokens": prompt_tokens,
-                "output_tokens": row["output_tokens"],
-                "engine_seconds_per_request": engine_per_request,
-                "probe_seconds_per_request": probe_per_request,
-                "routing_seconds_per_request": routing_per_request,
-                "routing_overhead_fraction": routing_fraction,
-                "true_total_seconds_per_request": true_total,
-                "overhead_fraction": extra / engine_per_request,
-                "overhead_percent": 100.0 * extra / engine_per_request,
-                "probe_source": probe_note,
-                "routing_source": routing_note,
-            }
-        )
+    if routing:
+        # Preferred path. Each routing cell already holds Original and biased
+        # generation measured back to back on one engine at one concurrency, so
+        # the whole equation comes from same-cell numbers and only the probe is
+        # matched in from the other file:
+        #     true_total = biased_generation + probe
+        #                = original + probe + (biased - original)
+        # No cross-schema guessing about what the old baseline's batch_size meant.
+        for (input_length, output_length, concurrency), entry in sorted(
+            routing["table"].items()
+        ):
+            original_per_request = entry["original_seconds_per_request"]
+            biased_per_request = entry["pira_seconds_per_request"]
+            routing_per_request = biased_per_request - original_per_request
+            probe_per_request, probe_note = probe_seconds_per_request(
+                probe_rows, input_length, concurrency
+            )
+            true_total = biased_per_request + probe_per_request
+            extra = probe_per_request + routing_per_request
+            combined.append(
+                {
+                    "source": "cell-matched",
+                    "engine": engine["backend"],
+                    "batch_size": concurrency,
+                    "concurrency": concurrency,
+                    "prompt_tokens": input_length,
+                    "output_tokens": output_length,
+                    "engine_seconds_per_request": original_per_request,
+                    "probe_seconds_per_request": probe_per_request,
+                    "routing_seconds_per_request": routing_per_request,
+                    "routing_overhead_fraction": entry["routing_overhead_fraction"],
+                    "true_total_seconds_per_request": true_total,
+                    "overhead_fraction": extra / original_per_request,
+                    "overhead_percent": 100.0 * extra / original_per_request,
+                    "probe_source": probe_note,
+                    "routing_source": "measured (same cell)",
+                    "rows_biased": entry.get("rows_biased"),
+                }
+            )
+    else:
+        # Fallback: probe-only lower bound against the standalone engine baseline.
+        for row in engine["rows"]:
+            if not row["total_seconds"] or not row["num_requests"]:
+                continue
+            prompt_tokens = row["prompt_tokens"]
+            engine_per_request = row["total_seconds"] / row["num_requests"]
+            probe_per_request, probe_note = probe_seconds_per_request(
+                probe_rows, prompt_tokens, row["batch_size"]
+            )
+            combined.append(
+                {
+                    "source": "probe-only lower bound",
+                    "engine": engine["backend"],
+                    "batch_size": row["batch_size"],
+                    "concurrency": None,
+                    "prompt_tokens": prompt_tokens,
+                    "output_tokens": row["output_tokens"],
+                    "engine_seconds_per_request": engine_per_request,
+                    "probe_seconds_per_request": probe_per_request,
+                    "routing_seconds_per_request": 0.0,
+                    "routing_overhead_fraction": 0.0,
+                    "true_total_seconds_per_request": engine_per_request
+                    + probe_per_request,
+                    "overhead_fraction": probe_per_request / engine_per_request,
+                    "overhead_percent": 100.0 * probe_per_request / engine_per_request,
+                    "probe_source": probe_note,
+                    "routing_source": "assumed zero (no routing measurement supplied)",
+                }
+            )
 
     if not combined:
-        raise SystemExit("engine JSON contained no usable measurements")
+        raise SystemExit("no usable measurements after matching")
+
+    if routing and routing["dropped"]:
+        print(
+            f"dropped {len(routing['dropped'])} routing cell(s) with "
+            "rows_biased=0:"
+        )
+        for cell in routing["dropped"]:
+            print(f"  input={cell[0]} output={cell[1]} concurrency={cell[2]}")
+        print()
 
     header = (
-        f"{'batch':>6} {'in':>6} {'out':>6} {f'{args.engine_label}(s/req)':>16} "
+        f"{'conc':>6} {'in':>6} {'out':>6} {'Original(s/req)':>16} "
         f"{'probe(s/req)':>13} {'routing(s/req)':>15} {'true total':>11} "
         f"{'overhead':>9}"
     )
@@ -314,12 +346,20 @@ def main() -> int:
             for note in inexact:
                 print(f"  - {note}")
 
-    print(
-        "\nTrue Total = Original turnaround on "
-        f"{args.engine_label} at maximum GPU utilization"
-        "\n           + standalone PIRA forward+backward probe"
-        "\n           + measured cost of generating under biased routing"
-    )
+    if routing:
+        print(
+            "\nTrue Total = measured biased generation (same cell, same engine)"
+            "\n           + standalone PIRA forward+backward probe"
+            "\n  equivalently: Original + probe + (biased - Original)"
+            "\nOriginal, biased and their difference all come from the same "
+            "input/output/concurrency cell measured back to back."
+        )
+    else:
+        print(
+            "\nTrue Total = Original turnaround on "
+            f"{args.engine_label} at maximum GPU utilization"
+            "\n           + standalone PIRA forward+backward probe"
+        )
     if not routing:
         print(
             "\nWARNING: no routing measurement was supplied, so the routing term is "

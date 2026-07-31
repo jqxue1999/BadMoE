@@ -119,13 +119,13 @@ def build_biases(
     return biases
 
 
-def run_once(
+def run_wave(
     llm,
     pira,
     *,
     method: str,
     prompt_ids: list[int],
-    count: int,
+    concurrency: int,
     sampling,
     layers: list[int],
     num_experts: int,
@@ -133,20 +133,24 @@ def run_once(
     beta: float,
     seed: int,
 ) -> tuple[float, int]:
-    """Submit `count` requests and return (elapsed seconds, tokens produced).
+    """Run exactly `concurrency` requests together; return (seconds, tokens).
 
-    For PIRA the order matters and is the whole point: enqueue() returns the
-    engine's real request ids without starting execution, the biases are
-    registered against exactly those ids, and only then does
-    wait_for_completion() run the batch. That removes any need to guess vLLM's
-    id scheme -- a guess that silently mismatched would leave every row unbiased
-    and make PIRA look free.
+    One wave submits exactly `concurrency` requests and waits for all of them, so
+    the number of concurrently active sequences really is the value the cell is
+    labelled with. Submitting the whole cell at once would let the scheduler keep
+    up to max_num_seqs active regardless of the label, which is the flaw the
+    coauthor identified.
 
-    The enqueue call is inside the timed region for both methods, so the
-    comparison stays symmetric; bias registration is one small RPC and is timed
-    as part of PIRA's cost.
+    For PIRA the ordering is the crux: enqueue() returns the engine's real request
+    ids without starting execution, biases are registered against exactly those
+    ids, and only then does wait_for_completion() run them. Guessing the id scheme
+    would leave every row unbiased and make PIRA look free.
+
+    enqueue is inside the timed region for both methods, so the comparison stays
+    symmetric; PIRA additionally pays for one bias-registration RPC, which is part
+    of its real cost and is therefore timed.
     """
-    prompts = [{"prompt_token_ids": prompt_ids} for _ in range(count)]
+    prompts = [{"prompt_token_ids": prompt_ids} for _ in range(concurrency)]
 
     started = time.perf_counter()
     if method == "PIRA":
@@ -173,6 +177,48 @@ def run_once(
         if getattr(output, "outputs", None)
     )
     return elapsed, produced
+
+
+def run_cell(
+    llm,
+    pira,
+    *,
+    method: str,
+    prompt_ids: list[int],
+    total: int,
+    concurrency: int,
+    sampling,
+    layers: list[int],
+    num_experts: int,
+    top_k: int,
+    beta: float,
+    seed: int,
+) -> tuple[float, int]:
+    """Run total/concurrency sequential waves and return the summed time.
+
+    Timing the sum of waves rather than one big submission is what makes the
+    concurrency label binding.
+    """
+    waves = max(1, total // concurrency)
+    elapsed_total = 0.0
+    produced_total = 0
+    for wave in range(waves):
+        elapsed, produced = run_wave(
+            llm,
+            pira,
+            method=method,
+            prompt_ids=prompt_ids,
+            concurrency=concurrency,
+            sampling=sampling,
+            layers=layers,
+            num_experts=num_experts,
+            top_k=top_k,
+            beta=beta,
+            seed=seed + wave,
+        )
+        elapsed_total += elapsed
+        produced_total += produced
+    return elapsed_total, produced_total
 
 
 def main() -> int:
@@ -214,8 +260,29 @@ def main() -> int:
         f"biased_layers=0..{args.probe_layer} suppressed_per_layer={args.top_k}"
     )
 
+    # Installed once, with the layer set passed explicitly. It cannot be derived
+    # from registered biases, because request ids -- and therefore biases -- only
+    # exist after the engine is running.
+    installed = pira.install_in_worker(
+        llm, layers, beta=args.beta, strict=True
+    )
+    if not installed:
+        print("no MoE layer was hooked", file=sys.stderr)
+        return 2
+    print(f"hooked {len(installed)} MoE layers: {installed[0]}..{installed[-1]}")
+
+    hook_report = pira.verify_hooks(llm)
+    print(f"hook verification: {hook_report}")
+    if hook_report.get("unhooked_layers"):
+        print(
+            f"note: {hook_report['unhooked_layers']} MoE layers are outside the "
+            f"probed range and remain unbiased (expected for layers "
+            f"> {args.probe_layer})"
+        )
+
     records: list[dict] = []
     diagnostics: dict = {}
+    unbiased_cells: list[tuple[int, int, int]] = []
 
     for input_length in args.input_lengths:
         prompt_ids = fixed_length_prompt(tokenizer, input_length)
@@ -230,59 +297,58 @@ def main() -> int:
 
                 for method in ("Original", "PIRA"):
                     if method == "PIRA":
-                        installed = pira.install_in_worker(
-                            llm, beta=args.beta, strict=True
-                        )
-                        if not installed:
-                            print("no MoE layer was hooked", file=sys.stderr)
-                            return 2
+                        # Counters and registrations are cleared per cell so each
+                        # cell's diagnostics stand alone. Checking only the final
+                        # cell could let an earlier Original-vs-Original
+                        # comparison hide behind one good number at the end.
+                        pira.reset_counters(llm)
 
-                    try:
-                        # Warm up so allocator growth and kernel autotuning stay
-                        # out of the timed region.
-                        run_once(
+                    # Warm up so allocator growth and kernel autotuning stay out
+                    # of the timed region.
+                    run_wave(
+                        llm,
+                        pira,
+                        method=method,
+                        prompt_ids=prompt_ids,
+                        concurrency=concurrency,
+                        sampling=warmup,
+                        layers=layers,
+                        num_experts=num_experts,
+                        top_k=args.top_k,
+                        beta=args.beta,
+                        seed=args.seed,
+                    )
+                    if method == "PIRA":
+                        pira.reset_counters(llm)
+
+                    durations = []
+                    for repeat in range(args.repeats):
+                        elapsed, produced = run_cell(
                             llm,
                             pira,
                             method=method,
                             prompt_ids=prompt_ids,
-                            count=concurrency,
-                            sampling=warmup,
+                            total=total,
+                            concurrency=concurrency,
+                            sampling=sampling,
                             layers=layers,
                             num_experts=num_experts,
                             top_k=args.top_k,
                             beta=args.beta,
-                            seed=args.seed,
+                            seed=args.seed + repeat * 1000,
                         )
-
-                        durations = []
-                        for repeat in range(args.repeats):
-                            elapsed, produced = run_once(
-                                llm,
-                                pira,
-                                method=method,
-                                prompt_ids=prompt_ids,
-                                count=total,
-                                sampling=sampling,
-                                layers=layers,
-                                num_experts=num_experts,
-                                top_k=args.top_k,
-                                beta=args.beta,
-                                seed=args.seed + repeat,
+                        durations.append(elapsed)
+                        expected = total * output_length
+                        if produced != expected:
+                            print(
+                                f"warning: produced {produced} tokens, "
+                                f"expected {expected}",
+                                file=sys.stderr,
                             )
-                            durations.append(elapsed)
-                            expected = total * output_length
-                            if produced != expected:
-                                print(
-                                    f"warning: produced {produced} tokens, "
-                                    f"expected {expected}",
-                                    file=sys.stderr,
-                                )
 
-                        if method == "PIRA":
-                            diagnostics = pira.worker_diagnostics(llm)
-                    finally:
-                        if method == "PIRA":
-                            pira.uninstall_in_worker(llm)
+                    cell_diagnostics = (
+                        pira.worker_diagnostics(llm) if method == "PIRA" else None
+                    )
 
                     median = statistics.median(durations)
                     record = {
@@ -291,6 +357,7 @@ def main() -> int:
                         "output_length": output_length,
                         "concurrency": concurrency,
                         "num_requests": total,
+                        "waves": max(1, total // concurrency),
                         "median_seconds": median,
                         "min_seconds": min(durations),
                         "max_seconds": max(durations),
@@ -299,12 +366,27 @@ def main() -> int:
                         "output_token_throughput": total * output_length / median,
                     }
                     if method == "PIRA":
-                        record["diagnostics"] = diagnostics
+                        record["diagnostics"] = cell_diagnostics
+                        rows = (cell_diagnostics or {}).get("rows_biased", 0)
+                        record["rows_biased"] = rows
+                        if not rows:
+                            unbiased_cells.append(
+                                (input_length, output_length, concurrency)
+                            )
+                        diagnostics = cell_diagnostics
                     records.append(record)
+                    suffix = ""
+                    if method == "PIRA":
+                        rows = record.get("rows_biased", 0)
+                        suffix = (
+                            f"  rows_biased={rows}"
+                            if rows
+                            else "  rows_biased=0  <-- NOT BIASED"
+                        )
                     print(
                         f"  {method:<8} in={input_length:<5} out={output_length:<4} "
                         f"conc={concurrency:<3} {median:8.3f} s  "
-                        f"{record['request_throughput']:7.2f} req/s"
+                        f"{record['request_throughput']:7.2f} req/s{suffix}"
                     )
 
     # Pair the two methods per cell to get the routing overhead.
@@ -340,10 +422,14 @@ def main() -> int:
                         "input_length": input_length,
                         "output_length": output_length,
                         "concurrency": concurrency,
+                        "num_requests": original["num_requests"],
                         "original_seconds": original["median_seconds"],
                         "pira_seconds": biased["median_seconds"],
+                        "original_seconds_per_request": original["seconds_per_request"],
+                        "pira_seconds_per_request": biased["seconds_per_request"],
                         "routing_overhead_fraction": ratio,
                         "routing_overhead_percent": 100.0 * ratio,
+                        "rows_biased": biased.get("rows_biased", 0),
                     }
                 )
                 print(
@@ -351,15 +437,30 @@ def main() -> int:
                     f"{original['median_seconds']:>12.3f} "
                     f"{biased['median_seconds']:>10.3f} "
                     f"{100.0 * ratio:>8.1f}%"
+                    + ("" if biased.get("rows_biased") else "   <-- NOT BIASED")
                 )
 
-    rows_biased = diagnostics.get("rows_biased", 0)
-    print(f"\nworker diagnostics (last PIRA cell): {diagnostics}")
-    if not rows_biased:
+    pira_cells = [r for r in records if r["method"] == "PIRA"]
+    biased_cells = [r for r in pira_cells if r.get("rows_biased")]
+    print(
+        f"\nper-cell bias validation: {len(biased_cells)}/{len(pira_cells)} PIRA "
+        "cells actually applied a bias"
+    )
+    if unbiased_cells:
         print(
-            "\nFAIL: the router never saw a biased row, so the PIRA timings are "
-            "just the Original model. Check that request ids match "
-            "InputBatch.req_ids and that the MoE backend is modular.",
+            "\nFAIL: these cells ran without any biased row, so their PIRA "
+            "timings are just the Original model:",
+            file=sys.stderr,
+        )
+        for cell in unbiased_cells:
+            print(
+                f"  input={cell[0]} output={cell[1]} concurrency={cell[2]}",
+                file=sys.stderr,
+            )
+        print(
+            "Check that request ids match InputBatch.req_ids, that the MoE "
+            "backend is modular, and that the compiled/CUDA-graph path does not "
+            "bypass the Python hook.",
             file=sys.stderr,
         )
 
@@ -368,14 +469,22 @@ def main() -> int:
             "model": args.model,
             "num_experts": num_experts,
             "biased_layers": [0, args.probe_layer],
+            "hooked_layers": installed,
+            "hook_verification": hook_report,
             "suppressed_per_layer": args.top_k,
             "beta": args.beta,
             "repeats": args.repeats,
+            "requests_per_cell": args.requests_per_cell,
             "gpu_memory_utilization": args.gpu_memory_utilization,
             "max_model_len": max_len,
+            "max_num_seqs": max(args.concurrency),
+            "concurrency_enforcement": "total/concurrency sequential waves of "
+                                       "exactly `concurrency` requests each",
             "bias": "seeded synthetic suppression sets; timing only",
             "scope": "generation only; the probe is measured by "
                      "rebuttal_probe_scaling.py",
+            "all_cells_biased": not unbiased_cells,
+            "unbiased_cells": unbiased_cells,
         },
         "measurements": records,
         "comparisons": comparisons,
@@ -384,7 +493,9 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2) + "\n")
     print(f"wrote {args.output}")
-    return 0 if rows_biased else 1
+
+    pira.uninstall_in_worker(llm)
+    return 0 if not unbiased_cells else 1
 
 
 if __name__ == "__main__":
