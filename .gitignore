@@ -5,7 +5,9 @@
 # Local crash dumps and scheduler outputs
 core.*
 slurm-*.out
+slurm-*.err
 logs/
+timing_results/
 
 # Python and editor noise
 __pycache__/
