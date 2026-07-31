@@ -19,3 +19,10 @@ repos/
 
 # Keep Overleaf sync untouched by excluding the nested git repo entirely
 paper/
+
+# Local agent config
+.claude/
+
+# Review material kept locally, not part of the released code
+paper.pdf
+rebuttal.pdf

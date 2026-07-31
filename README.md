@@ -8,6 +8,32 @@ safety artifacts.
 
 ## Files
 
+Probe implementation and its correctness tests:
+
+- `scripts/moe/pira_probe.py`: the probe. `ReferenceProbe` is the unoptimized
+  implementation; `FastProbe` applies layer truncation, gradient checkpointing,
+  and a memory-efficient attention backward. Every optimization is
+  mathematically neutral -- there is no closed form, no surrogate direction, and
+  no dropped term, only a better execution of the same autograd graph.
+- `scripts/moe/test_probe_equivalence_cpu.py`: **run this first.** Tiny CPU MoE,
+  no GPU needed, seconds to run. In fp32 it requires the optimized probe to be
+  *bitwise* identical to the reference.
+- `scripts/moe/test_probe_equivalence.py`: the same check on the real model,
+  ablating one optimization at a time. bf16 admits small numeric differences, so
+  the binding criteria are an identical top-K suppression set and Spearman 1.0.
+- `scripts/moe/probe_workload.py`: shared model loading and prompt construction,
+  so every benchmark builds identical batches.
+
+Measurement:
+
+- `scripts/moe/rebuttal_probe_scaling.py`: probe time and peak activation memory
+  across prompt lengths and batch sizes, with and without checkpointing.
+- `scripts/moe/rebuttal_true_overhead.py`: combines a production-engine baseline
+  with the standalone probe cost into `True Total`, over an (input, output)
+  length grid.
+- `scripts/moe/pira_vllm_routing.py`: applies PIRA's per-request, pre-softmax
+  router bias inside vLLM's expert-selection path. Includes a CPU self-check
+  (`python scripts/moe/pira_vllm_routing.py`) that needs neither GPU nor vLLM.
 - `scripts/moe/rebuttal_cost_benchmark.py`: batch-1 Original/PIRA timing,
   including probe time, prefill time, TTFT, total generation time, and CUDA
   peak memory.
@@ -18,6 +44,51 @@ safety artifacts.
 
 `rebuttal_batch_benchmark.py` imports the PIRA hooks and probe implementation
 from `rebuttal_cost_benchmark.py`, so keep both files together.
+
+## Cost Model
+
+All of PIRA's overhead is the probe. The biased prefill and decoding that follow
+perform the same FLOPs as ordinary generation: the router bias changes *which*
+experts a token is routed to, not how many (top-k is unchanged) and not the
+expert MLPs themselves.
+
+    PIRA     = [probe: forward+backward over layers 0..L] + [prefill] + [decode]
+    Original =                                              [prefill] + [decode]
+
+So the honest accounting is the one Reviewer 7ZUn asked for:
+
+    True Total = Original turnaround on a serving engine at maximum GPU
+                 utilization
+               + standalone time for PIRA's forward + backward probe
+
+`rebuttal_true_overhead.py` computes exactly that. The overhead *ratio* depends
+on how prompt-heavy the workload is, so it is reported over a grid of input and
+output lengths rather than as one number.
+
+Adding a bias to router logits before top-k is already a first-class operation in
+vLLM (`e_score_correction_bias`, used by DeepSeek-V3). PIRA needs a
+per-request, pre-softmax variant of it rather than the per-expert, post-softmax
+one, which is what `pira_vllm_routing.py` supplies; the point is that the
+mechanism itself is not exotic and costs nothing measurable beside the expert
+MLPs.
+
+## Probe Optimizations
+
+Each is exactness-preserving, and `test_probe_equivalence*.py` verifies that
+rather than assuming it:
+
+| Optimization | Effect | Why it cannot change the result |
+|---|---|---|
+| Layer truncation | Skips layers above `L` | Layers above `L` are not in the graph of `s(q)`, so they cannot influence any gradient |
+| Gradient checkpointing | Peak activation memory becomes `O(1)` in depth instead of `O(L)` | Recomputes the same deterministic activations it would otherwise have stored |
+| Memory-efficient attention backward | Attention workspace `O(S)` instead of `O(S^2)` | A different kernel for the same mathematical operation |
+| Batching, early graph release | Better utilization; bounded memory | Scheduling only |
+
+Deliberately **not** used: closed-form gradients, forward-only surrogates, or
+any approximation of the backward pass. A forward-only surrogate that replaces
+the adjoint with the readout direction was tested and rejected -- it reorders
+experts (Spearman about 0.3 on a controlled setup) and would select a different
+suppression set.
 
 ## Measured Execution Path
 
@@ -59,6 +130,52 @@ uv pip install --python .venv-hf/bin/python \
 uv venv --python 3.12 .venv-vllm
 uv pip install --python .venv-vllm/bin/python vllm==0.19.0
 ```
+
+## Recommended Run Order
+
+Correctness before timing: a speedup only means something once the fast probe is
+shown to compute the same thing as the slow one.
+
+```bash
+# 0. No GPU needed. Seconds. Run before submitting anything.
+python scripts/moe/test_probe_equivalence_cpu.py
+python scripts/moe/pira_vllm_routing.py
+
+# 1. Equivalence on the real model. Must pass before quoting any timing.
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=equivalence,PYTHON_BIN=$PWD/.venv-hf/bin/python \
+  scripts/moe/rebuttal_probe_scaling.slurm
+
+# 1b. Strictest variant: fp32, deterministic kernels.
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=equivalence-strict,PYTHON_BIN=$PWD/.venv-hf/bin/python \
+  scripts/moe/rebuttal_probe_scaling.slurm
+
+# 2. Long-context scaling: probe time and activation memory, 128..8192 tokens,
+#    with and without checkpointing.
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=scaling,PYTHON_BIN=$PWD/.venv-hf/bin/python \
+  scripts/moe/rebuttal_probe_scaling.slurm
+
+# 3. Speedup of the optimized probe over the unoptimized reference.
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=scaling-with-reference,PYTHON_BIN=$PWD/.venv-hf/bin/python \
+  scripts/moe/rebuttal_probe_scaling.slurm
+
+# 4. Engine baseline at maximum GPU utilization (vLLM env), then combine.
+sbatch --partition=<p> --account=<a> --qos=<q> \
+  --export=ALL,MODE=long,PYTHON_BIN=$PWD/.venv-vllm/bin/python \
+  scripts/moe/rebuttal_vllm_baseline.slurm
+
+python scripts/moe/rebuttal_true_overhead.py \
+  --engine-json timing_results/vllm_long_<jobid>.json \
+  --probe-json  timing_results/probe_scaling_<jobid>.json \
+  --output      timing_results/true_overhead.json
+```
+
+Step 2 sweeps prompt lengths, so run it with enough walltime; the 8192-token
+cell without checkpointing is expected to be the one that OOMs, which is itself
+the result being reported.
 
 ## Slurm Usage
 
