@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Set up the environment for the PIRA benchmarks with uv.
 #
-#   bash setup_env.sh              # HF/probe env (.venv), plus optional backends
-#   bash setup_env.sh --vllm       # also create .venv-vllm for the serving arm
-#   bash setup_env.sh --all        # both, and attempt every grouped-GEMM backend
+#   bash setup_env.sh              # everything: both envs, every backend
+#   bash setup_env.sh --no-vllm    # probe env only; skips the slow vLLM install
+#
+# The default installs everything needed for the whole benchmark suite in one
+# pass, so there is no second setup round later.
 #
 # Two virtualenvs, because vLLM pins its own Transformers stack and the probe
 # needs a version it can hook:
@@ -22,12 +24,14 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
-WANT_VLLM=0
-WANT_ALL=0
+# vLLM is installed by default: the serving arms (Original and PIRA generation)
+# need it, and provisioning both environments in one pass avoids a second setup
+# round later. --no-vllm skips it when only the feasibility probe is wanted.
+WANT_VLLM=1
 for arg in "$@"; do
   case "$arg" in
-    --vllm) WANT_VLLM=1 ;;
-    --all)  WANT_VLLM=1; WANT_ALL=1 ;;
+    --no-vllm) WANT_VLLM=0 ;;
+    --vllm|--all) ;;   # accepted for compatibility; both are now the default
     -h|--help)
       sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0 ;;
@@ -95,25 +99,37 @@ GROUPED_GEMM_CUTLASS=1 uv pip install --python "$VPY" --no-build-isolation \
   && echo "  grouped_gemm: installed" \
   || echo "  grouped_gemm: FAILED (expected on sm_90+; this is a real result)"
 
-if [[ $WANT_ALL -eq 1 ]]; then
-  echo
-  echo "--- MegaBlocks (dMoE layers on top of grouped_gemm) ---"
-  uv pip install --python "$VPY" --no-build-isolation megablocks \
-    && echo "  megablocks: installed" \
-    || echo "  megablocks: FAILED"
-fi
+echo
+echo "--- MegaBlocks (dMoE layers on top of grouped_gemm) ---"
+uv pip install --python "$VPY" --no-build-isolation megablocks \
+  && echo "  megablocks: installed" \
+  || echo "  megablocks: FAILED"
 
 # ---- vLLM env ---------------------------------------------------------------
 if [[ $WANT_VLLM -eq 1 ]]; then
-  step "creating .venv-vllm (serving arms)"
+  step "creating .venv-vllm (serving arms: Original and PIRA generation)"
+  echo "this pulls a large wheel and can take several minutes;"
+  echo "skip it with --no-vllm if you only need the feasibility probe."
   uv venv --python "$PYTHON_VERSION" .venv-vllm || exit 2
-  uv pip install --python "$REPO_ROOT/.venv-vllm/bin/python" vllm \
-    && echo "  vllm: installed" \
-    || echo "  vllm: FAILED"
+  if uv pip install --python "$REPO_ROOT/.venv-vllm/bin/python" vllm; then
+    echo "  vllm: installed"
+    "$REPO_ROOT/.venv-vllm/bin/python" - <<'PY' 2>&1 || true
+import vllm, torch
+print("  vllm          ", vllm.__version__)
+print("  torch (vllm)  ", torch.__version__)
+PY
+  else
+    echo "  vllm: FAILED (the probe in .venv is unaffected)"
+  fi
+else
+  echo
+  echo "skipping vLLM (--no-vllm). The serving arms will need it later:"
+  echo "    bash setup_env.sh          # re-run to add .venv-vllm"
 fi
 
 # ---- summary ----------------------------------------------------------------
-step "backend availability in .venv"
+step "final summary"
+echo ".venv  (probe, equivalence tests, feasibility):"
 "$VPY" - <<'PY'
 for name, module in (("torch", "torch"),
                      ("transformers", "transformers"),
@@ -126,6 +142,21 @@ for name, module in (("torch", "torch"),
     except Exception as e:
         print(f"  {name:<20} unavailable -> {type(e).__name__}")
 PY
+
+echo
+echo ".venv-vllm  (Original and PIRA generation arms):"
+if [[ -x "$REPO_ROOT/.venv-vllm/bin/python" ]]; then
+  "$REPO_ROOT/.venv-vllm/bin/python" - <<'PY'
+for name, module in (("torch", "torch"), ("vllm", "vllm")):
+    try:
+        __import__(module)
+        print(f"  {name:<20} OK")
+    except Exception as e:
+        print(f"  {name:<20} unavailable -> {type(e).__name__}")
+PY
+else
+  echo "  (not created; re-run without --no-vllm)"
+fi
 
 cat <<EOF
 
