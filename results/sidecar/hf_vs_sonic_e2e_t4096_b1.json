@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.14.1",
+    "sonicmoe": "0.1.2.post1",
+    "prompt_tokens": 4096,
+    "batch_size": 1,
+    "probe_layer": 24,
+    "top_k": 25,
+    "repeats": 3,
+    "checkpoint": true,
+    "truncate": true,
+    "efficient_attention": true
+  },
+  "grouped_mm": {
+    "forward_seconds": 0.06249755481258035,
+    "backward_seconds": 0.16781120700761676,
+    "total_seconds": 0.2303087618201971,
+    "seconds_per_request": 0.2303087618201971,
+    "peak_allocated_gib": 58.24275779724121,
+    "peak_reserved_gib": 58.90234375,
+    "all_total_seconds": [
+      0.23038992891088128,
+      0.2302416111342609,
+      0.2303087618201971
+    ]
+  },
+  "sonicmoe": {
+    "forward_seconds": 0.05240065511316061,
+    "backward_seconds": 0.12942212773486972,
+    "total_seconds": 0.18182278284803033,
+    "seconds_per_request": 0.18182278284803033,
+    "peak_allocated_gib": 58.56892681121826,
+    "peak_reserved_gib": 59.525390625,
+    "all_total_seconds": [
+      0.19054948398843408,
+      0.18174455035477877,
+      0.18182278284803033
+    ]
+  },
+  "fidelity": {
+    "layers": 25,
+    "num_requests": 1,
+    "max_abs_diff": 0.008308042772114277,
+    "mean_abs_diff": 0.00015905826876405627,
+    "max_rel_diff": 0.2320566028356552,
+    "spearman_min": 0.8206720729416087,
+    "suppression_overlap_min": 0.92,
+    "suppression_overlap_mean": 0.92,
+    "identical_suppression_set": false,
+    "top_k": 25,
+    "reference_seconds": 0.2303087618201971,
+    "candidate_seconds": 0.18182278284803033,
+    "speedup": 1.2666661361832303,
+    "reference_peak_gib": 58.24275779724121,
+    "candidate_peak_gib": 58.56892681121826,
+    "memory_ratio": 1.0056001643176398
+  },
+  "speedup": 1.2666661361832303
+}

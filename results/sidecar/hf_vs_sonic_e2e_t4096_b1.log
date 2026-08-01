@@ -1,0 +1,67 @@
+Loading weights:   0%|          | 0/531 [00:00<?, ?it/s]Loading weights:   0%|          | 2/531 [00:00<01:10,  7.45it/s]Loading weights:   1%|          | 4/531 [00:04<11:51,  1.35s/it]Loading weights:   1%|          | 5/531 [00:05<10:15,  1.17s/it]Loading weights:   3%|▎         | 15/531 [00:07<03:14,  2.65it/s]Loading weights:   3%|▎         | 16/531 [00:08<03:55,  2.19it/s]Loading weights:   5%|▍         | 26/531 [00:10<02:49,  2.98it/s]Loading weights:   5%|▌         | 27/531 [00:13<03:55,  2.14it/s]Loading weights:   7%|▋         | 37/531 [00:15<02:49,  2.92it/s]Loading weights:   7%|▋         | 38/531 [00:15<02:41,  3.05it/s]Loading weights:   9%|▉         | 48/531 [00:18<02:42,  2.98it/s]Loading weights:   9%|▉         | 49/531 [00:19<02:59,  2.69it/s]Loading weights:  11%|█         | 59/531 [00:22<02:43,  2.90it/s]Loading weights:  11%|█▏        | 60/531 [00:24<03:12,  2.44it/s]Loading weights:  13%|█▎        | 70/531 [00:26<02:25,  3.17it/s]Loading weights:  13%|█▎        | 71/531 [00:26<02:32,  3.01it/s]Loading weights:  15%|█▌        | 81/531 [00:29<02:05,  3.59it/s]Loading weights:  15%|█▌        | 82/531 [00:29<02:16,  3.28it/s]Loading weights:  17%|█▋        | 92/531 [00:31<01:42,  4.29it/s]Loading weights:  19%|█▉        | 103/531 [00:33<01:34,  4.53it/s]Loading weights:  20%|█▉        | 104/531 [00:35<02:02,  3.50it/s]Loading weights:  21%|██▏       | 114/531 [00:37<01:45,  3.94it/s]Loading weights:  22%|██▏       | 115/531 [00:38<02:00,  3.45it/s]Loading weights:  24%|██▎       | 125/531 [00:40<01:40,  4.06it/s]Loading weights:  24%|██▎       | 126/531 [00:40<01:37,  4.15it/s]Loading weights:  26%|██▌       | 136/531 [00:43<01:51,  3.53it/s]Loading weights:  26%|██▌       | 137/531 [00:44<02:09,  3.05it/s]Loading weights:  28%|██▊       | 147/531 [00:46<01:38,  3.88it/s]Loading weights:  28%|██▊       | 148/531 [00:47<01:57,  3.26it/s]Loading weights:  30%|██▉       | 158/531 [00:48<01:26,  4.31it/s]Loading weights:  30%|██▉       | 159/531 [00:49<01:33,  3.99it/s]Loading weights:  32%|███▏      | 169/531 [00:52<01:37,  3.73it/s]Loading weights:  32%|███▏      | 170/531 [00:52<01:37,  3.72it/s]Loading weights:  34%|███▍      | 180/531 [00:55<01:31,  3.85it/s]Loading weights:  34%|███▍      | 181/531 [00:56<01:54,  3.05it/s]Loading weights:  36%|███▌      | 191/531 [00:58<01:34,  3.59it/s]Loading weights:  36%|███▌      | 192/531 [00:59<01:44,  3.23it/s]Loading weights:  38%|███▊      | 202/531 [01:00<01:15,  4.34it/s]Loading weights:  38%|███▊      | 203/531 [01:03<01:57,  2.79it/s]Loading weights:  40%|████      | 213/531 [01:06<01:47,  2.95it/s]Loading weights:  40%|████      | 214/531 [01:07<02:09,  2.45it/s]Loading weights:  42%|████▏     | 224/531 [01:09<01:34,  3.24it/s]Loading weights:  42%|████▏     | 225/531 [01:11<01:58,  2.58it/s]Loading weights:  44%|████▍     | 235/531 [01:12<01:19,  3.74it/s]Loading weights:  44%|████▍     | 236/531 [01:14<01:44,  2.82it/s]Loading weights:  46%|████▋     | 246/531 [01:17<01:35,  2.98it/s]Loading weights:  47%|████▋     | 247/531 [01:18<01:48,  2.62it/s]Loading weights:  48%|████▊     | 257/531 [01:20<01:17,  3.56it/s]Loading weights:  49%|████▊     | 258/531 [01:21<01:40,  2.72it/s]Loading weights:  50%|█████     | 268/531 [01:24<01:19,  3.31it/s]Loading weights:  51%|█████     | 269/531 [01:24<01:19,  3.31it/s]Loading weights:  53%|█████▎    | 279/531 [01:25<00:55,  4.51it/s]Loading weights:  53%|█████▎    | 280/531 [01:26<01:09,  3.61it/s]Loading weights:  55%|█████▍    | 290/531 [01:28<00:52,  4.62it/s]Loading weights:  55%|█████▍    | 291/531 [01:28<00:54,  4.44it/s]Loading weights:  57%|█████▋    | 301/531 [01:30<00:52,  4.35it/s]Loading weights:  57%|█████▋    | 302/531 [01:31<00:59,  3.86it/s]Loading weights:  59%|█████▉    | 312/531 [01:33<00:47,  4.60it/s]Loading weights:  59%|█████▉    | 313/531 [01:34<01:01,  3.53it/s]Loading weights:  61%|██████    | 323/531 [01:36<00:54,  3.84it/s]Loading weights:  61%|██████    | 324/531 [01:38<01:09,  2.96it/s]Loading weights:  63%|██████▎   | 334/531 [01:40<00:53,  3.71it/s]Loading weights:  63%|██████▎   | 335/531 [01:41<00:57,  3.41it/s]Loading weights:  65%|██████▍   | 345/531 [01:42<00:43,  4.28it/s]Loading weights:  65%|██████▌   | 346/531 [01:44<00:56,  3.27it/s]Loading weights:  67%|██████▋   | 356/531 [01:45<00:41,  4.23it/s]Loading weights:  67%|██████▋   | 357/531 [01:46<00:52,  3.34it/s]Loading weights:  69%|██████▉   | 367/531 [01:48<00:38,  4.22it/s]Loading weights:  69%|██████▉   | 368/531 [01:49<00:43,  3.72it/s]Loading weights:  71%|███████   | 378/531 [01:51<00:38,  3.97it/s]Loading weights:  71%|███████▏  | 379/531 [01:52<00:47,  3.21it/s]Loading weights:  73%|███████▎  | 389/531 [01:54<00:32,  4.35it/s]Loading weights:  73%|███████▎  | 390/531 [01:55<00:38,  3.68it/s]Loading weights:  75%|███████▌  | 400/531 [01:57<00:33,  3.97it/s]Loading weights:  76%|███████▌  | 401/531 [01:58<00:40,  3.22it/s]Loading weights:  77%|███████▋  | 411/531 [02:01<00:34,  3.49it/s]Loading weights:  78%|███████▊  | 412/531 [02:02<00:45,  2.62it/s]Loading weights:  79%|███████▉  | 422/531 [02:04<00:28,  3.82it/s]Loading weights:  80%|███████▉  | 423/531 [02:05<00:34,  3.16it/s]Loading weights:  82%|████████▏ | 433/531 [02:08<00:31,  3.09it/s]Loading weights:  82%|████████▏ | 434/531 [02:09<00:35,  2.71it/s]Loading weights:  84%|████████▎ | 444/531 [02:12<00:28,  3.02it/s]Loading weights:  84%|████████▍ | 445/531 [02:14<00:36,  2.37it/s]Loading weights:  86%|████████▌ | 455/531 [02:15<00:20,  3.66it/s]Loading weights:  86%|████████▌ | 456/531 [02:16<00:22,  3.37it/s]Loading weights:  88%|████████▊ | 466/531 [02:18<00:17,  3.62it/s]Loading weights:  88%|████████▊ | 467/531 [02:20<00:22,  2.90it/s]Loading weights:  90%|████████▉ | 477/531 [02:22<00:15,  3.38it/s]Loading weights:  90%|█████████ | 478/531 [02:23<00:17,  2.97it/s]Loading weights:  92%|█████████▏| 488/531 [02:26<00:13,  3.28it/s]Loading weights:  92%|█████████▏| 489/531 [02:27<00:16,  2.55it/s]Loading weights:  94%|█████████▍| 499/531 [02:29<00:09,  3.23it/s]Loading weights:  94%|█████████▍| 500/531 [02:30<00:11,  2.80it/s]Loading weights:  96%|█████████▌| 510/531 [02:33<00:06,  3.20it/s]Loading weights:  96%|█████████▌| 511/531 [02:34<00:07,  2.74it/s]Loading weights:  98%|█████████▊| 521/531 [02:36<00:02,  3.84it/s]Loading weights: 100%|██████████| 531/531 [02:36<00:00,  3.40it/s]
+GPU=NVIDIA B200 model=Qwen/Qwen3-30B-A3B prompt=4096 batch=1 probe_layer=24 initial_experts={'': 'grouped_mm'}
+grouped_mm: fwd=0.062498s bwd=0.167811s total=0.230309s
+sonicmoe:  fwd=0.052401s bwd=0.129422s total=0.181823s
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.14.1",
+    "sonicmoe": "0.1.2.post1",
+    "prompt_tokens": 4096,
+    "batch_size": 1,
+    "probe_layer": 24,
+    "top_k": 25,
+    "repeats": 3,
+    "checkpoint": true,
+    "truncate": true,
+    "efficient_attention": true
+  },
+  "grouped_mm": {
+    "forward_seconds": 0.06249755481258035,
+    "backward_seconds": 0.16781120700761676,
+    "total_seconds": 0.2303087618201971,
+    "seconds_per_request": 0.2303087618201971,
+    "peak_allocated_gib": 58.24275779724121,
+    "peak_reserved_gib": 58.90234375,
+    "all_total_seconds": [
+      0.23038992891088128,
+      0.2302416111342609,
+      0.2303087618201971
+    ]
+  },
+  "sonicmoe": {
+    "forward_seconds": 0.05240065511316061,
+    "backward_seconds": 0.12942212773486972,
+    "total_seconds": 0.18182278284803033,
+    "seconds_per_request": 0.18182278284803033,
+    "peak_allocated_gib": 58.56892681121826,
+    "peak_reserved_gib": 59.525390625,
+    "all_total_seconds": [
+      0.19054948398843408,
+      0.18174455035477877,
+      0.18182278284803033
+    ]
+  },
+  "fidelity": {
+    "layers": 25,
+    "num_requests": 1,
+    "max_abs_diff": 0.008308042772114277,
+    "mean_abs_diff": 0.00015905826876405627,
+    "max_rel_diff": 0.2320566028356552,
+    "spearman_min": 0.8206720729416087,
+    "suppression_overlap_min": 0.92,
+    "suppression_overlap_mean": 0.92,
+    "identical_suppression_set": false,
+    "top_k": 25,
+    "reference_seconds": 0.2303087618201971,
+    "candidate_seconds": 0.18182278284803033,
+    "speedup": 1.2666661361832303,
+    "reference_peak_gib": 58.24275779724121,
+    "candidate_peak_gib": 58.56892681121826,
+    "memory_ratio": 1.0056001643176398
+  },
+  "speedup": 1.2666661361832303
+}
+wrote results/sidecar/hf_vs_sonic_e2e_t4096_b1.json

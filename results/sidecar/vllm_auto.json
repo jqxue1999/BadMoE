@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "tokens": 16,
+    "seed": 0,
+    "moe_backend_requested": "auto",
+    "gpu_memory_utilization": 0.45,
+    "test_sonicmoe": false
+  },
+  "workers": [
+    {
+      "layer": "model.layers.0.mlp",
+      "runner": "MoERunner",
+      "quant_method": "UnquantizedFusedMoEMethod",
+      "unquantized_backend": "UnquantizedMoeBackend.FLASHINFER_TRTLLM",
+      "top_k": 8,
+      "renormalize": true,
+      "weights": {
+        "gate": {
+          "shape": [
+            128,
+            2048
+          ],
+          "stride": [
+            2048,
+            1
+          ],
+          "dtype": "torch.bfloat16",
+          "is_inference": false,
+          "data_ptr": 23057045538816
+        },
+        "w13": {
+          "shape": [
+            128,
+            32,
+            1536,
+            64
+          ],
+          "stride": [
+            3145728,
+            98304,
+            64,
+            1
+          ],
+          "dtype": "torch.bfloat16",
+          "is_inference": false,
+          "data_ptr": 22992704765952
+        },
+        "w2": {
+          "shape": [
+            128,
+            12,
+            2048,
+            64
+          ],
+          "stride": [
+            1572864,
+            131072,
+            64,
+            1
+          ],
+          "dtype": "torch.bfloat16",
+          "is_inference": false,
+          "data_ptr": 22992302112768
+        }
+      },
+      "resident_weight_autograd": {
+        "ok": false,
+        "type": "RuntimeError",
+        "message": "t() expects a tensor with <= 2 dimensions, but self is 3D"
+      },
+      "vllm_fused_backward": {
+        "ok": false,
+        "output_requires_grad": true,
+        "input_grad_finite": false
+      },
+      "manual_sidecar": {
+        "ok": false,
+        "type": "RuntimeError",
+        "message": "t() expects a tensor with <= 2 dimensions, but self is 3D"
+      },
+      "conclusion": {
+        "zero_copy_weight_reuse": false,
+        "vllm_kernel_has_backward": false,
+        "sidecar_router_bias_gradient": false,
+        "sonicmoe_zero_copy_sidecar": false
+      }
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "tokens": 16,
+    "seed": 0,
+    "moe_backend_requested": "triton",
+    "gpu_memory_utilization": 0.45
+  },
+  "workers": [
+    {
+      "layer": "model.layers.0.mlp",
+      "runner": "MoERunner",
+      "quant_method": "UnquantizedFusedMoEMethod",
+      "unquantized_backend": "UnquantizedMoeBackend.TRITON",
+      "top_k": 8,
+      "renormalize": true,
+      "weights": {
+        "gate": {
+          "shape": [
+            128,
+            2048
+          ],
+          "stride": [
+            2048,
+            1
+          ],
+          "dtype": "torch.bfloat16",
+          "is_inference": false,
+          "data_ptr": 23015001835520
+        },
+        "w13": {
+          "shape": [
+            128,
+            1536,
+            2048
+          ],
+          "stride": [
+            3145728,
+            2048,
+            1
+          ],
+          "dtype": "torch.bfloat16",
+          "is_inference": false,
+          "data_ptr": 23011864346624
+        },
+        "w2": {
+          "shape": [
+            128,
+            2048,
+            768
+          ],
+          "stride": [
+            1572864,
+            768,
+            1
+          ],
+          "dtype": "torch.bfloat16",
+          "is_inference": false,
+          "data_ptr": 23011461693440
+        }
+      },
+      "resident_weight_autograd": {
+        "ok": true,
+        "same_data_ptr": true,
+        "output_requires_grad": true,
+        "input_grad_finite": true,
+        "input_grad_norm": 78.56718444824219
+      },
+      "vllm_fused_backward": {
+        "ok": false,
+        "output_requires_grad": true,
+        "input_grad_finite": false
+      },
+      "manual_sidecar": {
+        "ok": true,
+        "seconds": 0.10490362602286041,
+        "incremental_peak_allocated_gib": 0.0019249916076660156,
+        "bias_grad_finite": true,
+        "bias_grad_norm": 27.716094970703125,
+        "bias_grad_nonzero": 128,
+        "input_grad_finite": true,
+        "selected_experts": 80,
+        "weight_data_ptrs_unchanged": {
+          "gate": true,
+          "w13": true,
+          "w2": true
+        },
+        "max_abs_diff_vs_vllm": 0.03125,
+        "mean_abs_diff_vs_vllm": 0.0005707592936232686
+      },
+      "conclusion": {
+        "zero_copy_weight_reuse": true,
+        "vllm_kernel_has_backward": false,
+        "sidecar_router_bias_gradient": true
+      }
+    }
+  ]
+}
