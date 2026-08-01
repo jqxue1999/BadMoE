@@ -1,0 +1,83 @@
+note: ignoring inherited HF_HOME=/blue/qi855292.ucf/yi217029.ucf/hf-cache
+      (using the repository filesystem instead; REUSE_HF_HOME=1 to keep it)
+==================================================================
+ PIRA measurements: step2
+ started 2026-08-01T01:30:38-04:00   host c0903a-s15
+ model   Qwen/Qwen3-30B-A3B   probe_layer 24   K 25 (global)
+ results results/experiments/20260801-013038-c0903a-s15
+==================================================================
+Sat Aug  1 01:30:38 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:43:00.0 Off |                    0 |
+| N/A   26C    P0            190W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+(nvidia-smi unavailable)
+
+--- cache locations ---
+  HF_HOME                  /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+  HF_HUB_CACHE             /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub
+  HF_XET_CACHE             /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/xet
+  TRANSFORMERS_CACHE       /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+  HF_DATASETS_CACHE        /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/datasets
+  TORCH_HOME               /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/torch
+  TRITON_CACHE_DIR         /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/triton
+  TORCHINDUCTOR_CACHE_DIR  /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/inductor
+  VLLM_CACHE_ROOT          /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/vllm
+  TMPDIR                   /tmp   <-- OUTSIDE CACHE_BASE
+
+--- filesystem health ---
+  model cache: read/write ok   (/orange/qi855292.ucf)
+  tmp / compile: read/write ok   (/tmp)
+
+--- disk space ---
+  model already cached (~57855292217029 GiB), so only working room is needed
+  model cache              144 GiB free   (need ~20 GiB)   ok
+  tmp / compile           1610 GiB free   (need ~20 GiB)   ok
+  home (python, misc)        2 GiB free   (need ~5 GiB)   <-- TOO SMALL
+  quota check (per-user limits, not filesystem size):
+    Filesystem quota usage for user yi217029.ucf on /home/yi217029.ucf
+    Quota    Used    Available
+    -------  ------  -----------
+    40G      39G     1.9G
+    
+    See additional options with 'home_quota -h'
+  resolved by huggingface_hub:
+    HF_HOME        /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+    HF_HUB_CACHE   /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub
+    HF_XET_CACHE   /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/xet
+
+### STEP 2: vLLM Original vs PIRA-biased generation ###
+
+--- smoke: is the routing hook live under the compiled path? ---
+  [heartbeat 1m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 2m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 3m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 4m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 5m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 6m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 7m] util=0% mem=0MiB compile_cache=2MiB
+  [heartbeat 8m] util=0% mem=0MiB compile_cache=2MiB
+Terminated
+
+smoke exit status: 143
+
+SMOKE FAILED: at least one cell ran without a live routing hook, so the
+PIRA timings would be the Original model. Skipping the grid.
+Check the per-cell 'fills=<actual>/<expected> tokens_biased=' lines above,
+and that the startup line '[PIRA] installed routing ... before
+compile/capture' appeared -- if it did not, PYTHONPATH did not reach the
+worker process.
+=== summary ===
+  step1 (probe backends): skipped
+  step2 (serving arms):   143
+  results: results/experiments/20260801-013038-c0903a-s15
+environment.txt
+run.log
+
