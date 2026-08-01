@@ -59,8 +59,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--engine-json",
         type=Path,
-        required=True,
-        help="Output of rebuttal_vllm_baseline.py (Original on vLLM/SGLang).",
+        help="Optional output of rebuttal_vllm_baseline.py. Not needed with "
+        "--routing-json: those cells already hold Original and biased generation "
+        "measured back to back on one engine, which pairs them more tightly than "
+        "subtracting across separate processes.",
     )
     parser.add_argument(
         "--probe-json",
@@ -229,11 +231,14 @@ def probe_seconds_per_request(
 
 def main() -> int:
     args = parse_args()
-    engine = load_engine(args.engine_json)
+    engine = load_engine(args.engine_json) if args.engine_json else None
     probe_rows = load_probe(args.probe_json, args.probe_configuration)
     routing = load_routing(args.routing_json) if args.routing_json else None
 
-    print(f"engine baseline: {engine['backend']} ({args.engine_json})")
+    if engine is not None:
+        print(f"engine baseline: {engine['backend']} ({args.engine_json})")
+    else:
+        print("engine baseline: taken from the routing JSON's own Original arm")
     print(f"probe cost:      {args.probe_configuration} ({args.probe_json})")
     if routing:
         print(f"routing cost:    measured ({args.routing_json})")
@@ -265,7 +270,7 @@ def main() -> int:
             combined.append(
                 {
                     "source": "cell-matched",
-                    "engine": engine["backend"],
+                    "engine": (engine["backend"] if engine else "vLLM (cell-matched)"),
                     "batch_size": concurrency,
                     "concurrency": concurrency,
                     "prompt_tokens": input_length,
@@ -282,6 +287,10 @@ def main() -> int:
                     "rows_biased": entry.get("rows_biased"),
                 }
             )
+    elif engine is None:
+        raise SystemExit(
+            "nothing to combine: pass --routing-json (preferred) or --engine-json"
+        )
     else:
         # Fallback: probe-only lower bound against the standalone engine baseline.
         for row in engine["rows"]:
@@ -295,7 +304,7 @@ def main() -> int:
             combined.append(
                 {
                     "source": "probe-only lower bound",
-                    "engine": engine["backend"],
+                    "engine": (engine["backend"] if engine else "vLLM (cell-matched)"),
                     "batch_size": row["batch_size"],
                     "concurrency": None,
                     "prompt_tokens": prompt_tokens,
@@ -380,7 +389,7 @@ def main() -> int:
             "metadata": {
                 "engine_json": str(args.engine_json),
                 "probe_json": str(args.probe_json),
-                "engine_backend": engine["backend"],
+                "engine_backend": (engine["backend"] if engine else "vLLM (cell-matched)"),
                 "probe_configuration": args.probe_configuration,
                 "routing_json": str(args.routing_json) if args.routing_json else None,
                 "routing_measured": bool(routing),

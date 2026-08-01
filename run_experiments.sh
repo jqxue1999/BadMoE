@@ -679,14 +679,13 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
     STEP2_STATUS=$SMOKE_STATUS
   else
     echo
-    echo "--- Original baseline at full GPU utilization (arm A, standalone) ---"
-    "$VLLM_PY" scripts/moe/rebuttal_vllm_baseline.py \
-      --model "$MODEL" \
-      --prompt-tokens 128 --output-tokens 256 --num-requests 16 \
-      --batch-sizes 1 4 16 \
-      --max-num-batched-tokens "${BASELINE_MAX_BATCHED_TOKENS:-4352}" \
-      --output "$OUT/vllm_baseline_long.json"
-    echo
+    # No standalone Original baseline. The grid below measures Original and PIRA
+    # back to back in one engine for every cell, which pairs them more tightly than
+    # subtracting across separate processes, and it is what True Total is computed
+    # from. A separate baseline only cross-checked that the harness reaches normal
+    # engine throughput -- already confirmed, since the grid measured Original at
+    # 1.018 s/req against 1.008 s/req recorded earlier. It also cost an extra engine
+    # start and was the arm that crashed FlashInfer autotuning on B200.
 
     # Isolates prefill, so the probe's cost can be expressed against a measured
     # vLLM prefill rather than an estimate.
@@ -717,7 +716,6 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
     if [[ -f "$OUT/probe_scaling.json" && -f "$OUT/vllm_pira_grid.json" ]]; then
       echo "--- True Total (cell-matched) ---"
       "$HF_PY" scripts/moe/rebuttal_true_overhead.py \
-        --engine-json "$OUT/vllm_baseline_long.json" \
         --probe-json "$OUT/probe_scaling.json" \
         --routing-json "$OUT/vllm_pira_grid.json" \
         --output "$OUT/true_overhead.json"
