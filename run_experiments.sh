@@ -65,7 +65,23 @@ VLLM_PY="${VLLM_PY:-$REPO_ROOT/.venv-vllm/bin/python}"
 # process (worker_cls is resolved there by qualified name).
 CACHE_BASE="${CACHE_BASE:-$REPO_ROOT/.cache}"
 export UV_CACHE_DIR="${UV_CACHE_DIR:-$CACHE_BASE/uv}"
-export HF_HOME="${HF_HOME:-$CACHE_BASE/huggingface}"
+# HF_HOME is deliberately NOT inherited. Cluster shells and ~/.bashrc often export
+# it to a filesystem chosen for other work (a blue allocation, a home directory),
+# and "${HF_HOME:-default}" would let that win -- which is what sent a 60 GiB
+# download to a full blue quota while this repository sat on orange with room to
+# spare. Set REUSE_HF_HOME=1 to opt back in, e.g. to reuse an existing download.
+if [[ "${REUSE_HF_HOME:-0}" == "1" && -n "${HF_HOME:-}" ]]; then
+  echo "REUSE_HF_HOME=1: keeping inherited HF_HOME=$HF_HOME"
+else
+  if [[ -n "${HF_HOME:-}" && "$HF_HOME" != "$CACHE_BASE/huggingface" ]]; then
+    echo "note: ignoring inherited HF_HOME=$HF_HOME"
+    echo "      (using the repository filesystem instead; REUSE_HF_HOME=1 to keep it)"
+  fi
+  export HF_HOME="$CACHE_BASE/huggingface"
+fi
+# Same reasoning: these override HF_HOME when set, so a stale export would split
+# the caches across filesystems.
+unset HF_XET_CACHE HF_HUB_CACHE HUGGINGFACE_HUB_CACHE TRANSFORMERS_CACHE
 export TORCH_HOME="${TORCH_HOME:-$CACHE_BASE/torch}"
 export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_BASE/triton}"
 export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
