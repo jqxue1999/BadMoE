@@ -30,7 +30,6 @@ whether adapting the probe to a grouped backend is worth doing at all:
 
 Backends probed (each optional; missing ones are reported, not fatal):
   hf_loop        the current Hugging Face-style per-expert Python loop
-  bmm            batched matmul, as a control -- expected fast but memory-hungry
   grouped_gemm   tgale96/grouped_gemm (MegaBlocks' kernel)
   te_grouped     TransformerEngine GroupedLinear (Megatron-Core MoE's path)
 
@@ -110,21 +109,6 @@ def moe_hf_loop(x, w_gate, w_up, w_down, topk_weights, topk_ids):
     return out
 
 
-def moe_bmm(x, w_gate, w_up, w_down, topk_weights, topk_ids):
-    """Batched matmul control. Gathers a weight copy per token: memory-hungry."""
-    out = torch.zeros_like(x)
-    for slot in range(topk_ids.shape[1]):
-        expert = topk_ids[:, slot]
-        inputs = x.unsqueeze(1)
-        hidden = torch.nn.functional.silu(
-            torch.bmm(inputs, w_gate[expert])
-        ) * torch.bmm(inputs, w_up[expert])
-        out = out + torch.bmm(hidden, w_down[expert]).squeeze(1) * topk_weights[
-            :, slot : slot + 1
-        ]
-    return out
-
-
 def _sort_tokens_by_expert(x, topk_weights, topk_ids, num_experts):
     """Flatten (token, slot) pairs and sort them by expert.
 
@@ -196,7 +180,6 @@ def moe_te_grouped(x, w_gate, w_up, w_down, topk_weights, topk_ids):
 
 BACKENDS = {
     "hf_loop": moe_hf_loop,
-    "bmm": moe_bmm,
     "grouped_gemm": moe_grouped_gemm,
     "te_grouped": moe_te_grouped,
 }
@@ -283,12 +266,6 @@ def self_check() -> int:
     failures = []
     reference = moe_hf_loop(x, w_gate, w_up, w_down, topk_weights, topk_ids)
 
-    batched = moe_bmm(x, w_gate, w_up, w_down, topk_weights, topk_ids)
-    difference = (reference - batched).abs().amax()
-    print(f"  hf_loop vs bmm                 max abs diff {difference:.3e}")
-    if difference > 1e-4:
-        failures.append(f"bmm disagrees with hf_loop by {difference:.3e}")
-
     gathered, counts, destination, weights = _sort_tokens_by_expert(
         x, topk_weights, topk_ids, num_experts
     )
@@ -330,7 +307,9 @@ def self_check() -> int:
     other = torch.randn_like(x)
     mismatched = moe_hf_loop(other, w_gate, w_up, w_down, topk_weights, topk_ids)
     scale = reference.abs().amax().clamp_min(1e-12)
-    same_input = (reference - batched).abs().amax() / scale
+    # Compare against the grouped reconstruction built above, which is the path
+    # the real backends take.
+    same_input = (reference - reconstructed).abs().amax() / scale
     different_input = (reference - mismatched).abs().amax() / scale
     print(
         f"  shared-input rel_diff          {same_input:.3e}  "
@@ -408,7 +387,6 @@ def main() -> int:
             report["availability"][name] = f"unavailable: {type(error).__name__}: {error}"
             print(f"  {name:<14} UNAVAILABLE: {type(error).__name__}: {error}")
     report["availability"]["hf_loop"] = "builtin"
-    report["availability"]["bmm"] = "builtin"
     print()
 
     for seq_len in args.seq_lens:
