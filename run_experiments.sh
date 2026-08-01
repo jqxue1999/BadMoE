@@ -30,7 +30,11 @@
 #   MODEL, PROBE_LAYER, TOP_K, BETA
 #   PROMPT_TOKENS   probe sweep lengths          (default "128 1024 4096")
 #   LOCAL_RUNTIME_ROOT=/tmp/...  put the vLLM environment and compile caches on
-#                                node-local disk; model weights stay in HF_HOME
+#                                node-local disk (step2 default:
+#                                /tmp/badmoe-vllm-$USER); set it empty to disable
+#   PERSISTENT_RUNTIME_CACHE     Orange directory used to save/restore compiled
+#                                artifacts (default "$CACHE_BASE/compiled-runtime")
+#   NO_RUNTIME_CACHE=1           do not restore or save compiled artifacts
 #   VLLM_VERSION    version installed when LOCAL_RUNTIME_ROOT bootstraps an env
 #                   (default "0.26.0")
 #   NO_PUSH=1       commit locally, do not push
@@ -44,7 +48,7 @@ cd "$REPO_ROOT"
 WHICH="${1:-all}"
 case "$WHICH" in
   all|step1|step2) ;;
-  -h|--help) sed -n '2,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n '2,41p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "unknown step: $WHICH (expected all, step1 or step2)" >&2; exit 2 ;;
 esac
 
@@ -80,7 +84,8 @@ heartbeat() {
       gpu="util=${gpu%,*}% mem=${gpu#*,}MiB"
     fi
     local cache
-    cache=$(du -sm "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" 2>/dev/null \
+    cache=$(du -sm "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" \
+            "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer" 2>/dev/null \
             | awk '{s+=$1} END {print s+0}')
     echo "  [heartbeat ${minutes}m] $gpu compile_cache=${cache}MiB"
   done
@@ -98,7 +103,159 @@ HF_PY="${HF_PY:-$REPO_ROOT/.venv/bin/python}"
 # Caches off the home filesystem, and scripts/moe importable by the vLLM worker
 # process (worker_cls is resolved there by qualified name).
 CACHE_BASE="${CACHE_BASE:-$REPO_ROOT/.cache}"
-LOCAL_RUNTIME_ROOT="${LOCAL_RUNTIME_ROOT:-}"
+if [[ ! ${LOCAL_RUNTIME_ROOT+x} && ( "$WHICH" == "all" || "$WHICH" == "step2" ) ]]; then
+  LOCAL_RUNTIME_ROOT="/tmp/badmoe-vllm-${USER:-$(id -u)}"
+else
+  LOCAL_RUNTIME_ROOT="${LOCAL_RUNTIME_ROOT:-}"
+fi
+PERSISTENT_RUNTIME_CACHE="${PERSISTENT_RUNTIME_CACHE:-$CACHE_BASE/compiled-runtime}"
+# Internal trust signals must only be created after this process validates a
+# version-tagged archive/marker; never accept inherited shell values.
+unset BADMOE_RESTORED_CACHE_TAG BADMOE_REAL_NINJA
+
+rewrite_cached_path() {
+  local root="$1" old="$2" new="$3"
+  [[ -n "$old" && "$old" != "$new" && -d "$root" ]] || return 0
+  local changed=0
+  while IFS= read -r -d '' file; do
+    # Only rewrite text metadata/build files. Absolute source paths embedded as
+    # debug strings in .so files do not affect loading and must not be modified.
+    LC_ALL=C grep -Iq . "$file" 2>/dev/null || continue
+    LC_ALL=C grep -qF -- "$old" "$file" 2>/dev/null || continue
+    OLD_CACHE_PATH="$old" NEW_CACHE_PATH="$new" perl -pi -e \
+      'BEGIN {$old=$ENV{OLD_CACHE_PATH}; $new=$ENV{NEW_CACHE_PATH}} s/\Q$old\E/$new/g' \
+      "$file"
+    changed=$((changed + 1))
+  done < <(find "$root" -type f -print0 2>/dev/null)
+  [[ $changed -gt 0 ]] && echo "  rewrote $changed cache metadata file(s): $old -> $new"
+}
+
+runtime_cache_tag() {
+  local versions gpu
+  versions=$("$VLLM_PY" - <<'PY' 2>/dev/null
+from importlib.metadata import PackageNotFoundError, version
+
+def v(name):
+    try:
+        return version(name)
+    except PackageNotFoundError:
+        return "unknown"
+
+print(f"vllm-{v('vllm')}_torch-{v('torch')}_flashinfer-{v('flashinfer-python')}")
+PY
+  )
+  gpu=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null \
+        | sed -n '1p' || echo unknown-gpu)
+  printf '%s-%s' "$gpu" "$versions" | tr -cs 'A-Za-z0-9._-' '_'
+}
+
+restore_runtime_cache() {
+  [[ -n "$LOCAL_RUNTIME_ROOT" && "${NO_RUNTIME_CACHE:-0}" != "1" ]] || return 0
+  local archive="$PERSISTENT_RUNTIME_CACHE/${RUNTIME_CACHE_TAG}.tar.zst"
+  local marker="$LOCAL_RUNTIME_ROOT/runtime/.restored-${RUNTIME_CACHE_TAG}"
+  if [[ -e "$marker" ]]; then
+    export BADMOE_RESTORED_CACHE_TAG="$RUNTIME_CACHE_TAG"
+    return 0
+  fi
+  [[ -f "$archive" ]] || return 0
+  if ! command -v zstd >/dev/null 2>&1; then
+    echo "warning: zstd is unavailable; cannot restore $archive"
+    return 0
+  fi
+
+  echo "--- restoring persistent compiled runtime cache ---"
+  echo "  archive: $archive"
+  local started=$SECONDS
+  if ! zstd -q -dc "$archive" | tar -xf - -C "$LOCAL_RUNTIME_ROOT/runtime"; then
+    echo "warning: compiled-cache restore failed; vLLM will rebuild what it needs"
+    return 0
+  fi
+
+  local manifest="$LOCAL_RUNTIME_ROOT/runtime/.persistent-cache-manifest"
+  local current_vllm_env
+  current_vllm_env=$(cd "$(dirname "$(dirname "$VLLM_PY")")" && pwd -P)
+  if [[ -f "$manifest" ]]; then
+    local old_runtime old_env old_flashinfer
+    old_runtime=$(sed -n 's/^runtime_root=//p' "$manifest" | sed -n '1p')
+    old_env=$(sed -n 's/^vllm_env=//p' "$manifest" | sed -n '1p')
+    old_flashinfer=$(sed -n 's/^flashinfer_workspace_base=//p' "$manifest" | sed -n '1p')
+    rewrite_cached_path "$LOCAL_RUNTIME_ROOT/runtime" \
+      "$old_runtime" "$LOCAL_RUNTIME_ROOT/runtime"
+    rewrite_cached_path "$LOCAL_RUNTIME_ROOT/runtime" \
+      "$old_env" "$current_vllm_env"
+    rewrite_cached_path "$LOCAL_RUNTIME_ROOT/runtime" \
+      "$old_flashinfer/.cache/flashinfer" \
+      "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer"
+  fi
+
+  touch "$marker"
+  export BADMOE_RESTORED_CACHE_TAG="$RUNTIME_CACHE_TAG"
+  echo "  restored in $((SECONDS - started))s"
+  echo
+}
+
+install_flashinfer_cache_wrapper() {
+  [[ -n "${BADMOE_RESTORED_CACHE_TAG:-}" ]] || return 0
+  local wrapper_dir="$LOCAL_RUNTIME_ROOT/runtime/bin"
+  local wrapper="$wrapper_dir/ninja"
+  mkdir -p "$wrapper_dir"
+  # FlashInfer invokes Ninja even when its final shared object was restored.
+  # Ninja's binary .ninja_deps database embeds absolute paths and cannot be
+  # safely relocated. The cache tag already pins GPU and package versions, so
+  # accept an existing final .so only for this verified restored cache. All
+  # other Ninja calls (and incomplete caches) delegate to the real executable.
+  install -m 0755 "$REPO_ROOT/scripts/moe/ninja_flashinfer_cache_wrapper.sh" \
+    "$wrapper"
+  export PATH="$wrapper_dir:$PATH"
+  echo "  FlashInfer binary reuse enabled for restored cache $BADMOE_RESTORED_CACHE_TAG"
+}
+
+save_runtime_cache() {
+  [[ -n "$LOCAL_RUNTIME_ROOT" && "${NO_RUNTIME_CACHE:-0}" != "1" ]] || return 0
+  local runtime="$LOCAL_RUNTIME_ROOT/runtime"
+  local paths=()
+  local rel
+  for rel in vllm triton inductor .cache/flashinfer; do
+    [[ -e "$runtime/$rel" ]] && paths+=("$rel")
+  done
+  [[ ${#paths[@]} -gt 0 ]] || return 0
+  if ! command -v zstd >/dev/null 2>&1; then
+    echo "warning: zstd is unavailable; compiled artifacts were not persisted"
+    return 0
+  fi
+
+  mkdir -p "$PERSISTENT_RUNTIME_CACHE"
+  local manifest="$runtime/.persistent-cache-manifest"
+  local current_vllm_env
+  current_vllm_env=$(cd "$(dirname "$(dirname "$VLLM_PY")")" && pwd -P)
+  {
+    echo "cache_tag=$RUNTIME_CACHE_TAG"
+    echo "runtime_root=$runtime"
+    echo "vllm_env=$current_vllm_env"
+    echo "flashinfer_workspace_base=$FLASHINFER_WORKSPACE_BASE"
+    echo "saved=$(date -Is)"
+  } > "$manifest"
+
+  local tmp_dir archive
+  tmp_dir=$(mktemp -d "$PERSISTENT_RUNTIME_CACHE/.save-${RUNTIME_CACHE_TAG}.XXXXXX") \
+    || { echo "warning: could not create cache staging directory"; return 0; }
+  archive="$PERSISTENT_RUNTIME_CACHE/${RUNTIME_CACHE_TAG}.tar.zst"
+  echo "--- saving compiled runtime cache for the next run ---"
+  echo "  archive: $archive"
+  local started=$SECONDS
+  if tar -cf - -C "$runtime" "${paths[@]}" .persistent-cache-manifest \
+       | zstd -q -T0 -3 -o "$tmp_dir/cache.tar.zst" \
+    && mv "$tmp_dir/cache.tar.zst" "$archive"; then
+    chmod g+r "$archive" 2>/dev/null || true
+    touch "$runtime/.restored-${RUNTIME_CACHE_TAG}"
+    echo "  saved $(du -h "$archive" 2>/dev/null | awk '{print $1}') in $((SECONDS - started))s"
+  else
+    echo "warning: could not save compiled runtime cache"
+  fi
+  rmdir "$tmp_dir" 2>/dev/null || true
+  echo
+}
+
 if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
   # Only the frequently imported/compiled runtime belongs on node-local storage.
   # Keeping HF_HOME tied to CACHE_BASE means the ~57 GiB model is downloaded once
@@ -106,15 +263,20 @@ if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
   LOCAL_RUNTIME_ROOT="${LOCAL_RUNTIME_ROOT%/}"
   LOCAL_VLLM_ENV="$LOCAL_RUNTIME_ROOT/venv-vllm"
   VLLM_PY="${VLLM_PY:-$LOCAL_VLLM_ENV/bin/python}"
-  export UV_CACHE_DIR="${UV_CACHE_DIR:-$LOCAL_RUNTIME_ROOT/uv-cache}"
-  export TORCH_HOME="${TORCH_HOME:-$LOCAL_RUNTIME_ROOT/runtime/torch}"
-  export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$LOCAL_RUNTIME_ROOT/runtime/triton}"
-  export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$LOCAL_RUNTIME_ROOT/runtime/inductor}"
-  export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-$LOCAL_RUNTIME_ROOT/runtime/vllm}"
-  export TMPDIR="${TMPDIR:-$LOCAL_RUNTIME_ROOT/runtime/tmp}"
+  # Keep imported/compiled runtime files local. The uv package-download cache is
+  # persistent on Orange so a new node can recreate the venv without downloading
+  # every wheel again; it is not touched during inference.
+  export UV_CACHE_DIR="$CACHE_BASE/uv"
+  export TORCH_HOME="$LOCAL_RUNTIME_ROOT/runtime/torch"
+  export TRITON_CACHE_DIR="$LOCAL_RUNTIME_ROOT/runtime/triton"
+  export TORCHINDUCTOR_CACHE_DIR="$LOCAL_RUNTIME_ROOT/runtime/inductor"
+  export VLLM_CACHE_ROOT="$LOCAL_RUNTIME_ROOT/runtime/vllm"
+  export TMPDIR="$LOCAL_RUNTIME_ROOT/runtime/tmp"
+  export FLASHINFER_WORKSPACE_BASE="$LOCAL_RUNTIME_ROOT/runtime"
 
   mkdir -p "$UV_CACHE_DIR" "$TORCH_HOME" "$TRITON_CACHE_DIR" \
-           "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR"
+           "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR" \
+           "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer"
 
   # A local environment is cheap to create with uv and avoids copying tens of
   # thousands of files from Lustre. If VLLM_PY was explicitly supplied, use it
@@ -140,7 +302,8 @@ if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
   # which otherwise fails only after the full model has loaded.
   VLLM_BIN_DIR="$(dirname "$VLLM_PY")"
   export PATH="$VLLM_BIN_DIR:$PATH"
-  if ! "$VLLM_PY" -c 'import vllm' >/dev/null 2>&1 || \
+  if ! "$VLLM_PY" -c 'import importlib.util; assert importlib.util.find_spec("vllm")' \
+       >/dev/null 2>&1 || \
      [[ ! -x "$VLLM_BIN_DIR/ninja" ]]; then
     UV_BIN="${UV_BIN:-$(command -v uv 2>/dev/null || true)}"
     [[ -x "$UV_BIN" ]] || UV_BIN="/apps/conda/25.7.0/bin/uv"
@@ -153,6 +316,14 @@ if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
     "$UV_BIN" pip install --python "$VLLM_PY" \
       "vllm==${VLLM_VERSION:-0.26.0}" ninja || exit 4
   fi
+
+  RUNTIME_CACHE_TAG="${RUNTIME_CACHE_TAG:-$(runtime_cache_tag)}"
+  export BADMOE_REAL_NINJA="$VLLM_BIN_DIR/ninja"
+  restore_runtime_cache
+  install_flashinfer_cache_wrapper
+  # Import only after FLASHINFER_WORKSPACE_BASE is set and persistent artifacts
+  # have been restored. FlashInfer resolves its workspace once at import time.
+  "$VLLM_PY" -c 'import vllm' >/dev/null 2>&1 || exit 4
 else
   VLLM_PY="${VLLM_PY:-$REPO_ROOT/.venv-vllm/bin/python}"
   [[ -x "$VLLM_PY" ]] || VLLM_PY="$HF_PY"
@@ -162,6 +333,8 @@ else
   export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
   export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-$CACHE_BASE/vllm}"
   export TMPDIR="${TMPDIR:-$CACHE_BASE/tmp}"
+  export FLASHINFER_WORKSPACE_BASE="${FLASHINFER_WORKSPACE_BASE:-$CACHE_BASE/flashinfer-workspace}"
+  RUNTIME_CACHE_TAG="disabled"
 fi
 
 # VLLM_PY is a launcher choice for this shell, not a vLLM setting. If the caller
@@ -224,7 +397,8 @@ export VLLM_ALLOW_INSECURE_SERIALIZATION="${VLLM_ALLOW_INSECURE_SERIALIZATION:-1
 export HF_XET_CACHE="${HF_XET_CACHE:-$HF_HOME/xet}"
 export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
 mkdir -p "$HF_HOME" "$HF_XET_CACHE" "$HF_HUB_CACHE" "$TORCH_HOME" \
-         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR"
+         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR" \
+         "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer"
 
 # Qwen3-30B-A3B is ~60 GiB in bf16, and Xet stages chunks before assembling, so
 # the download needs roughly 120 GiB of headroom. Checking here turns a failure
@@ -274,7 +448,8 @@ check_disk_space() {
   # somewhere else, which is invisible unless the resolved paths are shown.
   for name in HF_HOME HF_HUB_CACHE HF_XET_CACHE TRANSFORMERS_CACHE \
               HF_DATASETS_CACHE TORCH_HOME TRITON_CACHE_DIR \
-              TORCHINDUCTOR_CACHE_DIR VLLM_CACHE_ROOT TMPDIR; do
+              TORCHINDUCTOR_CACHE_DIR VLLM_CACHE_ROOT \
+              FLASHINFER_WORKSPACE_BASE TMPDIR; do
     local value="${!name:-}"
     local warn=""
     [[ "$value" == "$HOME"* ]] && warn="   <-- ON HOME"
@@ -299,7 +474,8 @@ check_disk_space() {
   # what is still to be fetched rather than the model size.
   local cached_gib=0
   if [[ -d "$HF_HOME/hub" ]]; then
-    cached_gib=$(du -sBG "$HF_HOME/hub" 2>/dev/null | tr -dc '0-9' || echo 0)
+    cached_gib=$(du -sBG "$HF_HOME/hub" 2>/dev/null \
+      | awk 'NR == 1 {sub(/G$/, "", $1); print $1 + 0}' || echo 0)
   fi
   local need=120
   if [[ ${cached_gib:-0} -ge 50 ]]; then
@@ -360,8 +536,9 @@ echo " started $(date -Is)   host $HOST"
 echo " model   $MODEL   probe_layer $PROBE_LAYER   K $TOP_K (global)"
 echo " results $OUT"
 [[ -n "$LOCAL_RUNTIME_ROOT" ]] && echo " local runtime $LOCAL_RUNTIME_ROOT"
+[[ -n "$LOCAL_RUNTIME_ROOT" ]] && echo " persistent cache $PERSISTENT_RUNTIME_CACHE/$RUNTIME_CACHE_TAG.tar.zst"
 echo "=================================================================="
-nvidia-smi 2>&1 | head -12 || echo "(nvidia-smi unavailable)"
+nvidia-smi 2>&1 | sed -n '1,12p' || echo "(nvidia-smi unavailable)"
 echo
 check_disk_space
 
@@ -519,8 +696,12 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
 fi
 
 # --------------------------------------------------------------------------- #
-# Commit and push
+# Persist compiled artifacts, then commit and push
 # --------------------------------------------------------------------------- #
+if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
+  save_runtime_cache
+fi
+
 {
   echo "date: $(date -Is)"
   echo "host: $HOST"
@@ -541,7 +722,10 @@ fi
   echo
   echo "vLLM python: $VLLM_PY"
   echo "ninja: $(command -v ninja 2>/dev/null || echo not-found)"
-  [[ -n "$LOCAL_RUNTIME_ROOT" ]] && echo "local runtime: $LOCAL_RUNTIME_ROOT"
+  if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
+    echo "local runtime: $LOCAL_RUNTIME_ROOT"
+    echo "persistent runtime cache: $PERSISTENT_RUNTIME_CACHE/$RUNTIME_CACHE_TAG.tar.zst"
+  fi
 } > "$OUT/environment.txt" 2>&1
 
 echo "=== summary ==="
