@@ -1,0 +1,1803 @@
+==================================================================
+ PIRA environment setup
+ started  2026-07-31T22:56:25-04:00
+ host     c1000a-s15
+ log      results/setup/20260731-225625-c1000a-s15/setup.log
+==================================================================
+
+=== disk space ===
+caches and venvs will be written under: /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache
+  repo   /orange/qi855292.ucf/yi217029.ucf/BadMoE
+         mount /orange/qi855292.ucf, 213 GiB free
+  home   /home/yi217029.ucf
+         2 GiB free  (not used for caches; see above)
+uv: /apps/conda/25.7.0/bin/uv (uv 0.8.18)
+
+=== creating .venv (probe / feasibility), python 3.12 ===
+Using CPython 3.12.11
+Creating virtual environment at: .venv
+warning: A virtual environment already exists at `.venv`. In the future, uv will require `--clear` to replace it
+Activate with: source .venv/bin/activate
+
+=== installing torch + transformers into .venv ===
+Audited 1 package in 5.05s
+Resolved 57 packages in 969ms
+Downloading transformers (11.1MiB)
+Downloading hf-xet (4.2MiB)
+Downloading sentencepiece (1.3MiB)
+Downloading tokenizers (3.1MiB)
+Downloading pygments (1.2MiB)
+Downloading numpy (15.9MiB)
+ Downloading sentencepiece
+ Downloading tokenizers
+ Downloading hf-xet
+ Downloading pygments
+ Downloading numpy
+ Downloading transformers
+Prepared 28 packages in 1m 32s
+Installed 28 packages in 3.55s
+ + accelerate==1.14.0
+ + annotated-doc==0.0.5
+ + anyio==4.14.2
+ + certifi==2026.7.22
+ + click==8.4.2
+ + h11==0.16.0
+ + hf-xet==1.5.2
+ + httpcore==1.0.9
+ + httpx==0.28.1
+ + huggingface-hub==1.26.0
+ + idna==3.18
+ + markdown-it-py==4.2.0
+ + mdurl==0.1.2
+ + ninja==1.13.0
+ + numpy==2.5.1
+ + packaging==26.2
+ + psutil==7.2.2
+ + pygments==2.20.0
+ + pyyaml==6.0.3
+ + regex==2026.7.19
+ + rich==15.0.0
+ + safetensors==0.8.0
+ + sentencepiece==0.2.2
+ + shellingham==1.5.4
+ + tokenizers==0.22.2
+ + tqdm==4.70.0
+ + transformers==5.14.1
+ + typer==0.27.0
+torch           2.13.0+cu130
+cuda runtime    13.0
+cuda available  True
+device          NVIDIA B200
+capability      sm_100
+
+=== installing grouped-GEMM backends (optional, failures are expected) ===
+--- TransformerEngine (Megatron-Core MoE path; NVIDIA-maintained) ---
+Resolved 48 packages in 6.29s
+   Building transformer-engine-torch==2.17.0
+Downloading pydantic-core (2.0MiB)
+Downloading onnx (18.2MiB)
+Downloading ml-dtypes (4.8MiB)
+Downloading transformer-engine-cu13 (233.2MiB)
+ Downloading pydantic-core
+ Downloading ml-dtypes
+ Downloading transformer-engine-cu13
+ Downloading onnx
+  × Failed to build `transformer-engine-torch==2.17.0`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `setuptools.build_meta:__legacy__.build_wheel` failed (exit
+      status: 1)
+
+      [stdout]
+      running bdist_wheel
+      Guessing wheel URL:
+      https://github.com/NVIDIA/TransformerEngine/releases/download/v2.17.0/transformer_engine_torch-2.17.0+cu13torch2.13.0+cu130cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+      Precompiled wheel not found. Building from source...
+      running build
+      running build_ext
+      building 'transformer_engine_torch' extension
+      creating
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc
+      creating
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions
+      creating
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/multi_tensor
+      [1/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/bias.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/bias.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/bias.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/bias.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/bias.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/bias.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/bias.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/common.h:44,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/bias.cpp:13:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/./util/logging.h:12:10:
+      fatal error: cudnn.h: No such file or directory
+         12 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [2/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/allocate.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/allocate.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/allocate.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/allocate.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/allocate.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/allocate.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/allocate.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../extensions.h:22,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/allocate.cpp:10:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [3/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/attention.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/attention.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/attention.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/attention.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/attention.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/attention.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/attention.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../extensions.h:22,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/attention.cpp:7:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [4/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/comm_gemm_overlap.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/comm_gemm_overlap.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/comm_gemm_overlap.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/comm_gemm_overlap.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/comm_gemm_overlap.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/comm_gemm_overlap.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/comm_gemm_overlap.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../extensions.h:22,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/comm_gemm_overlap.cpp:10:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [5/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/apply_rope.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/apply_rope.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/apply_rope.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/apply_rope.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/apply_rope.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/apply_rope.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/apply_rope.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../extensions.h:22,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/apply_rope.cpp:7:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [6/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/activation.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/activation.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/activation.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/activation.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/activation.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/activation.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/activation.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../extensions.h:22,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/activation.cpp:6:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [7/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/common.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/common.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/common.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/common.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/common.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/common.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/common.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/common.cpp:7:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [8/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/cast.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/cast.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/cast.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/cast.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/cast.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/cast.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/cast.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../extensions.h:22,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/cast.cpp:18:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [9/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/dropout.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/dropout.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/dropout.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/dropout.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/dropout.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/dropout.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/dropout.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/pybind.h:18,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/dropout.cpp:10:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      [10/33] c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/ep.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/ep.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/ep.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/ep.o
+      c++ -MMD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/ep.o.d
+      -pthread -fno-strict-overflow -Wsign-compare -Wunreachable-code
+      -DNDEBUG -g -O3 -Wall -fPIC -fPIC -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/common_headers/common/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/ep.cpp
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build/temp.linux-x86_64-cpython-312/csrc/extensions/ep.o
+      -O3 -fvisibility=hidden -g0 -DNVTE_WITH_NCCL_EP
+      -DUSE_NCCL -DTORCH_API_INCLUDE_EXTENSION_H
+      -DTORCH_EXTENSION_NAME=transformer_engine_torch -std=c++20
+      In file included from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/Handle.h:5,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/../common.h:14,
+                       from
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/csrc/extensions/ep.cpp:33:
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/ATen/cudnn/cudnn-wrapper.h:4:10:
+      fatal error: cudnn.h: No such file or directory
+          4 | #include <cudnn.h>
+            |          ^~~~~~~~~
+      compilation terminated.
+      ninja: build stopped: subcommand failed.
+
+      [stderr]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_vendor/wheel/bdist_wheel.py:4:
+      FutureWarning: The 'wheel' package is no longer the canonical location
+      of the 'bdist_wheel' command, and will be removed in a future release.
+      Please update to setuptools v70.1 or later which contains an integrated
+      version of this command.
+        warn(
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py:288:
+      UserWarning: Unknown distribution option: 'tests_require'
+        warnings.warn(msg)
+      Traceback (most recent call last):
+        File "<string>", line 133, in run
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 240, in urlretrieve
+          with contextlib.closing(urlopen(url, data)) as fp:
+                                  ^^^^^^^^^^^^^^^^^^
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 215, in urlopen
+          return opener.open(url, data, timeout)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 521, in open
+          response = meth(req, response)
+                     ^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 630, in http_response
+          response = self.parent.error(
+                     ^^^^^^^^^^^^^^^^^^
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 559, in error
+          return self._call_chain(*args)
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 492, in _call_chain
+          result = func(*args)
+                   ^^^^^^^^^^^
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/urllib/request.py",
+      line 639, in http_error_default
+          raise HTTPError(req.full_url, code, msg, hdrs, fp)
+      urllib.error.HTTPError: HTTP Error 404: Not Found
+
+      During handling of the above exception, another exception occurred:
+
+      Traceback (most recent call last):
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 2893, in _run_ninja_build
+          subprocess.run(
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/subprocess.py",
+      line 571, in run
+          raise CalledProcessError(retcode, process.args,
+      subprocess.CalledProcessError: Command '['ninja', '-v']' returned
+      non-zero exit status 1.
+
+      The above exception was the direct cause of the following exception:
+
+      Traceback (most recent call last):
+        File "<string>", line 11, in <module>
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 438, in build_wheel
+          return _build(['bdist_wheel'])
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 429, in _build
+          return self._build_with_temp_dir(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 410, in _build_with_temp_dir
+          self.run_setup()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 520, in run_setup
+          super().run_setup(setup_script=setup_script)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 317, in run_setup
+          exec(code, locals())
+        File "<string>", line 176, in <module>
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/__init__.py",
+      line 117, in setup
+          return distutils.core.setup(**attrs)  # type: ignore[return-value]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/core.py",
+      line 186, in setup
+          return run_commands(dist)
+                 ^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/core.py",
+      line 202, in run_commands
+          dist.run_commands()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1001, in run_commands
+          self.run_command(cmd)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py",
+      line 1107, in run_command
+          super().run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1020, in run_command
+          cmd_obj.run()
+        File "<string>", line 151, in run
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/command/bdist_wheel.py",
+      line 370, in run
+          self.run_command("build")
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/cmd.py",
+      line 341, in run_command
+          self.distribution.run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py",
+      line 1107, in run_command
+          super().run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1020, in run_command
+          cmd_obj.run()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build.py",
+      line 135, in run
+          self.run_command(cmd_name)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/cmd.py",
+      line 341, in run_command
+          self.distribution.run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py",
+      line 1107, in run_command
+          super().run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1020, in run_command
+          cmd_obj.run()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build_tools/build_ext.py",
+      line 137, in run
+          super().run()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/command/build_ext.py",
+      line 97, in run
+          _build_ext.run(self)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 367, in run
+          self.build_extensions()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/transformer-engine-torch/2.17.0/VqTOk4OcfHdePLNVInOoV/src/build_tools/build_ext.py",
+      line 214, in build_extensions
+          super().build_extensions()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 1289, in build_extensions
+          super().build_extensions()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 483, in build_extensions
+          self._build_extensions_serial()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 509, in _build_extensions_serial
+          self.build_extension(ext)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/command/build_ext.py",
+      line 262, in build_extension
+          _build_ext.build_extension(self, ext)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 564, in build_extension
+          objects = self.compiler.compile(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 1027, in unix_wrap_ninja_compile
+          _write_ninja_file_and_compile_objects(
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 2475, in _write_ninja_file_and_compile_objects
+          _run_ninja_build(
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 2910, in _run_ninja_build
+          raise RuntimeError(message) from e
+      RuntimeError: Error compiling objects for extension
+
+      hint: This usually indicates a problem with the package or the build
+      environment.
+  help: `transformer-engine-torch` (v2.17.0) was included because
+        `transformer-engine[pytorch]` (v2.17.0) depends on
+        `transformer-engine-torch`
+  transformer_engine: FAILED (probe will report it unavailable)
+
+--- grouped_gemm (MegaBlocks kernel; CUDA arch hardcoded to Sm80) ---
+   Updating https://github.com/tgale96/grouped_gemm.git (HEAD)
+    Updated https://github.com/tgale96/grouped_gemm.git (f1429a3c44c98f7912aa4b00125144cdf4e7fdb2)
+Resolved 1 package in 2m 40s
+   Building grouped-gemm @ git+https://github.com/tgale96/grouped_gemm.git@f1429a3c44c98f7912aa4b00125144cdf4e7fdb2
+      Built grouped-gemm @ git+https://github.com/tgale96/grouped_gemm.git@f1429a3c44c98f7912aa4b00125144cdf4e7fdb2
+Prepared 1 package in 59.49s
+Installed 1 package in 152ms
+ + grouped-gemm==0.3.0 (from git+https://github.com/tgale96/grouped_gemm.git@f1429a3c44c98f7912aa4b00125144cdf4e7fdb2)
+  grouped_gemm: installed
+
+--- MegaBlocks (dMoE layers on top of grouped_gemm) ---
+Resolved 29 packages in 4.48s
+   Building megablocks==0.10.0
+   Building stanford-stk==0.7.1
+Downloading nvidia-cuda-nvrtc-cu12 (22.6MiB)
+Downloading nvidia-cuda-cupti-cu12 (8.5MiB)
+Downloading nvidia-cublas-cu12 (374.9MiB)
+Downloading nvidia-nccl-cu12 (192.0MiB)
+Downloading nvidia-cusparselt-cu12 (149.5MiB)
+Downloading nvidia-cusolver-cu12 (150.9MiB)
+Downloading nvidia-cusparse-cu12 (206.5MiB)
+Downloading nvidia-nvjitlink-cu12 (18.8MiB)
+Downloading numpy (18.3MiB)
+Downloading nvidia-cufft-cu12 (190.9MiB)
+Downloading nvidia-cufile-cu12 (1.1MiB)
+Downloading nvidia-cudnn-cu12 (544.5MiB)
+Downloading nvidia-curand-cu12 (53.7MiB)
+Downloading triton (149.3MiB)
+Downloading torch (825.0MiB)
+ Downloading nvidia-cufile-cu12
+ Downloading nvidia-cuda-cupti-cu12
+      Built stanford-stk==0.7.1
+ Downloading nvidia-nvjitlink-cu12
+ Downloading nvidia-cuda-nvrtc-cu12
+ Downloading nvidia-curand-cu12
+ Downloading nvidia-cusparselt-cu12
+ Downloading nvidia-cusolver-cu12
+ Downloading numpy
+ Downloading nvidia-nccl-cu12
+ Downloading nvidia-cufft-cu12
+ Downloading nvidia-cusparse-cu12
+ Downloading nvidia-cublas-cu12
+ Downloading triton
+ Downloading nvidia-cudnn-cu12
+  × Failed to build `megablocks==0.10.0`
+  ├─▶ The build backend returned an error
+  ╰─▶ Call to `setuptools.build_meta.build_wheel` failed (exit status: 1)
+
+      [stdout]
+      running bdist_wheel
+      running build
+      running build_py
+      creating build/lib.linux-x86_64-cpython-312/megablocks
+      copying megablocks/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks
+      copying megablocks/benchmark_util.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks
+      copying megablocks/_version.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks
+      copying megablocks/grouped_gemm_util.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks
+      creating build/lib.linux-x86_64-cpython-312/megablocks/backend
+      copying megablocks/backend/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/backend
+      copying megablocks/backend/kernels.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/backend
+      creating build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/dmlp_registry.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/activation_fn.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/router.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/mlp.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/common.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/glu.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/dmoe.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/moe.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/all_to_all.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/gelu.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/arguments.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/mpu.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/memory_test.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      copying megablocks/layers/sharedexpert_registry.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/layers
+      creating build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/permute_benchmark.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/round_up.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/__init__.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/binned_scatter.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/binned_gather.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/padded_scatter_benchmark.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/scatter.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/histogram.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/repeat.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/all_to_all_benchmark.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/padded_gather.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/topology.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/matmul_benchmark.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/sort.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/replicate.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/sum.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/histogram_benchmark.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/padded_scatter.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/cumsum.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/sort_benchmark.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/ops/gather.py ->
+      build/lib.linux-x86_64-cpython-312/megablocks/ops
+      copying megablocks/py.typed ->
+      build/lib.linux-x86_64-cpython-312/megablocks
+      running build_ext
+      building 'megablocks_ops' extension
+      creating
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/build/temp.linux-x86_64-cpython-312/csrc
+      [1/1] /usr/local/cuda/bin/nvcc -MD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/build/temp.linux-x86_64-cpython-312/csrc/ops.o.d
+      -Icsrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/ops.cu
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/build/temp.linux-x86_64-cpython-312/csrc/ops.o
+      -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__
+      -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__
+      --expt-relaxed-constexpr --compiler-options
+      ''"'"'-fPIC'"'"'' --ptxas-options=-v --optimize=2
+      --generate-code=arch=compute_100,code=sm_100
+      -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=megablocks_ops
+      -std=c++20
+      FAILED: [code=1]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/build/temp.linux-x86_64-cpython-312/csrc/ops.o
+      /usr/local/cuda/bin/nvcc -MD -MF
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/build/temp.linux-x86_64-cpython-312/csrc/ops.o.d
+      -Icsrc
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/include/torch/csrc/api/include
+      -I/usr/local/cuda/include
+      -I/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/include
+      -I/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/include/python3.12
+      -c -c
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/ops.cu
+      -o
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/build/temp.linux-x86_64-cpython-312/csrc/ops.o
+      -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__
+      -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__
+      --expt-relaxed-constexpr --compiler-options
+      ''"'"'-fPIC'"'"'' --ptxas-options=-v --optimize=2
+      --generate-code=arch=compute_100,code=sm_100
+      -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=megablocks_ops
+      -std=c++20
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h(34):
+      error: no instance of overloaded function
+      "megablocks::cub::DeviceScan::ExclusiveSum" matches the argument list
+                  argument types are: (void *, size_t, short *, short *, int,
+      cudaStream_t, __nv_bool)
+            do { cudaError_t status =
+      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      d_in, d_out, num_items, stream, debug_synchronous);
+      std::string err = cudaGetErrorString(status); if (!(status
+      == cudaSuccess)) { ::c10::detail::torchCheckFail( __func__,
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h",
+      static_cast<uint32_t>(34), (::c10::detail::torchCheckMsgImpl( "Expected
+      " "status == cudaSuccess" " to be true, but got false.  " "(Could this
+      error message be improved?  If so, " "please report an enhancement
+      request to PyTorch.)", err))); }; } while (0)
+                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(485):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(void *, size_t &, IteratorT,
+      NumItemsT, cudaStream_t)" does not match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      ExclusiveSum(
+                                                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(403):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(InputIteratorT,
+      OutputIteratorT, NumItemsT, EnvT)" does not match the call
+          ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT
+      num_items, EnvT env = {})
+          ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(309):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(void *, size_t &,
+      InputIteratorT, OutputIteratorT, NumItemsT, cudaStream_t)" does not
+      match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      ExclusiveSum(
+                                                                      ^
+                detected during:
+                  instantiation of "void megablocks::Cumsum<Type>::Run(void
+      *, size_t &, InputIteratorT, OutputIteratorT, int, cudaStream_t,
+      __nv_bool) [with Type=megablocks::Exclusive, InputIteratorT=short *,
+      OutputIteratorT=short *]" at line 74
+                  instantiation of "void
+      megablocks::cub_cumsum<SumType,T>(at::Tensor, int, at::Tensor) [with
+      SumType=megablocks::Exclusive, T=short]" at line 121
+
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h(34):
+      error: no instance of overloaded function
+      "megablocks::cub::DeviceScan::ExclusiveSum" matches the argument list
+                  argument types are: (void *, size_t, int *, int *, int,
+      cudaStream_t, __nv_bool)
+            do { cudaError_t status =
+      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      d_in, d_out, num_items, stream, debug_synchronous);
+      std::string err = cudaGetErrorString(status); if (!(status
+      == cudaSuccess)) { ::c10::detail::torchCheckFail( __func__,
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h",
+      static_cast<uint32_t>(34), (::c10::detail::torchCheckMsgImpl( "Expected
+      " "status == cudaSuccess" " to be true, but got false.  " "(Could this
+      error message be improved?  If so, " "please report an enhancement
+      request to PyTorch.)", err))); }; } while (0)
+                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(485):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(void *, size_t &, IteratorT,
+      NumItemsT, cudaStream_t)" does not match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      ExclusiveSum(
+                                                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(403):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(InputIteratorT,
+      OutputIteratorT, NumItemsT, EnvT)" does not match the call
+          ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT
+      num_items, EnvT env = {})
+          ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(309):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(void *, size_t &,
+      InputIteratorT, OutputIteratorT, NumItemsT, cudaStream_t)" does not
+      match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      ExclusiveSum(
+                                                                      ^
+                detected during:
+                  instantiation of "void megablocks::Cumsum<Type>::Run(void
+      *, size_t &, InputIteratorT, OutputIteratorT, int, cudaStream_t,
+      __nv_bool) [with Type=megablocks::Exclusive, InputIteratorT=int *,
+      OutputIteratorT=int *]" at line 74
+                  instantiation of "void
+      megablocks::cub_cumsum<SumType,T>(at::Tensor, int, at::Tensor) [with
+      SumType=megablocks::Exclusive, T=int]" at line 124
+
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h(34):
+      error: no instance of overloaded function
+      "megablocks::cub::DeviceScan::ExclusiveSum" matches the argument list
+                  argument types are: (void *, size_t, long *, long *, int,
+      cudaStream_t, __nv_bool)
+            do { cudaError_t status =
+      cub::DeviceScan::ExclusiveSum(d_temp_storage, temp_storage_bytes,
+      d_in, d_out, num_items, stream, debug_synchronous);
+      std::string err = cudaGetErrorString(status); if (!(status
+      == cudaSuccess)) { ::c10::detail::torchCheckFail( __func__,
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h",
+      static_cast<uint32_t>(34), (::c10::detail::torchCheckMsgImpl( "Expected
+      " "status == cudaSuccess" " to be true, but got false.  " "(Could this
+      error message be improved?  If so, " "please report an enhancement
+      request to PyTorch.)", err))); }; } while (0)
+                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(485):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(void *, size_t &, IteratorT,
+      NumItemsT, cudaStream_t)" does not match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      ExclusiveSum(
+                                                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(403):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(InputIteratorT,
+      OutputIteratorT, NumItemsT, EnvT)" does not match the call
+          ExclusiveSum(InputIteratorT d_in, OutputIteratorT d_out, NumItemsT
+      num_items, EnvT env = {})
+          ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(309):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::ExclusiveSum(void *, size_t &,
+      InputIteratorT, OutputIteratorT, NumItemsT, cudaStream_t)" does not
+      match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      ExclusiveSum(
+                                                                      ^
+                detected during:
+                  instantiation of "void megablocks::Cumsum<Type>::Run(void
+      *, size_t &, InputIteratorT, OutputIteratorT, int, cudaStream_t,
+      __nv_bool) [with Type=megablocks::Exclusive, InputIteratorT=long *,
+      OutputIteratorT=long *]" at line 74
+                  instantiation of "void
+      megablocks::cub_cumsum<SumType,T>(at::Tensor, int, at::Tensor) [with
+      SumType=megablocks::Exclusive, T=long]" at line 128
+
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h(55):
+      error: no instance of overloaded function
+      "megablocks::cub::DeviceScan::InclusiveSum" matches the argument list
+                  argument types are: (void *, size_t, short *, short *, int,
+      cudaStream_t, __nv_bool)
+            do { cudaError_t status =
+      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      d_in, d_out, num_items, stream, debug_synchronous);
+      std::string err = cudaGetErrorString(status); if (!(status
+      == cudaSuccess)) { ::c10::detail::torchCheckFail( __func__,
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h",
+      static_cast<uint32_t>(55), (::c10::detail::torchCheckMsgImpl( "Expected
+      " "status == cudaSuccess" " to be true, but got false.  " "(Could this
+      error message be improved?  If so, " "please report an enhancement
+      request to PyTorch.)", err))); }; } while (0)
+                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(1240):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::InclusiveSum(void *, size_t &, IteratorT,
+      NumItemsT, cudaStream_t)" does not match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      InclusiveSum(
+                                                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(1154):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::InclusiveSum(void *, size_t &,
+      InputIteratorT, OutputIteratorT, NumItemsT, cudaStream_t)" does not
+      match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      InclusiveSum(
+                                                                      ^
+                detected during:
+                  instantiation of "void
+      megablocks::Cumsum<megablocks::Inclusive>::Run(void *, size_t &,
+      InputIteratorT, OutputIteratorT, int, cudaStream_t, __nv_bool) [with
+      InputIteratorT=short *, OutputIteratorT=short *]" at line 74
+                  instantiation of "void
+      megablocks::cub_cumsum<SumType,T>(at::Tensor, int, at::Tensor) [with
+      SumType=megablocks::Inclusive, T=short]" at line 148
+
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h(55):
+      error: no instance of overloaded function
+      "megablocks::cub::DeviceScan::InclusiveSum" matches the argument list
+                  argument types are: (void *, size_t, int *, int *, int,
+      cudaStream_t, __nv_bool)
+            do { cudaError_t status =
+      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      d_in, d_out, num_items, stream, debug_synchronous);
+      std::string err = cudaGetErrorString(status); if (!(status
+      == cudaSuccess)) { ::c10::detail::torchCheckFail( __func__,
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h",
+      static_cast<uint32_t>(55), (::c10::detail::torchCheckMsgImpl( "Expected
+      " "status == cudaSuccess" " to be true, but got false.  " "(Could this
+      error message be improved?  If so, " "please report an enhancement
+      request to PyTorch.)", err))); }; } while (0)
+                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(1240):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::InclusiveSum(void *, size_t &, IteratorT,
+      NumItemsT, cudaStream_t)" does not match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      InclusiveSum(
+                                                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(1154):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::InclusiveSum(void *, size_t &,
+      InputIteratorT, OutputIteratorT, NumItemsT, cudaStream_t)" does not
+      match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      InclusiveSum(
+                                                                      ^
+                detected during:
+                  instantiation of "void
+      megablocks::Cumsum<megablocks::Inclusive>::Run(void *, size_t &,
+      InputIteratorT, OutputIteratorT, int, cudaStream_t, __nv_bool) [with
+      InputIteratorT=int *, OutputIteratorT=int *]" at line 74
+                  instantiation of "void
+      megablocks::cub_cumsum<SumType,T>(at::Tensor, int, at::Tensor) [with
+      SumType=megablocks::Inclusive, T=int]" at line 151
+
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h(55):
+      error: no instance of overloaded function
+      "megablocks::cub::DeviceScan::InclusiveSum" matches the argument list
+                  argument types are: (void *, size_t, long *, long *, int,
+      cudaStream_t, __nv_bool)
+            do { cudaError_t status =
+      cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes,
+      d_in, d_out, num_items, stream, debug_synchronous);
+      std::string err = cudaGetErrorString(status); if (!(status
+      == cudaSuccess)) { ::c10::detail::torchCheckFail( __func__,
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/cumsum.h",
+      static_cast<uint32_t>(55), (::c10::detail::torchCheckMsgImpl( "Expected
+      " "status == cudaSuccess" " to be true, but got false.  " "(Could this
+      error message be improved?  If so, " "please report an enhancement
+      request to PyTorch.)", err))); }; } while (0)
+                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(1240):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::InclusiveSum(void *, size_t &, IteratorT,
+      NumItemsT, cudaStream_t)" does not match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      InclusiveSum(
+                                                                      ^
+      /usr/local/cuda-13.2/targets/x86_64-linux/include/cccl/cub/device/device_scan.cuh(1154):
+      note #3322-D: number of parameters of function template
+      "megablocks::cub::DeviceScan::InclusiveSum(void *, size_t &,
+      InputIteratorT, OutputIteratorT, NumItemsT, cudaStream_t)" does not
+      match the call
+         __attribute__((__visibility__("hidden"))) static cudaError_t
+      InclusiveSum(
+                                                                      ^
+                detected during:
+                  instantiation of "void
+      megablocks::Cumsum<megablocks::Inclusive>::Run(void *, size_t &,
+      InputIteratorT, OutputIteratorT, int, cudaStream_t, __nv_bool) [with
+      InputIteratorT=long *, OutputIteratorT=long *]" at line 74
+                  instantiation of "void
+      megablocks::cub_cumsum<SumType,T>(at::Tensor, int, at::Tensor) [with
+      SumType=megablocks::Inclusive, T=long]" at line 155
+
+      6 errors detected in the compilation of
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/uv/sdists-v9/pypi/megablocks/0.10.0/jNc6Nt-W304iDL14ssjZX/src/csrc/ops.cu".
+      ninja: build stopped: subcommand failed.
+
+      [stderr]
+      /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py:765:
+      SetuptoolsDeprecationWarning: License classifiers are deprecated.
+      !!
+
+      
+      ********************************************************************************
+              Please consider removing the following classifiers in favor of a
+      SPDX license expression:
+
+              License :: OSI Approved :: BSD License
+
+              See
+      https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+      for details.
+      
+      ********************************************************************************
+
+      !!
+        self._finalize_license_expression()
+      W0731 23:08:40.418000 2809391 torch/utils/cpp_extension.py:647] The
+      detected CUDA version (13.2) has a minor version mismatch with the
+      version that was used to compile PyTorch (13.0). Most likely this
+      shouldn't be a problem.
+      W0731 23:08:40.419000 2809391 torch/utils/cpp_extension.py:657] There
+      are no c++ version bounds defined for CUDA version 13.2
+      Traceback (most recent call last):
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 2893, in _run_ninja_build
+          subprocess.run(
+        File
+      "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/subprocess.py",
+      line 571, in run
+          raise CalledProcessError(retcode, process.args,
+      subprocess.CalledProcessError: Command '['ninja', '-v']' returned
+      non-zero exit status 1.
+
+      The above exception was the direct cause of the following exception:
+
+      Traceback (most recent call last):
+        File "<string>", line 11, in <module>
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 438, in build_wheel
+          return _build(['bdist_wheel'])
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 429, in _build
+          return self._build_with_temp_dir(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 410, in _build_with_temp_dir
+          self.run_setup()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/build_meta.py",
+      line 317, in run_setup
+          exec(code, locals())
+        File "<string>", line 129, in <module>
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/__init__.py",
+      line 117, in setup
+          return distutils.core.setup(**attrs)  # type: ignore[return-value]
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/core.py",
+      line 186, in setup
+          return run_commands(dist)
+                 ^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/core.py",
+      line 202, in run_commands
+          dist.run_commands()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1001, in run_commands
+          self.run_command(cmd)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py",
+      line 1107, in run_command
+          super().run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1020, in run_command
+          cmd_obj.run()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/command/bdist_wheel.py",
+      line 370, in run
+          self.run_command("build")
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/cmd.py",
+      line 341, in run_command
+          self.distribution.run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py",
+      line 1107, in run_command
+          super().run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1020, in run_command
+          cmd_obj.run()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build.py",
+      line 135, in run
+          self.run_command(cmd_name)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/cmd.py",
+      line 341, in run_command
+          self.distribution.run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/dist.py",
+      line 1107, in run_command
+          super().run_command(command)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/dist.py",
+      line 1020, in run_command
+          cmd_obj.run()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/command/build_ext.py",
+      line 97, in run
+          _build_ext.run(self)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 367, in run
+          self.build_extensions()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 1289, in build_extensions
+          super().build_extensions()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 483, in build_extensions
+          self._build_extensions_serial()
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 509, in _build_extensions_serial
+          self.build_extension(ext)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/command/build_ext.py",
+      line 262, in build_extension
+          _build_ext.build_extension(self, ext)
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/setuptools/_distutils/command/build_ext.py",
+      line 564, in build_extension
+          objects = self.compiler.compile(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 1027, in unix_wrap_ninja_compile
+          _write_ninja_file_and_compile_objects(
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 2475, in _write_ninja_file_and_compile_objects
+          _run_ninja_build(
+        File
+      "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/torch/utils/cpp_extension.py",
+      line 2910, in _run_ninja_build
+          raise RuntimeError(message) from e
+      RuntimeError: Error compiling objects for extension
+
+      hint: This usually indicates a problem with the package or the build
+      environment.
+  megablocks: FAILED
+
+=== creating .venv-vllm (serving arms: Original and PIRA generation) ===
+this pulls a large wheel and can take several minutes;
+skip it with --no-vllm if you only need the feasibility probe.
+Using CPython 3.12.11
+Creating virtual environment at: .venv-vllm
+Activate with: source .venv-vllm/bin/activate
+Using Python 3.12.11 environment at: .venv-vllm
+Resolved 195 packages in 2.70s
+Downloading openai-harmony (2.8MiB)
+Downloading sympy (6.0MiB)
+Downloading cryptography (4.5MiB)
+Downloading numba (3.6MiB)
+Downloading flashinfer-python (13.9MiB)
+Downloading nvidia-nvshmem-cu13 (57.6MiB)
+Downloading outlines-core (2.2MiB)
+Downloading nvidia-cudnn-frontend (3.5MiB)
+Downloading xgrammar (42.8MiB)
+Downloading grpcio (6.7MiB)
+Downloading nvidia-nvvm (66.0MiB)
+Downloading pillow (6.6MiB)
+Downloading numpy (15.8MiB)
+Downloading mistral-common (6.2MiB)
+Downloading nvidia-nccl-cu13 (187.4MiB)
+Downloading triton (179.5MiB)
+Downloading cuda-core (4.9MiB)
+Downloading nvidia-cusparse (139.2MiB)
+Downloading nvidia-cuda-nvdisasm (4.6MiB)
+Downloading nvidia-curand (56.8MiB)
+Downloading cuda-bindings (6.3MiB)
+Downloading torchvision (7.2MiB)
+Downloading torch (506.1MiB)
+Downloading tilelang (43.3MiB)
+Downloading nvidia-cudnn-cu13 (349.1MiB)
+Downloading pynvvideocodec (41.2MiB)
+Downloading opencv-python-headless (58.4MiB)
+Downloading nvidia-cutlass-dsl-libs-cu13 (83.9MiB)
+Downloading pycountry (7.7MiB)
+Downloading torchcodec (2.9MiB)
+Downloading uvloop (4.2MiB)
+Downloading nvidia-nvjitlink (38.8MiB)
+Downloading apache-tvm-ffi (2.5MiB)
+Downloading nvidia-cuda-runtime (2.1MiB)
+Downloading vllm (289.6MiB)
+Downloading llguidance (2.9MiB)
+Downloading nvidia-cusolver (191.6MiB)
+Downloading nvidia-cuda-nvcc (42.9MiB)
+Downloading z3-solver (27.9MiB)
+Downloading llvmlite (53.7MiB)
+Downloading nvidia-cuda-cccl (3.3MiB)
+Downloading nvidia-cublas (403.5MiB)
+Downloading nvidia-cutlass-dsl-libs-cu12 (84.3MiB)
+Downloading tokenspeed-triton (83.2MiB)
+Downloading nvidia-cuda-nvrtc (86.0MiB)
+Downloading nvidia-cufft (204.2MiB)
+Downloading nvidia-cuda-cupti (10.2MiB)
+Downloading nvidia-cutlass-dsl-libs-base (2.7MiB)
+Downloading nvidia-cusparselt-cu13 (162.0MiB)
+Downloading networkx (2.0MiB)
+ Downloading outlines-core
+Downloading fastsafetensors (1.8MiB)
+ Downloading nvidia-cuda-runtime
+Downloading aiohttp (1.7MiB)
+ Downloading apache-tvm-ffi
+Downloading torchaudio (1.7MiB)
+ Downloading openai-harmony
+Downloading openai (1.6MiB)
+ Downloading nvidia-cutlass-dsl-libs-base
+Downloading nvidia-cufile (1.2MiB)
+ Downloading llguidance
+Downloading tiktoken (1.1MiB)
+ Downloading torchcodec
+Downloading setuptools (1.0MiB)
+ Downloading networkx
+ Downloading nvidia-cudnn-frontend
+ Downloading numba
+ Downloading nvidia-cufile
+ Downloading tiktoken
+ Downloading setuptools
+ Downloading aiohttp
+ Downloading fastsafetensors
+ Downloading torchaudio
+ Downloading uvloop
+ Downloading cryptography
+ Downloading nvidia-cuda-nvdisasm
+ Downloading cuda-core
+ Downloading sympy
+ Downloading mistral-common
+ Downloading cuda-bindings
+ Downloading pillow
+ Downloading torchvision
+ Downloading openai
+ Downloading grpcio
+ Downloading nvidia-cuda-cccl
+ Downloading pycountry
+ Downloading nvidia-cuda-cupti
+ Downloading numpy
+ Downloading z3-solver
+ Downloading flashinfer-python
+ Downloading nvidia-nvjitlink
+ Downloading nvidia-cuda-nvcc
+ Downloading xgrammar
+ Downloading pynvvideocodec
+ Downloading llvmlite
+ Downloading nvidia-curand
+ Downloading nvidia-nvshmem-cu13
+ Downloading opencv-python-headless
+ Downloading nvidia-nvvm
+ Downloading nvidia-cutlass-dsl-libs-cu13
+ Downloading nvidia-cutlass-dsl-libs-cu12
+ Downloading nvidia-cuda-nvrtc
+ Downloading tokenspeed-triton
+ Downloading nvidia-cusparse
+ Downloading tilelang
+ Downloading nvidia-cusparselt-cu13
+ Downloading nvidia-nccl-cu13
+ Downloading nvidia-cusolver
+ Downloading nvidia-cufft
+ Downloading triton
+ Downloading nvidia-cudnn-cu13
+ Downloading nvidia-cublas
+ Downloading vllm
+ Downloading torch
+Prepared 163 packages in 4m 37s
+Installed 195 packages in 12.57s
+ + aiohappyeyeballs==2.7.1
+ + aiohttp==3.14.3
+ + aiosignal==1.4.0
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anthropic==0.120.2
+ + anyio==4.14.2
+ + apache-tvm-ffi==0.1.10
+ + astor==0.8.1
+ + attrs==26.1.0
+ + blake3==1.0.9
+ + cachetools==7.1.6
+ + cbor2==6.1.3
+ + certifi==2026.7.22
+ + cffi==2.1.0
+ + charset-normalizer==3.4.9
+ + click==8.4.2
+ + cloudpickle==3.1.2
+ + compressed-tensors==0.17.0
+ + cryptography==50.0.0
+ + cuda-bindings==13.3.1
+ + cuda-core==1.0.1
+ + cuda-pathfinder==1.6.0
+ + cuda-python==13.3.1
+ + cuda-tile==1.5.0
+ + cuda-toolkit==13.0.2
+ + depyf==0.20.0
+ + detect-installer==0.1.0
+ + dill==0.4.1
+ + distro==1.9.0
+ + dnspython==2.8.0
+ + docstring-parser==0.18.0
+ + einops==0.8.2
+ + email-validator==2.3.0
+ + fastapi==0.136.3
+ + fastapi-cli==0.0.32
+ + fastapi-cloud-cli==0.23.0
+ + fastar==0.11.0
+ + fastsafetensors==0.3.3
+ + filelock==3.32.2
+ + flashinfer-python==0.6.14
+ + frozenlist==1.8.0
+ + fsspec==2026.7.0
+ + googleapis-common-protos==1.75.0
+ + grpcio==1.83.0
+ + h11==0.16.0
+ + hf-xet==1.5.2
+ + httpcore==1.0.9
+ + httpcore2==2.9.1
+ + httptools==0.8.0
+ + httpx==0.28.1
+ + httpx2==2.9.1
+ + huggingface-hub==1.26.0
+ + humming-kernels==0.1.10
+ + idna==3.18
+ + ijson==3.5.1
+ + interegular==0.3.3
+ + jinja2==3.1.6
+ + jiter==0.16.0
+ + jmespath==1.1.0
+ + jsonschema==4.26.0
+ + jsonschema-specifications==2025.9.1
+ + lark==1.2.2
+ + llguidance==1.7.6
+ + llvmlite==0.47.0
+ + lm-format-enforcer==0.11.3
+ + loguru==0.7.3
+ + markdown-it-py==4.2.0
+ + markupsafe==3.0.3
+ + mcp==2.0.0
+ + mcp-types==2.0.0
+ + mdurl==0.1.2
+ + mistral-common==1.11.7
+ + ml-dtypes==0.5.4
+ + model-hosting-container-standards==0.1.16
+ + mpmath==1.3.0
+ + msgspec==0.21.1
+ + multidict==6.7.1
+ + networkx==3.6.1
+ + ninja==1.13.0
+ + numba==0.65.0
+ + numpy==2.3.5
+ + nvidia-cublas==13.1.0.3
+ + nvidia-cuda-cccl==13.3.3.4.1
+ + nvidia-cuda-crt==13.3.73
+ + nvidia-cuda-cupti==13.0.85
+ + nvidia-cuda-nvcc==13.3.73
+ + nvidia-cuda-nvdisasm==13.3.73
+ + nvidia-cuda-nvrtc==13.0.88
+ + nvidia-cuda-runtime==13.0.96
+ + nvidia-cudnn-cu13==9.19.0.56
+ + nvidia-cudnn-frontend==1.26.0
+ + nvidia-cufft==12.0.0.61
+ + nvidia-cufile==1.15.1.6
+ + nvidia-curand==10.4.0.35
+ + nvidia-cusolver==12.0.4.66
+ + nvidia-cusparse==12.6.3.3
+ + nvidia-cusparselt-cu13==0.8.0
+ + nvidia-cutlass-dsl==4.6.0
+ + nvidia-cutlass-dsl-libs-base==4.6.0
+ + nvidia-cutlass-dsl-libs-core==4.6.0
+ + nvidia-cutlass-dsl-libs-cu12==4.6.0
+ + nvidia-cutlass-dsl-libs-cu13==4.6.0
+ + nvidia-ml-py==13.610.43
+ + nvidia-nccl-cu13==2.28.9
+ + nvidia-nvjitlink==13.0.88
+ + nvidia-nvshmem-cu13==3.4.5
+ + nvidia-nvtx==13.0.85
+ + nvidia-nvvm==13.3.73
+ + nvtx==0.2.15
+ + openai==2.52.0
+ + openai-harmony==0.0.8
+ + opencv-python-headless==5.0.0.93
+ + opentelemetry-api==1.44.0
+ + opentelemetry-exporter-otlp==1.44.0
+ + opentelemetry-exporter-otlp-proto-common==1.44.0
+ + opentelemetry-exporter-otlp-proto-grpc==1.44.0
+ + opentelemetry-exporter-otlp-proto-http==1.44.0
+ + opentelemetry-proto==1.44.0
+ + opentelemetry-sdk==1.44.0
+ + opentelemetry-semantic-conventions==0.65b0
+ + opentelemetry-semantic-conventions-ai==0.5.1
+ + outlines-core==0.2.14
+ + packaging==26.2
+ + partial-json-parser==0.2.1.1.post7
+ + pillow==12.3.0
+ + prometheus-client==0.26.0
+ + prometheus-fastapi-instrumentator==8.1.0
+ + propcache==0.5.2
+ + protobuf==6.33.6
+ + psutil==7.2.2
+ + py-cpuinfo==9.0.0
+ + pybase64==1.4.3
+ + pycountry==26.2.16
+ + pycparser==3.0
+ + pydantic==2.13.4
+ + pydantic-core==2.46.4
+ + pydantic-extra-types==2.11.1
+ + pydantic-settings==2.14.2
+ + pyelftools==0.33
+ + pygments==2.20.0
+ + pyjwt==2.13.0
+ + pynvvideocodec==2.0.4
+ + python-dotenv==1.2.2
+ + python-json-logger==4.1.0
+ + python-multipart==0.0.32
+ + pyyaml==6.0.3
+ + pyzmq==27.1.0
+ + quack-kernels==0.6.1
+ + referencing==0.37.0
+ + regex==2026.7.19
+ + requests==2.34.2
+ + rich==15.0.0
+ + rich-toolkit==0.20.3
+ + rignore==0.8.0
+ + rpds-py==2026.6.3
+ + safetensors==0.8.0
+ + sentencepiece==0.2.2
+ + sentry-sdk==2.66.1
+ + setproctitle==1.3.7
+ + setuptools==80.10.2
+ + shellingham==1.5.4
+ + six==1.17.0
+ + sniffio==1.3.1
+ + sse-starlette==3.4.6
+ + starlette==1.3.1
+ + supervisor==4.3.0
+ + sympy==1.14.0
+ + tabulate==0.10.0
+ + tiktoken==0.13.0
+ + tilelang==0.1.9
+ + tokenizers==0.22.2
+ + tokenspeed-mla==0.1.8
+ + tokenspeed-triton==3.8.10.post20260721
+ + torch==2.11.0
+ + torch-c-dlpack-ext==0.1.5
+ + torchaudio==2.11.0
+ + torchcodec==0.15.0
+ + torchvision==0.26.0
+ + tqdm==4.70.0
+ + transformers==5.14.1
+ + triton==3.6.0
+ + truststore==0.10.4
+ + typer==0.27.0
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.2
+ + urllib3==2.7.0
+ + uvicorn==0.52.0
+ + uvloop==0.22.1
+ + vllm==0.26.0
+ + watchfiles==1.2.0
+ + websockets==17.0.1
+ + xgrammar==0.2.3
+ + yarl==1.24.5
+ + z3-solver==4.15.4.0
+  vllm: installed
+  vllm           0.26.0
+  torch (vllm)   2.11.0+cu130
+
+=== final summary ===
+.venv  (probe, equivalence tests, feasibility):
+  torch                OK
+  transformers         OK
+  grouped_gemm         OK
+  megablocks           unavailable -> ModuleNotFoundError
+  transformer_engine   unavailable -> ModuleNotFoundError
+
+.venv-vllm  (Original and PIRA generation arms):
+  torch                OK
+  vllm                 OK
+
+=== done ===
+
+Next: run the feasibility probe (logs + JSON are committed and pushed for review)
+
+    bash run_feasibility.sh
+
+Sanity checks that need no GPU and take seconds:
+
+    .venv/bin/python scripts/moe/test_probe_equivalence_cpu.py
+    .venv/bin/python scripts/moe/pira_vllm_routing.py
+    .venv/bin/python scripts/moe/rebuttal_vllm_pira_benchmark.py --check-workload
+
+If a grouped-GEMM backend failed to install, run the probe anyway. It reports
+which backends were importable and measures the rest; "does not build on this
+GPU" is one of the answers we need.
+
+=== saving setup log ===
