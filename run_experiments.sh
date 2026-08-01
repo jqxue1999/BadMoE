@@ -110,6 +110,34 @@ check_disk_space() {
   check_space "$HF_HOME" 120 "model cache" || failed=1
   check_space "$TMPDIR" 20 "tmp / compile" || failed=1
   check_space "$HOME" 5 "home (python, misc)" || true
+
+  # df reports the filesystem, which on a cluster is usually far larger than the
+  # per-user quota, so a home directory can look roomy and still be full. The
+  # previous run failed exactly this way: orange had 200+ GiB, but the Xet staging
+  # directory had fallen back to ~/.cache and home was already exhausted.
+  echo "  quota check (per-user limits, not filesystem size):"
+  local quota_out=""
+  for cmd in "home_quota" "blue_quota" "quota -s"; do
+    quota_out=$($cmd 2>/dev/null | head -8)
+    [[ -n "$quota_out" ]] && { echo "$quota_out" | sed 's/^/    /'; break; }
+  done
+  [[ -z "$quota_out" ]] && echo "    (no quota tool found; check manually if a"\
+    "download fails with 'Disk quota exceeded')"
+
+  # Prove the caches really resolve off home, since these are read at import time
+  # and a stale export would silently send tens of GiB to the wrong filesystem.
+  echo "  resolved by huggingface_hub:"
+  "$HF_PY" - <<'PY' 2>/dev/null | sed 's/^/    /' || echo "    (could not query)"
+import os
+try:
+    from huggingface_hub import constants as c
+    for name in ("HF_HOME", "HF_HUB_CACHE", "HF_XET_CACHE"):
+        path = getattr(c, name, None)
+        flag = "  <-- ON HOME" if path and path.startswith(os.path.expanduser("~")) else ""
+        print(f"{name:<14} {path}{flag}")
+except Exception as error:
+    print(f"(huggingface_hub not importable: {error})")
+PY
   if [[ $failed -ne 0 ]]; then
     echo
     echo "Not enough room for the model weights (~60 GiB, and Xet stages chunks"
