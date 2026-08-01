@@ -29,6 +29,10 @@
 # Overrides:
 #   MODEL, PROBE_LAYER, TOP_K, BETA
 #   PROMPT_TOKENS   probe sweep lengths          (default "128 1024 4096")
+#   LOCAL_RUNTIME_ROOT=/tmp/...  put the vLLM environment and compile caches on
+#                                node-local disk; model weights stay in HF_HOME
+#   VLLM_VERSION    version installed when LOCAL_RUNTIME_ROOT bootstraps an env
+#                   (default "0.26.0")
 #   NO_PUSH=1       commit locally, do not push
 #   NO_COMMIT=1     run only
 
@@ -40,7 +44,7 @@ cd "$REPO_ROOT"
 WHICH="${1:-all}"
 case "$WHICH" in
   all|step1|step2) ;;
-  -h|--help) sed -n '2,32p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  -h|--help) sed -n '2,37p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "unknown step: $WHICH (expected all, step1 or step2)" >&2; exit 2 ;;
 esac
 
@@ -89,14 +93,87 @@ BETA="${BETA:-10.0}"
 PROMPT_TOKENS="${PROMPT_TOKENS:-128 1024 4096}"
 
 HF_PY="${HF_PY:-$REPO_ROOT/.venv/bin/python}"
-VLLM_PY="${VLLM_PY:-$REPO_ROOT/.venv-vllm/bin/python}"
 [[ -x "$HF_PY" ]]   || HF_PY="python3"
-[[ -x "$VLLM_PY" ]] || VLLM_PY="$HF_PY"
 
 # Caches off the home filesystem, and scripts/moe importable by the vLLM worker
 # process (worker_cls is resolved there by qualified name).
 CACHE_BASE="${CACHE_BASE:-$REPO_ROOT/.cache}"
-export UV_CACHE_DIR="${UV_CACHE_DIR:-$CACHE_BASE/uv}"
+LOCAL_RUNTIME_ROOT="${LOCAL_RUNTIME_ROOT:-}"
+if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
+  # Only the frequently imported/compiled runtime belongs on node-local storage.
+  # Keeping HF_HOME tied to CACHE_BASE means the ~57 GiB model is downloaded once
+  # on orange and can be reused across nodes and allocations.
+  LOCAL_RUNTIME_ROOT="${LOCAL_RUNTIME_ROOT%/}"
+  LOCAL_VLLM_ENV="$LOCAL_RUNTIME_ROOT/venv-vllm"
+  VLLM_PY="${VLLM_PY:-$LOCAL_VLLM_ENV/bin/python}"
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-$LOCAL_RUNTIME_ROOT/uv-cache}"
+  export TORCH_HOME="${TORCH_HOME:-$LOCAL_RUNTIME_ROOT/runtime/torch}"
+  export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$LOCAL_RUNTIME_ROOT/runtime/triton}"
+  export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$LOCAL_RUNTIME_ROOT/runtime/inductor}"
+  export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-$LOCAL_RUNTIME_ROOT/runtime/vllm}"
+  export TMPDIR="${TMPDIR:-$LOCAL_RUNTIME_ROOT/runtime/tmp}"
+
+  mkdir -p "$UV_CACHE_DIR" "$TORCH_HOME" "$TRITON_CACHE_DIR" \
+           "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR"
+
+  # A local environment is cheap to create with uv and avoids copying tens of
+  # thousands of files from Lustre. If VLLM_PY was explicitly supplied, use it
+  # as-is when valid rather than creating a second environment.
+  if [[ ! -x "$VLLM_PY" ]]; then
+    if [[ "$VLLM_PY" != "$LOCAL_VLLM_ENV/bin/python" ]]; then
+      echo "VLLM_PY is not executable: $VLLM_PY" >&2
+      exit 4
+    fi
+    UV_BIN="${UV_BIN:-$(command -v uv 2>/dev/null || true)}"
+    [[ -x "$UV_BIN" ]] || UV_BIN="/apps/conda/25.7.0/bin/uv"
+    if [[ ! -x "$UV_BIN" ]]; then
+      echo "LOCAL_RUNTIME_ROOT needs uv, but no uv executable was found." >&2
+      echo "Set UV_BIN=/path/to/uv and re-run." >&2
+      exit 4
+    fi
+    echo "--- bootstrapping node-local vLLM environment ---"
+    "$UV_BIN" venv --python "${LOCAL_RUNTIME_PYTHON:-3.12}" "$LOCAL_VLLM_ENV" || exit 4
+  fi
+
+  # FlashInfer launches `ninja` by name during its B200/SM100 MoE JIT build.
+  # Invoking a venv's Python directly does not activate the venv or update PATH,
+  # which otherwise fails only after the full model has loaded.
+  VLLM_BIN_DIR="$(dirname "$VLLM_PY")"
+  export PATH="$VLLM_BIN_DIR:$PATH"
+  if ! "$VLLM_PY" -c 'import vllm' >/dev/null 2>&1 || \
+     [[ ! -x "$VLLM_BIN_DIR/ninja" ]]; then
+    UV_BIN="${UV_BIN:-$(command -v uv 2>/dev/null || true)}"
+    [[ -x "$UV_BIN" ]] || UV_BIN="/apps/conda/25.7.0/bin/uv"
+    if [[ ! -x "$UV_BIN" ]]; then
+      echo "Local vLLM or ninja is missing and uv was not found." >&2
+      echo "Set UV_BIN=/path/to/uv and re-run." >&2
+      exit 4
+    fi
+    echo "--- installing node-local vLLM runtime dependencies ---"
+    "$UV_BIN" pip install --python "$VLLM_PY" \
+      "vllm==${VLLM_VERSION:-0.26.0}" ninja || exit 4
+  fi
+else
+  VLLM_PY="${VLLM_PY:-$REPO_ROOT/.venv-vllm/bin/python}"
+  [[ -x "$VLLM_PY" ]] || VLLM_PY="$HF_PY"
+  export UV_CACHE_DIR="${UV_CACHE_DIR:-$CACHE_BASE/uv}"
+  export TORCH_HOME="${TORCH_HOME:-$CACHE_BASE/torch}"
+  export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_BASE/triton}"
+  export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
+  export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-$CACHE_BASE/vllm}"
+  export TMPDIR="${TMPDIR:-$CACHE_BASE/tmp}"
+fi
+
+# VLLM_PY is a launcher choice for this shell, not a vLLM setting. If the caller
+# exported it, vLLM 0.26 warns about an unknown VLLM_* environment variable.
+export -n VLLM_PY 2>/dev/null || true
+export -n VLLM_VERSION 2>/dev/null || true
+META_PY="$HF_PY"
+if [[ "$WHICH" == "step2" && -n "$LOCAL_RUNTIME_ROOT" ]]; then
+  # Step 2 has no Hugging Face probe, so do not touch the slow Lustre-hosted HF
+  # environment merely to inspect cache constants or the GPU during bookkeeping.
+  META_PY="$VLLM_PY"
+fi
 # HF_HOME is deliberately NOT inherited. Cluster shells and ~/.bashrc often export
 # it to a filesystem chosen for other work (a blue allocation, a home directory),
 # and "${HF_HOME:-default}" would let that win -- which is what sent a 60 GiB
@@ -123,11 +200,6 @@ export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
 export TRANSFORMERS_CACHE="$HF_HOME"
 export HF_DATASETS_CACHE="$HF_HOME/datasets"
 export HF_MODULES_CACHE="$HF_HOME/modules"
-export TORCH_HOME="${TORCH_HOME:-$CACHE_BASE/torch}"
-export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_BASE/triton}"
-export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
-export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-$CACHE_BASE/vllm}"
-export TMPDIR="${TMPDIR:-$CACHE_BASE/tmp}"
 export PYTHONPATH="$REPO_ROOT/scripts/moe${PYTHONPATH:+:$PYTHONPATH}"
 export TOKENIZERS_PARALLELISM=false
 export PYTHONUNBUFFERED=1
@@ -206,8 +278,10 @@ check_disk_space() {
     local value="${!name:-}"
     local warn=""
     [[ "$value" == "$HOME"* ]] && warn="   <-- ON HOME"
-    [[ -n "$value" && "$value" != "$CACHE_BASE"* && "$value" != "$HOME"* ]] \
-      && warn="   <-- OUTSIDE CACHE_BASE"
+    if [[ -n "$value" && "$value" != "$CACHE_BASE"* && "$value" != "$HOME"* ]]; then
+      [[ -n "$LOCAL_RUNTIME_ROOT" && "$value" == "$LOCAL_RUNTIME_ROOT"* ]] \
+        || warn="   <-- OUTSIDE CACHE_BASE"
+    fi
     printf "  %-24s %s%s\n" "$name" "${value:-(unset)}" "$warn"
   done
   echo
@@ -252,7 +326,7 @@ check_disk_space() {
   # Prove the caches really resolve off home, since these are read at import time
   # and a stale export would silently send tens of GiB to the wrong filesystem.
   echo "  resolved by huggingface_hub:"
-  "$HF_PY" - <<'PY' 2>/dev/null | sed 's/^/    /' || echo "    (could not query)"
+  "$META_PY" - <<'PY' 2>/dev/null | sed 's/^/    /' || echo "    (could not query)"
 import os
 try:
     from huggingface_hub import constants as c
@@ -285,10 +359,22 @@ echo " PIRA measurements: $WHICH"
 echo " started $(date -Is)   host $HOST"
 echo " model   $MODEL   probe_layer $PROBE_LAYER   K $TOP_K (global)"
 echo " results $OUT"
+[[ -n "$LOCAL_RUNTIME_ROOT" ]] && echo " local runtime $LOCAL_RUNTIME_ROOT"
 echo "=================================================================="
 nvidia-smi 2>&1 | head -12 || echo "(nvidia-smi unavailable)"
 echo
 check_disk_space
+
+if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
+  echo "--- Step 2 runtime preflight ---"
+  echo "  python: $VLLM_PY"
+  if ! command -v ninja >/dev/null 2>&1; then
+    echo "  ninja: NOT FOUND (FlashInfer JIT cannot run)" >&2
+    exit 4
+  fi
+  echo "  ninja: $(command -v ninja) ($(ninja --version 2>/dev/null || echo unknown))"
+  echo
+fi
 
 # Started only now: the heartbeat reports compile-cache growth, and the cache
 # variables above must be exported first or it would always print 0 MiB and look
@@ -444,10 +530,18 @@ fi
   nvidia-smi 2>&1 | head -12 || true
   echo
   echo "--- .venv ---"
-  "$HF_PY" -m pip list 2>/dev/null | grep -Ei "torch|transformers|grouped|megablocks|transformer-engine|triton" || true
+  if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
+    "$HF_PY" -m pip list 2>/dev/null | grep -Ei "torch|transformers|grouped|megablocks|transformer-engine|triton" || true
+  else
+    echo "(not queried for a step2-only run)"
+  fi
   echo
   echo "--- .venv-vllm ---"
   "$VLLM_PY" -m pip list 2>/dev/null | grep -Ei "^torch|vllm|transformers" || true
+  echo
+  echo "vLLM python: $VLLM_PY"
+  echo "ninja: $(command -v ninja 2>/dev/null || echo not-found)"
+  [[ -n "$LOCAL_RUNTIME_ROOT" ]] && echo "local runtime: $LOCAL_RUNTIME_ROOT"
 } > "$OUT/environment.txt" 2>&1
 
 echo "=== summary ==="
@@ -470,7 +564,7 @@ if git diff --cached --quiet 2>/dev/null; then
   exit 0
 fi
 
-GPU="$("$HF_PY" -c "
+GPU="$("$META_PY" -c "
 import torch
 print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'no-gpu')" 2>/dev/null || echo unknown)"
 
