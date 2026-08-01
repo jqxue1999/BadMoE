@@ -17,9 +17,20 @@ Sat Aug  1 17:47:24 2026
 +-----------------------------------------+------------------------+----------------------+
 
 --- .venv ---
-(not queried for a step2-only run)
+python: /tmp/badmoe-hf.kLwrWF/venv-hf/bin/python
+torch: 2.13.0+cu130
+transformers: 5.14.1
+sonicmoe: 0.1.2.post1
+quack: 0.4.1
+active QuACK cache: /tmp/badmoe-hf.kLwrWF/runtime/quack
+persistent QuACK cache: /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/quack
 
 --- .venv-vllm ---
-
-vLLM python: /orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv-vllm/bin/python
-ninja: not-found
+python: /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/bin/python
+torch: 2.11.0+cu130
+transformers: 5.14.1
+vllm: 0.26.0
+flashinfer: 0.6.14
+ninja: 1.13.0.git.kitware.jobserver-pipe-1
+active runtime cache: /tmp/badmoe-vllm-yi217029.ucf/runtime
+persistent runtime archive: /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/compiled-runtime/NVIDIA_B200-vllm-0.26.0_torch-2.11.0_flashinfer-0.6.14.tar.zst

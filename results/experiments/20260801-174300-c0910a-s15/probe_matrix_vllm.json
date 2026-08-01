@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "arm": "vllm_original",
+    "prompt_tokens": [
+      2048,
+      4096,
+      8192,
+      16384
+    ],
+    "output_tokens": "256",
+    "batch_sizes": [
+      1
+    ],
+    "repeats": 3,
+    "gpu_memory_utilization": 0.9
+  },
+  "measurements": [
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 0.7828570841811597,
+      "seconds_per_request": 0.7828570841811597,
+      "peak_allocated_gib": 159.89818954467773,
+      "all_total_seconds": [
+        0.7842233451083302,
+        0.7828500918112695,
+        0.7828570841811597
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 0.7865637671202421,
+      "seconds_per_request": 0.7865637671202421,
+      "peak_allocated_gib": 160.06791019439697,
+      "all_total_seconds": [
+        0.78768519917503,
+        0.7858596798032522,
+        0.7865637671202421
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 0.8701490019448102,
+      "seconds_per_request": 0.8701490019448102,
+      "peak_allocated_gib": 160.31946086883545,
+      "all_total_seconds": [
+        0.8745929226279259,
+        0.8701490019448102,
+        0.8691982440650463
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 1,
+      "prompt_tokens": 16384,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 1.0507315369322896,
+      "seconds_per_request": 1.0507315369322896,
+      "peak_allocated_gib": 160.3518500328064,
+      "all_total_seconds": [
+        1.0533019825816154,
+        1.0507315369322896,
+        1.0468128980137408
+      ]
+    }
+  ]
+}

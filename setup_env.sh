@@ -80,11 +80,12 @@ export HF_HOME="${HF_HOME:-$CACHE_BASE/huggingface}"
 export TORCH_HOME="${TORCH_HOME:-$CACHE_BASE/torch}"
 export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_BASE/triton}"
 export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
+export QUACK_CACHE_DIR="${QUACK_CACHE_DIR:-$CACHE_BASE/quack}"
 # grouped_gemm compiles CUTLASS from source; its scratch files are large and would
 # otherwise land in /tmp or $HOME.
 export TMPDIR="${TMPDIR_OVERRIDE:-$CACHE_BASE/tmp}"
 mkdir -p "$UV_CACHE_DIR" "$PIP_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" \
-         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$TMPDIR"
+         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$QUACK_CACHE_DIR" "$TMPDIR"
 # Same filesystem as the venv now, so hardlinks work; copy remains the fallback.
 export UV_LINK_MODE="${UV_LINK_MODE:-hardlink}"
 

@@ -66,24 +66,6 @@
       ]
     },
     {
-      "arm": "sonic_ckpt",
-      "kernel": "sonic",
-      "checkpointing": true,
-      "batch_size": 1,
-      "prompt_tokens": 2048,
-      "status": "error",
-      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/MP74OL43HCBC3BJUQIMAZDZ2UNVPQNNPED6QD64UV27HQQDJ2TOA'"
-    },
-    {
-      "arm": "sonic_nockpt",
-      "kernel": "sonic",
-      "checkpointing": false,
-      "batch_size": 1,
-      "prompt_tokens": 2048,
-      "status": "error",
-      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/MP74OL43HCBC3BJUQIMAZDZ2UNVPQNNPED6QD64UV27HQQDJ2TOA'"
-    },
-    {
       "arm": "hf_ckpt",
       "kernel": "hf",
       "checkpointing": true,
@@ -204,24 +186,6 @@
       ]
     },
     {
-      "arm": "sonic_ckpt",
-      "kernel": "sonic",
-      "checkpointing": true,
-      "batch_size": 1,
-      "prompt_tokens": 8192,
-      "status": "error",
-      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/A7OLTMDB63UXPBJ7XSCHSWSMULIVMVSXOHGGPSIHTFRGQN4WTBPQ'"
-    },
-    {
-      "arm": "sonic_nockpt",
-      "kernel": "sonic",
-      "checkpointing": false,
-      "batch_size": 1,
-      "prompt_tokens": 8192,
-      "status": "error",
-      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/A7OLTMDB63UXPBJ7XSCHSWSMULIVMVSXOHGGPSIHTFRGQN4WTBPQ'"
-    },
-    {
       "arm": "hf_ckpt",
       "kernel": "hf",
       "checkpointing": true,
@@ -299,6 +263,86 @@
         0.8415195760317147,
         0.8418361805379391,
         0.8422181745991111
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "status": "ok",
+      "total_seconds": 0.1542266421020031,
+      "forward_seconds": 0.050066160038113594,
+      "backward_seconds": 0.10419292189180851,
+      "seconds_per_request": 0.1542266421020031,
+      "peak_allocated_gib": 58.16161870956421,
+      "resident_weight_gib": 56.958463191986084,
+      "activation_gib": 1.203155517578125,
+      "all_total_seconds": [
+        0.15515128150582314,
+        0.1542266421020031,
+        0.15411029616370797
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "status": "ok",
+      "total_seconds": 0.09824650641530752,
+      "forward_seconds": 0.045856380835175514,
+      "backward_seconds": 0.052370843943208456,
+      "seconds_per_request": 0.09824650641530752,
+      "peak_allocated_gib": 61.67375183105469,
+      "resident_weight_gib": 56.958463191986084,
+      "activation_gib": 4.7152886390686035,
+      "all_total_seconds": [
+        0.09824650641530752,
+        0.09821887966245413,
+        0.09830920305103064
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "status": "ok",
+      "total_seconds": 0.3982186773791909,
+      "forward_seconds": 0.09823719412088394,
+      "backward_seconds": 0.299981483258307,
+      "seconds_per_request": 0.3982186773791909,
+      "peak_allocated_gib": 59.47132635116577,
+      "resident_weight_gib": 56.95855474472046,
+      "activation_gib": 2.5127716064453125,
+      "all_total_seconds": [
+        0.3985352818854153,
+        0.3980564270168543,
+        0.3982186773791909
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "status": "ok",
+      "total_seconds": 0.30089434748515487,
+      "forward_seconds": 0.09791094111278653,
+      "backward_seconds": 0.20298340637236834,
+      "seconds_per_request": 0.30089434748515487,
+      "peak_allocated_gib": 73.45816802978516,
+      "resident_weight_gib": 56.95855474472046,
+      "activation_gib": 16.499613285064697,
+      "all_total_seconds": [
+        0.30074387323111296,
+        0.3017242602072656,
+        0.30089434748515487
       ]
     }
   ]

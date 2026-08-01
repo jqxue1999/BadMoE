@@ -130,6 +130,16 @@ else
   LOCAL_RUNTIME_ROOT="${LOCAL_RUNTIME_ROOT:-}"
 fi
 PERSISTENT_RUNTIME_CACHE="${PERSISTENT_RUNTIME_CACHE:-$CACHE_BASE/compiled-runtime}"
+PERSISTENT_QUACK_CACHE="${PERSISTENT_QUACK_CACHE:-$CACHE_BASE/quack}"
+if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
+  DEFAULT_LOCAL_QUACK_CACHE="$LOCAL_RUNTIME_ROOT/runtime/quack"
+else
+  DEFAULT_LOCAL_QUACK_CACHE="/tmp/badmoe-quack-${USER:-$(id -u)}"
+fi
+# QuACK creates many small files while compiling and autotuning SonicMoE. Keep
+# those latency-sensitive writes node-local, then copy the finished cache to
+# Orange once per run so a later allocation can restore it without using HOME.
+export QUACK_CACHE_DIR="${QUACK_CACHE_DIR:-$DEFAULT_LOCAL_QUACK_CACHE}"
 # Internal trust signals must only be created after this process validates a
 # version-tagged archive/marker; never accept inherited shell values.
 unset BADMOE_RESTORED_CACHE_TAG BADMOE_REAL_NINJA
@@ -296,7 +306,8 @@ if [[ -n "$LOCAL_RUNTIME_ROOT" ]]; then
   export FLASHINFER_WORKSPACE_BASE="$LOCAL_RUNTIME_ROOT/runtime"
 
   mkdir -p "$UV_CACHE_DIR" "$TORCH_HOME" "$TRITON_CACHE_DIR" \
-           "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR" \
+           "$TORCHINDUCTOR_CACHE_DIR" "$QUACK_CACHE_DIR" \
+           "$VLLM_CACHE_ROOT" "$TMPDIR" \
            "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer"
 
   # A local environment is cheap to create with uv and avoids copying tens of
@@ -427,8 +438,35 @@ fi
 export HF_XET_CACHE="${HF_XET_CACHE:-$HF_HOME/xet}"
 export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
 mkdir -p "$HF_HOME" "$HF_XET_CACHE" "$HF_HUB_CACHE" "$TORCH_HOME" \
-         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR" \
+         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$QUACK_CACHE_DIR" \
+         "$VLLM_CACHE_ROOT" "$TMPDIR" \
          "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer"
+
+restore_quack_cache() {
+  [[ "$WHICH" == "all" || "$WHICH" == "step1" || "$WHICH" == "matrix" ]] \
+    || return 0
+  mkdir -p "$PERSISTENT_QUACK_CACHE" "$QUACK_CACHE_DIR"
+  [[ "$PERSISTENT_QUACK_CACHE" != "$QUACK_CACHE_DIR" ]] || return 0
+  if [[ -n "$(find "$PERSISTENT_QUACK_CACHE" -mindepth 1 -print -quit 2>/dev/null)" ]]; then
+    echo "--- restoring QuACK cache to node-local storage ---"
+    cp -a "$PERSISTENT_QUACK_CACHE/." "$QUACK_CACHE_DIR/"
+    echo "  $PERSISTENT_QUACK_CACHE -> $QUACK_CACHE_DIR"
+    echo
+  fi
+}
+
+save_quack_cache() {
+  [[ "$WHICH" == "all" || "$WHICH" == "step1" || "$WHICH" == "matrix-done" ]] \
+    || return 0
+  [[ "$PERSISTENT_QUACK_CACHE" != "$QUACK_CACHE_DIR" ]] || return 0
+  mkdir -p "$PERSISTENT_QUACK_CACHE"
+  echo "--- saving QuACK cache for the next run ---"
+  cp -a "$QUACK_CACHE_DIR/." "$PERSISTENT_QUACK_CACHE/"
+  echo "  $QUACK_CACHE_DIR -> $PERSISTENT_QUACK_CACHE"
+  echo
+}
+
+restore_quack_cache
 
 # Qwen3-30B-A3B is ~60 GiB in bf16, and Xet stages chunks before assembling, so
 # the download needs roughly 120 GiB of headroom. Checking here turns a failure
@@ -478,7 +516,7 @@ check_disk_space() {
   # somewhere else, which is invisible unless the resolved paths are shown.
   for name in HF_HOME HF_HUB_CACHE HF_XET_CACHE TRANSFORMERS_CACHE \
               HF_DATASETS_CACHE TORCH_HOME TRITON_CACHE_DIR \
-              TORCHINDUCTOR_CACHE_DIR VLLM_CACHE_ROOT \
+              TORCHINDUCTOR_CACHE_DIR QUACK_CACHE_DIR VLLM_CACHE_ROOT \
               FLASHINFER_WORKSPACE_BASE TMPDIR; do
     local value="${!name:-}"
     local warn=""
@@ -787,6 +825,7 @@ fi
 if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
   save_runtime_cache
 fi
+save_quack_cache
 
 {
   echo "date: $(date -Is)"
