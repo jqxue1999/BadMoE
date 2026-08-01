@@ -343,9 +343,21 @@ def main() -> int:
         # collective_rpc must serialize the two local, trusted CUDA-memory
         # callbacks above. vLLM 0.26 requires an explicit opt-in for callables.
         os.environ.setdefault("VLLM_ALLOW_INSECURE_SERIALIZATION", "1")
+        # Benchmark runs do not need vLLM telemetry, and a full HOME quota must
+        # not make its background usage-stats writer fail noisily.
+        os.environ.setdefault("VLLM_NO_USAGE_STATS", "1")
     if not torch.cuda.is_available():
         print("CUDA is required.", file=sys.stderr)
         return 2
+    if args.vllm_only and "B200" in torch.cuda.get_device_name(0):
+        # FlashInfer 0.6.14's TRTLLM BF16 MoE tactic search can hit an illegal
+        # memory access on SM100 for this 4352-token engine shape. Keep the
+        # selected FlashInfer backend, but use its safe heuristic tactic rather
+        # than profiling the unsafe candidates.
+        os.environ.setdefault(
+            "VLLM_FLASHINFER_AUTOTUNE_SKIP_OPS",
+            "flashinfer::trtllm_bf16_moe",
+        )
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
