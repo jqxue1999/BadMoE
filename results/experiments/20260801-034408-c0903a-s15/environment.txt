@@ -1,0 +1,26 @@
+date: 2026-08-01T04:25:24-04:00
+host: c0903a-s15
+git:  ec3a296 on rebuttal-timing-minimal
+step: all   step1=0 step2=0
+
+Sat Aug  1 04:25:25 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:43:00.0 Off |                    0 |
+| N/A   33C    P0            203W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
+--- .venv ---
+
+--- .venv-vllm ---
+
+vLLM python: /tmp/badmoe-step2.ti9eEU/venv-vllm-fresh/bin/python
+ninja: /tmp/badmoe-step2.ti9eEU/runtime/bin/ninja
+local runtime: /tmp/badmoe-step2.ti9eEU
+persistent runtime cache: /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/compiled-runtime/NVIDIA_B200-vllm-0.26.0_torch-2.11.0_flashinfer-0.6.14.tar.zst
