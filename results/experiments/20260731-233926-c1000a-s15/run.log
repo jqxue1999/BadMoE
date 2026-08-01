@@ -1,0 +1,205 @@
+==================================================================
+ PIRA measurements: all
+ started 2026-07-31T23:39:26-04:00   host c1000a-s15
+ model   Qwen/Qwen3-30B-A3B   probe_layer 24   K 25 (global)
+ results results/experiments/20260731-233926-c1000a-s15
+==================================================================
+Fri Jul 31 23:39:26 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:1B:00.0 Off |                    0 |
+| N/A   24C    P0            189W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+(nvidia-smi unavailable)
+
+### STEP 1: grouped-GEMM probe vs Hugging Face probe ###
+
+--- CPU sanity checks first (seconds, no GPU) ---
+last_index handling: max_abs_diff vs naive last-row read 5.604e-01 -> load-bearing (OK)
+
+ALL EQUIVALENCE CHECKS PASSED
+  shared-input rel_diff          3.173e-07  (vs 1.088e+00 for different inputs)
+
+SELF-CHECK PASSED (sort/scatter reconstruction is correct)
+
+--- isolated MoE-layer comparison (which backends work at all) ---
+GPU: NVIDIA B200 (sm_100)
+torch 2.13.0+cu130, CUDA 13.0, dtype bfloat16
+shapes: hidden=2048 intermediate=768 experts=128 top_k=8
+
+  grouped_gemm   importable
+  te_grouped     UNAVAILABLE: ModuleNotFoundError: No module named 'transformer_engine'
+
+=== sequence length 128 ===
+  hf_loop        fwd   20.678 ms   fwd+bwd   40.997 ms   peak   2.33 GiB   rel_diff 0.00e+00
+  bmm            fwd   22.329 ms   fwd+bwd   23.982 ms   peak  10.20 GiB   rel_diff 1.02e-02
+  grouped_gemm   fwd    0.733 ms   fwd+bwd    1.294 ms   peak   1.21 GiB   rel_diff 6.80e-03
+
+=== sequence length 1024 ===
+  hf_loop        fwd   21.227 ms   fwd+bwd   41.201 ms   peak   2.54 GiB   rel_diff 0.00e+00
+  bmm            fwd  174.897 ms   fwd+bwd  186.983 ms   peak  73.27 GiB   rel_diff 1.33e-02
+  grouped_gemm   fwd    0.946 ms   fwd+bwd    1.720 ms   peak   1.36 GiB   rel_diff 6.67e-03
+
+=== sequence length 4096 ===
+  hf_loop        fwd   21.669 ms   fwd+bwd   41.629 ms   peak   2.77 GiB   rel_diff 0.00e+00
+[W731 23:44:45.458444316 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 12884901888 bytes (free: 8564572160, total: 191503007744).
+[W731 23:44:45.458757157 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 12884901888 bytes (free: 8564572160, total: 191503007744).
+  bmm            OOM
+  grouped_gemm   fwd    1.993 ms   fwd+bwd    3.984 ms   peak   1.86 GiB   rel_diff 5.49e-03
+
+=== projected probe cost (25 layers, fwd+bwd, MoE only) ===
+backend          seq  per-layer(ms)  x25 layers(ms)  vs hf_loop
+hf_loop          128         40.997          1024.9        1.0x
+bmm              128         23.982           599.5        1.7x
+grouped_gemm     128          1.294            32.3       31.7x
+hf_loop         1024         41.201          1030.0        1.0x
+bmm             1024        186.983          4674.6        0.2x
+grouped_gemm    1024          1.720            43.0       23.9x
+hf_loop         4096         41.629          1040.7        1.0x
+grouped_gemm    4096          3.984            99.6       10.4x
+
+NOTE: this is the MoE portion only. Attention, norms and the router are
+unchanged, so the real probe will not improve by the full ratio. The
+numbers to read are the speedup column and rel_diff -- a backend is only
+usable if it is both faster AND numerically close enough that PIRA's
+top-K suppression set does not change.
+
+wrote results/experiments/20260731-233926-c1000a-s15/moe_layer_backends.json
+
+--- full probe, grouped vs HF, on the real model ---
+grouped backends:
+  torch          available
+  grouped_gemm   available
+
+Fetching 16 files:   0%|          | 0/16 [00:00<?, ?it/s]Fetching 16 files:   6%|▋         | 1/16 [00:26<06:39, 26.66s/it]Fetching 16 files:  12%|█▎        | 2/16 [00:27<02:39, 11.36s/it]Fetching 16 files:  19%|█▉        | 3/16 [00:27<01:20,  6.23s/it]Fetching 16 files:  25%|██▌       | 4/16 [00:28<00:48,  4.07s/it]Fetching 16 files:  31%|███▏      | 5/16 [00:28<00:30,  2.76s/it]Fetching 16 files:  38%|███▊      | 6/16 [00:29<00:20,  2.03s/it]Fetching 16 files:  44%|████▍     | 7/16 [00:29<00:14,  1.57s/it]Fetching 16 files:  50%|█████     | 8/16 [00:29<00:08,  1.10s/it]Fetching 16 files:  50%|█████     | 8/16 [00:41<00:41,  5.18s/it]
+Traceback (most recent call last):
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_backends.py", line 297, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_backends.py", line 126, in main
+    model, tokenizer = load_model(args.model, torch.bfloat16)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/probe_workload.py", line 43, in load_model
+    model = AutoModelForCausalLM.from_pretrained(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 402, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4355, in from_pretrained
+    checkpoint_files, sharded_metadata = _get_resolved_checkpoint_files(
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 814, in _get_resolved_checkpoint_files
+    checkpoint_files, sharded_metadata = get_checkpoint_shard_files(
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/utils/hub.py", line 894, in get_checkpoint_shard_files
+    cached_filenames = cached_files(
+                       ^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/utils/hub.py", line 527, in cached_files
+    raise e
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/utils/hub.py", line 452, in cached_files
+    snapshot_download(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/_snapshot_download.py", line 522, in snapshot_download
+    hf_thread_map(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/utils/tqdm.py", line 441, in hf_thread_map
+    results[future_to_index[future]] = future.result()
+                                       ^^^^^^^^^^^^^^^
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/_snapshot_download.py", line 502, in _inner_hf_hub_download
+    hf_hub_download(  # type: ignore
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 1019, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 1242, in _hf_hub_download_to_cache_dir
+    _download_to_tmp_and_move(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 1932, in _download_to_tmp_and_move
+    xet_get(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 565, in xet_get
+    with session.new_file_download_group(
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Task error: File reconstruction error: IO Error: Disk quota exceeded (os error 122)
+
+step 1 exit status: 1
+
+--- probe scaling and activation memory (arm C) ---
+Fetching 16 files:   0%|          | 0/16 [00:00<?, ?it/s]Fetching 16 files:  56%|█████▋    | 9/16 [00:15<00:12,  1.72s/it]
+Traceback (most recent call last):
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/rebuttal_probe_scaling.py", line 295, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/rebuttal_probe_scaling.py", line 169, in main
+    model, tokenizer = load_model(args.model, dtype)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/probe_workload.py", line 43, in load_model
+    model = AutoModelForCausalLM.from_pretrained(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/models/auto/auto_factory.py", line 402, in from_pretrained
+    return model_class.from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 4355, in from_pretrained
+    checkpoint_files, sharded_metadata = _get_resolved_checkpoint_files(
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/modeling_utils.py", line 814, in _get_resolved_checkpoint_files
+    checkpoint_files, sharded_metadata = get_checkpoint_shard_files(
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/utils/hub.py", line 894, in get_checkpoint_shard_files
+    cached_filenames = cached_files(
+                       ^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/utils/hub.py", line 527, in cached_files
+    raise e
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/transformers/utils/hub.py", line 452, in cached_files
+    snapshot_download(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/_snapshot_download.py", line 522, in snapshot_download
+    hf_thread_map(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/utils/tqdm.py", line 441, in hf_thread_map
+    results[future_to_index[future]] = future.result()
+                                       ^^^^^^^^^^^^^^^
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/concurrent/futures/thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/_snapshot_download.py", line 502, in _inner_hf_hub_download
+    hf_hub_download(  # type: ignore
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/utils/_validators.py", line 88, in _inner_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 1019, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 1242, in _hf_hub_download_to_cache_dir
+    _download_to_tmp_and_move(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 1932, in _download_to_tmp_and_move
+    xet_get(
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/.venv/lib/python3.12/site-packages/huggingface_hub/file_download.py", line 565, in xet_get
+    with session.new_file_download_group(
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Task error: File reconstruction error: IO Error: Disk quota exceeded (os error 122)
+
+### STEP 2: vLLM Original vs PIRA-biased generation ###
+
+--- smoke: is the routing hook live under the compiled path? ---

@@ -1,0 +1,121 @@
+{
+  "environment": {
+    "gpu": "NVIDIA B200",
+    "capability": "10.0",
+    "torch": "2.13.0+cu130",
+    "cuda": "13.0",
+    "python": "3.12.11",
+    "dtype": "bfloat16"
+  },
+  "shapes": {
+    "hidden": 2048,
+    "intermediate": 768,
+    "num_experts": 128,
+    "top_k": 8,
+    "probed_layers": 25
+  },
+  "availability": {
+    "grouped_gemm": "importable",
+    "te_grouped": "unavailable: ModuleNotFoundError: No module named 'transformer_engine'",
+    "hf_loop": "builtin",
+    "bmm": "builtin"
+  },
+  "measurements": [
+    {
+      "backend": "hf_loop",
+      "seq_len": 128,
+      "max_abs_diff_vs_hf": 0.0,
+      "max_rel_diff_vs_hf": 0.0,
+      "forward_ms": 20.678434055298567,
+      "forward_backward_ms": 40.99691496230662,
+      "peak_allocated_gib": 2.3254971504211426,
+      "status": "ok",
+      "projected_probe_moe_ms": 1024.9228740576655
+    },
+    {
+      "backend": "bmm",
+      "seq_len": 128,
+      "max_abs_diff_vs_hf": 0.005859375,
+      "max_rel_diff_vs_hf": 0.010204081423580647,
+      "forward_ms": 22.329362807795405,
+      "forward_backward_ms": 23.981964448466897,
+      "peak_allocated_gib": 10.197092533111572,
+      "status": "ok",
+      "projected_probe_moe_ms": 599.5491112116724
+    },
+    {
+      "backend": "grouped_gemm",
+      "seq_len": 128,
+      "max_abs_diff_vs_hf": 0.00390625,
+      "max_rel_diff_vs_hf": 0.006802720949053764,
+      "forward_ms": 0.7332619279623032,
+      "forward_backward_ms": 1.2935514096170664,
+      "peak_allocated_gib": 1.2086386680603027,
+      "status": "ok",
+      "projected_probe_moe_ms": 32.33878524042666
+    },
+    {
+      "backend": "hf_loop",
+      "seq_len": 1024,
+      "max_abs_diff_vs_hf": 0.0,
+      "max_rel_diff_vs_hf": 0.0,
+      "forward_ms": 21.227349992841482,
+      "forward_backward_ms": 41.20094585232437,
+      "peak_allocated_gib": 2.5396928787231445,
+      "status": "ok",
+      "projected_probe_moe_ms": 1030.0236463081092
+    },
+    {
+      "backend": "bmm",
+      "seq_len": 1024,
+      "max_abs_diff_vs_hf": 0.0078125,
+      "max_rel_diff_vs_hf": 0.013333333656191826,
+      "forward_ms": 174.897015793249,
+      "forward_backward_ms": 186.98282772675157,
+      "peak_allocated_gib": 73.27058458328247,
+      "status": "ok",
+      "projected_probe_moe_ms": 4674.570693168789
+    },
+    {
+      "backend": "grouped_gemm",
+      "seq_len": 1024,
+      "max_abs_diff_vs_hf": 0.00390625,
+      "max_rel_diff_vs_hf": 0.006666666828095913,
+      "forward_ms": 0.9458169806748629,
+      "forward_backward_ms": 1.7203274182975292,
+      "peak_allocated_gib": 1.3565993309020996,
+      "status": "ok",
+      "projected_probe_moe_ms": 43.00818545743823
+    },
+    {
+      "backend": "hf_loop",
+      "seq_len": 4096,
+      "max_abs_diff_vs_hf": 0.0,
+      "max_rel_diff_vs_hf": 0.0,
+      "forward_ms": 21.66888560168445,
+      "forward_backward_ms": 41.629018960520625,
+      "peak_allocated_gib": 2.7737436294555664,
+      "status": "ok",
+      "projected_probe_moe_ms": 1040.7254740130156
+    },
+    {
+      "backend": "bmm",
+      "seq_len": 4096,
+      "max_abs_diff_vs_hf": 0.0078125,
+      "max_rel_diff_vs_hf": 0.010989011265337467,
+      "status": "oom",
+      "error": "CUDA out of memory. Tried to allocate 12.00 GiB. GPU 0 has a total capacity of 178.35 GiB of which 7.98 GiB is free. Including non-PyTorch memory, this process has 170.36 GiB memory in use. Of the allocated memory 169.40 GiB is allocated by PyTorch, and 140.69 MiB is reserved by PyTorch but unalloca"
+    },
+    {
+      "backend": "grouped_gemm",
+      "seq_len": 4096,
+      "max_abs_diff_vs_hf": 0.00390625,
+      "max_rel_diff_vs_hf": 0.005494505632668734,
+      "forward_ms": 1.993357902392745,
+      "forward_backward_ms": 3.9844640996307135,
+      "peak_allocated_gib": 1.8648695945739746,
+      "status": "ok",
+      "projected_probe_moe_ms": 99.61160249076784
+    }
+  ]
+}
