@@ -1,0 +1,388 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.14.1",
+    "sonicmoe": "0.1.2.post1",
+    "dtype": "bfloat16",
+    "prompt_tokens": 4096,
+    "probe_layer": 24,
+    "batch_sizes": [
+      1,
+      4,
+      8,
+      16,
+      32
+    ],
+    "repeats": 3,
+    "arms": [
+      "hf_ckpt",
+      "hf_nockpt",
+      "sonic_ckpt",
+      "sonic_nockpt"
+    ]
+  },
+  "measurements": [
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.23020038474351168,
+      "forward_seconds": 0.06244576396420598,
+      "backward_seconds": 0.1677598119713366,
+      "seconds_per_request": 0.23020038474351168,
+      "peak_allocated_gib": 58.2466402053833,
+      "resident_weight_gib": 56.87450933456421,
+      "activation_gib": 1.3721308708190918,
+      "all_total_seconds": [
+        0.23036068258807063,
+        0.2301672170870006,
+        0.23020038474351168
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.1707859062589705,
+      "forward_seconds": 0.062385442201048136,
+      "backward_seconds": 0.1083246860653162,
+      "seconds_per_request": 0.1707859062589705,
+      "peak_allocated_gib": 68.87676858901978,
+      "resident_weight_gib": 56.93798589706421,
+      "activation_gib": 11.938782691955566,
+      "all_total_seconds": [
+        0.1709300046786666,
+        0.17066299729049206,
+        0.1707859062589705
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.18356794631108642,
+      "forward_seconds": 0.053847899194806814,
+      "backward_seconds": 0.1297200471162796,
+      "seconds_per_request": 0.18356794631108642,
+      "peak_allocated_gib": 58.5737738609314,
+      "resident_weight_gib": 56.93798589706421,
+      "activation_gib": 1.6357879638671875,
+      "all_total_seconds": [
+        0.19129376765340567,
+        0.18356794631108642,
+        0.1830215658992529
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.15652025863528252,
+      "forward_seconds": 0.07027908740565181,
+      "backward_seconds": 0.08624117122963071,
+      "seconds_per_request": 0.15652025863528252,
+      "peak_allocated_gib": 65.57161712646484,
+      "resident_weight_gib": 56.93798589706421,
+      "activation_gib": 8.633631229400635,
+      "all_total_seconds": [
+        0.15652025863528252,
+        0.2551860297098756,
+        0.15484454575926065
+      ]
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 4,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.8204168425872922,
+      "forward_seconds": 0.21874935692176223,
+      "backward_seconds": 0.601666868198663,
+      "seconds_per_request": 0.20510421064682305,
+      "peak_allocated_gib": 62.1531548500061,
+      "resident_weight_gib": 56.93816900253296,
+      "activation_gib": 5.2149858474731445,
+      "all_total_seconds": [
+        0.8207252873107791,
+        0.8204168425872922,
+        0.8201300660148263
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 4,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.6124153975397348,
+      "forward_seconds": 0.21912451460957527,
+      "backward_seconds": 0.39329088293015957,
+      "seconds_per_request": 0.1531038493849337,
+      "peak_allocated_gib": 104.6354866027832,
+      "resident_weight_gib": 56.93816900253296,
+      "activation_gib": 47.697317600250244,
+      "all_total_seconds": [
+        0.6124863270670176,
+        0.6123689194209874,
+        0.6124153975397348
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 4,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.5865827803499997,
+      "forward_seconds": 0.1493953843601048,
+      "backward_seconds": 0.43718739598989487,
+      "seconds_per_request": 0.14664569508749992,
+      "peak_allocated_gib": 61.20778179168701,
+      "resident_weight_gib": 56.93816900253296,
+      "activation_gib": 4.269612789154053,
+      "all_total_seconds": [
+        0.6041328404098749,
+        0.5865827803499997,
+        0.5864390544593334
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 4,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.4383921381086111,
+      "forward_seconds": 0.1492729908786714,
+      "backward_seconds": 0.2891191472299397,
+      "seconds_per_request": 0.10959803452715278,
+      "peak_allocated_gib": 89.16001653671265,
+      "resident_weight_gib": 56.93816900253296,
+      "activation_gib": 32.22184753417969,
+      "all_total_seconds": [
+        0.4379027122631669,
+        0.4383921381086111,
+        0.4386730412952602
+      ]
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 8,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 1.6146425832994282,
+      "forward_seconds": 0.42944230092689395,
+      "backward_seconds": 1.1851409478113055,
+      "seconds_per_request": 0.20183032291242853,
+      "peak_allocated_gib": 67.36835145950317,
+      "resident_weight_gib": 56.93841314315796,
+      "activation_gib": 10.429938316345215,
+      "all_total_seconds": [
+        1.6146425832994282,
+        1.6143987220712006,
+        1.6153184729628265
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 8,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 1.2061218158341944,
+      "forward_seconds": 0.42968261102214456,
+      "backward_seconds": 0.7764392048120499,
+      "seconds_per_request": 0.1507652269792743,
+      "peak_allocated_gib": 152.31442832946777,
+      "resident_weight_gib": 56.93841314315796,
+      "activation_gib": 95.37601518630981,
+      "all_total_seconds": [
+        1.2061218158341944,
+        1.2067713611759245,
+        1.2057492253370583
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 8,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 1.147503747139126,
+      "forward_seconds": 0.2887208969332278,
+      "backward_seconds": 0.8586754989810288,
+      "seconds_per_request": 0.14343796839239076,
+      "peak_allocated_gib": 64.72369861602783,
+      "resident_weight_gib": 56.93841314315796,
+      "activation_gib": 7.785285472869873,
+      "all_total_seconds": [
+        1.1486719362437725,
+        1.147503747139126,
+        1.1467882003635168
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 8,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.8525311723351479,
+      "forward_seconds": 0.2886445540934801,
+      "backward_seconds": 0.5637350571341813,
+      "seconds_per_request": 0.10656639654189348,
+      "peak_allocated_gib": 120.60275220870972,
+      "resident_weight_gib": 56.93841314315796,
+      "activation_gib": 63.66433906555176,
+      "all_total_seconds": [
+        0.8525311723351479,
+        0.8528057029470801,
+        0.8519460042007267
+      ]
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 16,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 3.2191011500544846,
+      "forward_seconds": 0.8561057480983436,
+      "backward_seconds": 2.362995401956141,
+      "seconds_per_request": 0.2011938218784053,
+      "peak_allocated_gib": 77.78897905349731,
+      "resident_weight_gib": 56.93890142440796,
+      "activation_gib": 20.850077629089355,
+      "all_total_seconds": [
+        3.2181000150740147,
+        3.219372188206762,
+        3.2191011500544846
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 16,
+      "prompt_tokens": 4096,
+      "status": "oom",
+      "error": "CUDA out of memory. Tried to allocate 2.00 GiB. GPU 0 has a total capacity of 178.35 GiB of which 805.81 MiB is free. Including non-PyTorch memory, this process has 177.55 GiB memory in use. Of the al",
+      "resident_weight_gib": 56.93890142440796
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 16,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 2.3386638299562037,
+      "forward_seconds": 0.579811193048954,
+      "backward_seconds": 1.7588526369072497,
+      "seconds_per_request": 0.14616648937226273,
+      "peak_allocated_gib": 72.03189992904663,
+      "resident_weight_gib": 56.93890142440796,
+      "activation_gib": 15.092998504638672,
+      "all_total_seconds": [
+        2.337043103761971,
+        2.3386638299562037,
+        2.3424844602122903
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 16,
+      "prompt_tokens": 4096,
+      "status": "oom",
+      "error": "CUDA out of memory. Tried to allocate 2.00 GiB. GPU 0 has a total capacity of 178.35 GiB of which 37.81 MiB is free. Including non-PyTorch memory, this process has 178.30 GiB memory in use. Of the all",
+      "resident_weight_gib": 56.93890142440796
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 32,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 6.469674952793866,
+      "forward_seconds": 1.724773382768035,
+      "backward_seconds": 4.7434169091284275,
+      "seconds_per_request": 0.20217734227480832,
+      "peak_allocated_gib": 98.6360936164856,
+      "resident_weight_gib": 56.93987798690796,
+      "activation_gib": 41.69621562957764,
+      "all_total_seconds": [
+        6.471145974006504,
+        6.469674952793866,
+        6.466878566890955
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 32,
+      "prompt_tokens": 4096,
+      "status": "oom",
+      "error": "CUDA out of memory. Tried to allocate 4.00 GiB. GPU 0 has a total capacity of 178.35 GiB of which 3.57 GiB is free. Including non-PyTorch memory, this process has 174.77 GiB memory in use. Of the allo",
+      "resident_weight_gib": 56.93987798690796
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 32,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 4.741486767772585,
+      "forward_seconds": 1.141626502852887,
+      "backward_seconds": 3.5995377670042217,
+      "seconds_per_request": 0.14817146149289329,
+      "peak_allocated_gib": 87.11119222640991,
+      "resident_weight_gib": 56.93987798690796,
+      "activation_gib": 30.171314239501953,
+      "all_total_seconds": [
+        4.777767867781222,
+        4.729962205979973,
+        4.741486767772585
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 32,
+      "prompt_tokens": 4096,
+      "status": "oom",
+      "error": "CUDA out of memory. Tried to allocate 4.00 GiB. GPU 0 has a total capacity of 178.35 GiB of which 1.06 GiB is free. Including non-PyTorch memory, this process has 177.28 GiB memory in use. Of the allo",
+      "resident_weight_gib": 56.93987798690796
+    }
+  ]
+}

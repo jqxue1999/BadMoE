@@ -1,0 +1,145 @@
+note: ignoring inherited HF_HOME=/blue/qi855292.ucf/yi217029.ucf/hf-cache
+      (using the repository filesystem instead; REUSE_HF_HOME=1 to keep it)
+==================================================================
+ PIRA measurements: matrix
+ started 2026-08-01T16:49:12-04:00   host c0910a-s15
+ model   Qwen/Qwen3-30B-A3B   probe_layer 24   K 25 (global)
+ results results/experiments/20260801-164912-c0910a-s15
+==================================================================
+Sat Aug  1 16:49:12 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:43:00.0 Off |                    0 |
+| N/A   24C    P0            184W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
+--- cache locations ---
+  HF_HOME                  /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+  HF_HUB_CACHE             /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub
+  HF_XET_CACHE             /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/xet
+  TRANSFORMERS_CACHE       /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+  HF_DATASETS_CACHE        /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/datasets
+  TORCH_HOME               /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/torch
+  TRITON_CACHE_DIR         /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/triton
+  TORCHINDUCTOR_CACHE_DIR  /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/inductor
+  VLLM_CACHE_ROOT          /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/vllm
+  FLASHINFER_WORKSPACE_BASE /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/flashinfer-workspace
+  TMPDIR                   /tmp   <-- OUTSIDE CACHE_BASE
+
+--- filesystem health ---
+  model cache: read/write ok   (/orange/qi855292.ucf)
+  tmp / compile: read/write ok   (/tmp)
+
+--- disk space ---
+  model already cached (~57 GiB), so only working room is needed
+  model cache              122 GiB free   (need ~20 GiB)   ok
+  tmp / compile           1597 GiB free   (need ~20 GiB)   ok
+  home (python, misc)        3 GiB free   (need ~5 GiB)   <-- TOO SMALL
+  quota check (per-user limits, not filesystem size):
+    Filesystem quota usage for user yi217029.ucf on /home/yi217029.ucf
+    Quota    Used    Available
+    -------  ------  -----------
+    40G      38G     2.1G
+    
+    See additional options with 'home_quota -h'
+  resolved by huggingface_hub:
+    HF_HOME        /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+    HF_HUB_CACHE   /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub
+    HF_XET_CACHE   /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/xet
+
+### probe cost matrix only ###
+
+Loading weights:   0%|          | 0/531 [00:00<?, ?it/s]Loading weights:   0%|          | 2/531 [00:00<01:11,  7.39it/s]Loading weights:   1%|          | 4/531 [00:04<12:22,  1.41s/it]Loading weights:   1%|          | 5/531 [00:05<11:31,  1.32s/it]Loading weights:   3%|▎         | 15/531 [00:08<03:50,  2.24it/s]Loading weights:   3%|▎         | 16/531 [00:08<03:44,  2.29it/s]Loading weights:   5%|▍         | 26/531 [00:11<03:03,  2.76it/s]Loading weights:   5%|▌         | 27/531 [00:12<03:30,  2.40it/s]Loading weights:   7%|▋         | 37/531 [00:15<02:42,  3.03it/s]Loading weights:   7%|▋         | 38/531 [00:16<02:55,  2.82it/s]Loading weights:   9%|▉         | 48/531 [00:19<02:54,  2.77it/s]Loading weights:   9%|▉         | 49/531 [00:20<03:18,  2.43it/s]Loading weights:  11%|█         | 59/531 [00:23<02:36,  3.01it/s]Loading weights:  11%|█▏        | 60/531 [00:24<02:44,  2.85it/s]Loading weights:  13%|█▎        | 70/531 [00:26<02:14,  3.43it/s]Loading weights:  13%|█▎        | 71/531 [00:27<02:31,  3.03it/s]Loading weights:  15%|█▌        | 81/531 [00:28<01:47,  4.19it/s]Loading weights:  15%|█▌        | 82/531 [00:29<02:05,  3.57it/s]Loading weights:  17%|█▋        | 92/531 [00:30<01:35,  4.59it/s]Loading weights:  19%|█▉        | 103/531 [00:33<01:42,  4.16it/s]Loading weights:  20%|█▉        | 104/531 [00:35<02:02,  3.48it/s]Loading weights:  21%|██▏       | 114/531 [00:37<01:49,  3.80it/s]Loading weights:  22%|██▏       | 115/531 [00:38<02:17,  3.02it/s]Loading weights:  24%|██▎       | 125/531 [00:41<01:58,  3.42it/s]Loading weights:  24%|██▎       | 126/531 [00:41<02:00,  3.36it/s]Loading weights:  26%|██▌       | 136/531 [00:43<01:39,  3.99it/s]Loading weights:  26%|██▌       | 137/531 [00:44<01:57,  3.35it/s]Loading weights:  28%|██▊       | 147/531 [00:48<02:02,  3.13it/s]Loading weights:  28%|██▊       | 148/531 [00:49<02:17,  2.79it/s]Loading weights:  30%|██▉       | 158/531 [00:51<02:00,  3.09it/s]Loading weights:  30%|██▉       | 159/531 [00:52<02:18,  2.68it/s]  [heartbeat 1m] util_max=4% mem_total=58872MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=30.3% rss=1.2GiB
+Loading weights:  32%|███▏      | 169/531 [00:54<01:43,  3.51it/s]Loading weights:  32%|███▏      | 170/531 [00:56<02:08,  2.80it/s]Loading weights:  34%|███▍      | 180/531 [00:57<01:29,  3.93it/s]Loading weights:  34%|███▍      | 181/531 [00:58<01:48,  3.22it/s]Loading weights:  36%|███▌      | 191/531 [01:01<01:35,  3.56it/s]Loading weights:  36%|███▌      | 192/531 [01:02<01:49,  3.09it/s]Loading weights:  38%|███▊      | 202/531 [01:05<01:50,  2.98it/s]Loading weights:  38%|███▊      | 203/531 [01:07<02:10,  2.51it/s]Loading weights:  40%|████      | 213/531 [01:08<01:26,  3.66it/s]Loading weights:  40%|████      | 214/531 [01:09<01:34,  3.35it/s]Loading weights:  42%|████▏     | 224/531 [01:13<01:50,  2.79it/s]Loading weights:  42%|████▏     | 225/531 [01:14<02:03,  2.48it/s]Loading weights:  44%|████▍     | 235/531 [01:16<01:35,  3.11it/s]Loading weights:  44%|████▍     | 236/531 [01:18<02:02,  2.41it/s]Loading weights:  46%|████▋     | 246/531 [01:20<01:35,  2.97it/s]Loading weights:  47%|████▋     | 247/531 [01:22<01:48,  2.61it/s]Loading weights:  48%|████▊     | 257/531 [01:23<01:12,  3.76it/s]Loading weights:  49%|████▊     | 258/531 [01:24<01:35,  2.87it/s]Loading weights:  50%|█████     | 268/531 [01:28<01:28,  2.97it/s]Loading weights:  51%|█████     | 269/531 [01:28<01:30,  2.91it/s]Loading weights:  53%|█████▎    | 279/531 [01:29<00:51,  4.87it/s]Loading weights:  53%|█████▎    | 280/531 [01:30<01:13,  3.43it/s]Loading weights:  55%|█████▍    | 290/531 [01:32<00:59,  4.08it/s]Loading weights:  55%|█████▍    | 291/531 [01:33<01:00,  3.94it/s]Loading weights:  57%|█████▋    | 301/531 [01:35<00:59,  3.84it/s]Loading weights:  57%|█████▋    | 302/531 [01:36<01:08,  3.34it/s]Loading weights:  59%|█████▉    | 312/531 [01:39<01:01,  3.59it/s]Loading weights:  59%|█████▉    | 313/531 [01:40<01:16,  2.85it/s]Loading weights:  61%|██████    | 323/531 [01:43<01:08,  3.03it/s]Loading weights:  61%|██████    | 324/531 [01:45<01:23,  2.49it/s]Loading weights:  63%|██████▎   | 334/531 [01:46<00:55,  3.56it/s]Loading weights:  63%|██████▎   | 335/531 [01:47<00:56,  3.45it/s]Loading weights:  65%|██████▍   | 345/531 [01:50<00:57,  3.26it/s]Loading weights:  65%|██████▌   | 346/531 [01:51<01:11,  2.59it/s]  [heartbeat 2m] util_max=0% mem_total=58882MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=25.8% rss=1.1GiB
+Loading weights:  67%|██████▋   | 356/531 [01:55<01:03,  2.76it/s]Loading weights:  67%|██████▋   | 357/531 [01:56<01:15,  2.29it/s]Loading weights:  69%|██████▉   | 367/531 [01:59<00:58,  2.79it/s]Loading weights:  69%|██████▉   | 368/531 [02:01<01:13,  2.22it/s]Loading weights:  71%|███████   | 378/531 [02:03<00:49,  3.09it/s]Loading weights:  71%|███████▏  | 379/531 [02:03<00:54,  2.81it/s]Loading weights:  73%|███████▎  | 389/531 [02:07<00:47,  3.00it/s]Loading weights:  73%|███████▎  | 390/531 [02:08<01:00,  2.35it/s]Loading weights:  75%|███████▌  | 400/531 [02:11<00:44,  2.91it/s]Loading weights:  76%|███████▌  | 401/531 [02:12<00:54,  2.37it/s]Loading weights:  77%|███████▋  | 411/531 [02:17<00:53,  2.22it/s]Loading weights:  78%|███████▊  | 412/531 [02:19<01:00,  1.97it/s]Loading weights:  79%|███████▉  | 422/531 [02:20<00:37,  2.88it/s]Loading weights:  80%|███████▉  | 423/531 [02:23<00:54,  1.99it/s]Loading weights:  82%|████████▏ | 433/531 [02:25<00:34,  2.87it/s]Loading weights:  82%|████████▏ | 434/531 [02:26<00:36,  2.66it/s]Loading weights:  84%|████████▎ | 444/531 [02:29<00:31,  2.74it/s]Loading weights:  84%|████████▍ | 445/531 [02:30<00:33,  2.54it/s]Loading weights:  86%|████████▌ | 455/531 [02:31<00:18,  4.08it/s]Loading weights:  86%|████████▌ | 456/531 [02:32<00:21,  3.56it/s]Loading weights:  88%|████████▊ | 466/531 [02:35<00:18,  3.47it/s]Loading weights:  88%|████████▊ | 467/531 [02:35<00:17,  3.62it/s]Loading weights:  90%|████████▉ | 477/531 [02:38<00:16,  3.19it/s]Loading weights:  90%|█████████ | 478/531 [02:40<00:21,  2.49it/s]Loading weights:  92%|█████████▏| 488/531 [02:41<00:12,  3.54it/s]Loading weights:  92%|█████████▏| 489/531 [02:43<00:15,  2.64it/s]Loading weights:  94%|█████████▍| 499/531 [02:46<00:10,  3.15it/s]Loading weights:  94%|█████████▍| 500/531 [02:47<00:12,  2.55it/s]Loading weights:  96%|█████████▌| 510/531 [02:49<00:06,  3.25it/s]Loading weights:  96%|█████████▌| 511/531 [02:51<00:07,  2.75it/s]Loading weights:  98%|█████████▊| 521/531 [02:52<00:02,  3.83it/s]Loading weights: 100%|██████████| 531/531 [02:52<00:00,  3.08it/s]
+GPU=NVIDIA B200 model=Qwen/Qwen3-30B-A3B
+prompt=4096 probe_layer=24 sonicmoe=0.1.2.post1 switchable=True
+
+  [heartbeat 3m] util_max=0% mem_total=60598MiB gpus=1 compile_cache=3MiB stat=Rl+ cpu=24.4% rss=1.7GiB
+  hf_ckpt        b1      0.230 s  act    1.37 GiB  peak   58.25 GiB
+  hf_nockpt      b1      0.171 s  act   11.94 GiB  peak   68.88 GiB
+  [heartbeat 4m] util_max=0% mem_total=65663MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=22.3% rss=2.4GiB
+  [heartbeat 5m] util_max=0% mem_total=61312MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=25.0% rss=2.5GiB
+  [heartbeat 6m] util_max=94% mem_total=61322MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=22.5% rss=2.6GiB
+  [heartbeat 7m] util_max=0% mem_total=63966MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=20.5% rss=2.6GiB
+  [heartbeat 8m] util_max=0% mem_total=62096MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=20.1% rss=2.7GiB
+  sonic_ckpt     b1      0.184 s  act    1.64 GiB  peak   58.57 GiB
+  sonic_nockpt   b1      0.157 s  act    8.63 GiB  peak   65.57 GiB
+
+  hf_ckpt        b4      0.820 s  act    5.21 GiB  peak   62.15 GiB
+  hf_nockpt      b4      0.612 s  act   47.70 GiB  peak  104.64 GiB
+  sonic_ckpt     b4      0.587 s  act    4.27 GiB  peak   61.21 GiB
+  sonic_nockpt   b4      0.438 s  act   32.22 GiB  peak   89.16 GiB
+
+  [heartbeat 9m] util_max=100% mem_total=71702MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=26.1% rss=2.7GiB
+  hf_ckpt        b8      1.615 s  act   10.43 GiB  peak   67.37 GiB
+  hf_nockpt      b8      1.206 s  act   95.38 GiB  peak  152.31 GiB
+  sonic_ckpt     b8      1.148 s  act    7.79 GiB  peak   64.72 GiB
+  sonic_nockpt   b8      0.853 s  act   63.66 GiB  peak  120.60 GiB
+
+  hf_ckpt        b16     3.219 s  act   20.85 GiB  peak   77.79 GiB
+[W801 16:59:04.898152253 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2147483648 bytes (free: 39649280, total: 191503007744).
+[W801 16:59:04.237246919 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2147483648 bytes (free: 844955648, total: 191503007744).
+  hf_nockpt      b16  OOM
+  [heartbeat 10m] util_max=100% mem_total=77074MiB gpus=1 compile_cache=3MiB stat=Sl+ cpu=33.2% rss=2.7GiB
+  sonic_ckpt     b16     2.339 s  act   15.09 GiB  peak   72.03 GiB
+[W801 16:59:38.964428358 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2147483648 bytes (free: 39649280, total: 191503007744).
+[W801 16:59:38.964541439 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 2147483648 bytes (free: 39649280, total: 191503007744).
+  sonic_nockpt   b16  OOM
+
+  hf_ckpt        b32     6.470 s  act   41.70 GiB  peak   98.64 GiB
+[W801 17:00:06.657020019 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4294967296 bytes (free: 3829202944, total: 191503007744).
+[W801 17:00:06.657187072 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4294967296 bytes (free: 3829202944, total: 191503007744).
+  hf_nockpt      b32  OOM
+  [heartbeat 11m] util_max=100% mem_total=74514MiB gpus=1 compile_cache=3MiB stat=Rl+ cpu=39.2% rss=2.8GiB
+  sonic_ckpt     b32     4.741 s  act   30.17 GiB  peak   87.11 GiB
+[W801 17:00:58.825294575 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4294967296 bytes (free: 1136459776, total: 191503007744).
+[W801 17:00:58.825431067 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 4294967296 bytes (free: 1136459776, total: 191503007744).
+  sonic_nockpt   b32  OOM
+
+
+=== summary ===
+arm             batch   time(s)   act GiB  peak GiB
+---------------------------------------------------
+hf_ckpt             1     0.230      1.37     58.25
+hf_nockpt           1     0.171     11.94     68.88
+sonic_ckpt          1     0.184      1.64     58.57
+sonic_nockpt        1     0.157      8.63     65.57
+hf_ckpt             4     0.820      5.21     62.15
+hf_nockpt           4     0.612     47.70    104.64
+sonic_ckpt          4     0.587      4.27     61.21
+sonic_nockpt        4     0.438     32.22     89.16
+hf_ckpt             8     1.615     10.43     67.37
+hf_nockpt           8     1.206     95.38    152.31
+sonic_ckpt          8     1.148      7.79     64.72
+sonic_nockpt        8     0.853     63.66    120.60
+hf_ckpt            16     3.219     20.85     77.79
+hf_nockpt          16       OOM
+sonic_ckpt         16     2.339     15.09     72.03
+sonic_nockpt       16       OOM
+hf_ckpt            32     6.470     41.70     98.64
+hf_nockpt          32       OOM
+sonic_ckpt         32     4.741     30.17     87.11
+sonic_nockpt       32       OOM
+
+wrote results/experiments/20260801-164912-c0910a-s15/probe_matrix.json
+
+arm 5 (vLLM Original) needs the vLLM environment; run separately:
+  <vllm python> scripts/moe/compare_probe_matrix.py --vllm-only \
+    --prompt-tokens 4096 \
+    --batch-sizes 1 4 8 16 32 \
+    --output results/experiments/20260801-164912-c0910a-s15/probe_matrix_vllm.json
+=== summary ===
+  step1 (probe backends): skipped
+  step2 (serving arms):   skipped
+  results: results/experiments/20260801-164912-c0910a-s15
+environment.txt
+probe_matrix.json
+run.log
+
