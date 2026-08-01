@@ -18,6 +18,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--num-requests", type=int, default=512)
     parser.add_argument("--batch-sizes", type=int, nargs="+")
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
+    parser.add_argument(
+        "--max-num-batched-tokens",
+        type=int,
+        default=None,
+        help="Cap the batched-token budget. Left to vLLM by default, which derives "
+        "max_model_len * max_num_seqs; on B200 that produced a 6144-token shape "
+        "whose FlashInfer autotune crashed with an illegal memory access.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -42,6 +50,8 @@ def main() -> None:
         gpu_memory_utilization=args.gpu_memory_utilization,
         max_model_len=args.prompt_tokens + args.output_tokens,
         max_num_seqs=max(batch_sizes),
+        **({"max_num_batched_tokens": args.max_num_batched_tokens}
+           if args.max_num_batched_tokens else {}),
         enable_prefix_caching=False,
         trust_remote_code=True,
     )

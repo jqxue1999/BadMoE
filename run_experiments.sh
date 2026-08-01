@@ -405,6 +405,15 @@ export VLLM_LOG_BATCHSIZE_INTERVAL="${VLLM_LOG_BATCHSIZE_INTERVAL:-10}"
 # Callable collective_rpc falls back to pickle in vLLM 0.19.0; needed for the
 # bias-registration and diagnostics RPCs. Local trusted code only.
 export VLLM_ALLOW_INSECURE_SERIALIZATION="${VLLM_ALLOW_INSECURE_SERIALIZATION:-1}"
+# FlashInfer autotuning has crashed with an illegal memory access on B200 while
+# preparing a previously unseen batched-token shape. Setting VLLM_ATTENTION_BACKEND
+# selects a different kernel for every arm at once, which keeps the comparison
+# consistent -- both Original and PIRA must use the same backend or the overhead
+# is not attributable to PIRA.
+if [[ -n "${VLLM_ATTENTION_BACKEND:-}" ]]; then
+  export VLLM_ATTENTION_BACKEND
+  echo "attention backend pinned to $VLLM_ATTENTION_BACKEND"
+fi
 # HuggingFace's Xet backend keeps its own cache, separate from HF_HOME/hub, and
 # both are read at import time. It is set explicitly because a download that
 # exceeds quota fails deep inside xet_get with only "Disk quota exceeded", after
@@ -675,6 +684,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
       --model "$MODEL" \
       --prompt-tokens 128 --output-tokens 256 --num-requests 16 \
       --batch-sizes 1 4 16 \
+      --max-num-batched-tokens "${BASELINE_MAX_BATCHED_TOKENS:-4352}" \
       --output "$OUT/vllm_baseline_long.json"
     echo
 
@@ -685,6 +695,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
       --model "$MODEL" \
       --prompt-tokens 128 --output-tokens 1 --num-requests 16 \
       --batch-sizes 1 4 16 \
+      --max-num-batched-tokens "${BASELINE_MAX_BATCHED_TOKENS:-4352}" \
       --output "$OUT/vllm_baseline_prefill.json"
     echo
 
