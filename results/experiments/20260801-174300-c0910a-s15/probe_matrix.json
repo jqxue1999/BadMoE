@@ -1,0 +1,305 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "torch": "2.13.0+cu130",
+    "transformers": "5.14.1",
+    "sonicmoe": "0.1.2.post1",
+    "dtype": "bfloat16",
+    "prompt_tokens": [
+      2048,
+      4096,
+      8192,
+      16384
+    ],
+    "probe_layer": 24,
+    "batch_sizes": [
+      1
+    ],
+    "repeats": 3,
+    "arms": [
+      "hf_ckpt",
+      "hf_nockpt",
+      "sonic_ckpt",
+      "sonic_nockpt"
+    ]
+  },
+  "measurements": [
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "status": "ok",
+      "total_seconds": 0.12418651394546032,
+      "forward_seconds": 0.0362511589191854,
+      "backward_seconds": 0.08793535502627492,
+      "seconds_per_request": 0.12418651394546032,
+      "peak_allocated_gib": 57.60889148712158,
+      "resident_weight_gib": 56.888150691986084,
+      "activation_gib": 0.720740795135498,
+      "all_total_seconds": [
+        0.1243537743575871,
+        0.12418651394546032,
+        0.12364452937617898
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "status": "ok",
+      "total_seconds": 0.09832035843282938,
+      "forward_seconds": 0.044213916175067425,
+      "backward_seconds": 0.05412273434922099,
+      "seconds_per_request": 0.09832035843282938,
+      "peak_allocated_gib": 62.93422555923462,
+      "resident_weight_gib": 56.952603816986084,
+      "activation_gib": 5.981621742248535,
+      "all_total_seconds": [
+        0.09832035843282938,
+        0.09843270340934396,
+        0.09817706793546677
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "status": "error",
+      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/MP74OL43HCBC3BJUQIMAZDZ2UNVPQNNPED6QD64UV27HQQDJ2TOA'"
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 2048,
+      "status": "error",
+      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/MP74OL43HCBC3BJUQIMAZDZ2UNVPQNNPED6QD64UV27HQQDJ2TOA'"
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.23010073322802782,
+      "forward_seconds": 0.06241323705762625,
+      "backward_seconds": 0.16768749617040157,
+      "seconds_per_request": 0.23010073322802782,
+      "peak_allocated_gib": 58.33654594421387,
+      "resident_weight_gib": 57.030821323394775,
+      "activation_gib": 1.3057246208190918,
+      "all_total_seconds": [
+        0.23008338082581758,
+        0.23010073322802782,
+        0.23013536678627133
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.17093686014413834,
+      "forward_seconds": 0.06247620517387986,
+      "backward_seconds": 0.10846065497025847,
+      "seconds_per_request": 0.17093686014413834,
+      "peak_allocated_gib": 68.96960401535034,
+      "resident_weight_gib": 57.030821323394775,
+      "activation_gib": 11.938782691955566,
+      "all_total_seconds": [
+        0.17082785116508603,
+        0.17096933210268617,
+        0.17093686014413834
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.19938135892152786,
+      "forward_seconds": 0.06473736697807908,
+      "backward_seconds": 0.13464399194344878,
+      "seconds_per_request": 0.19938135892152786,
+      "peak_allocated_gib": 58.5845160484314,
+      "resident_weight_gib": 57.030821323394775,
+      "activation_gib": 1.553694725036621,
+      "all_total_seconds": [
+        0.19933223584666848,
+        0.20011145481839776,
+        0.19938135892152786
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "total_seconds": 0.16448600590229034,
+      "forward_seconds": 0.07843994488939643,
+      "backward_seconds": 0.08604606101289392,
+      "seconds_per_request": 0.16448600590229034,
+      "peak_allocated_gib": 65.58333587646484,
+      "resident_weight_gib": 56.95263433456421,
+      "activation_gib": 8.630701541900635,
+      "all_total_seconds": [
+        0.16448600590229034,
+        0.17540588695555925,
+        0.16228989558294415
+      ]
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "status": "ok",
+      "total_seconds": 0.5149227851070464,
+      "forward_seconds": 0.1335354740731418,
+      "backward_seconds": 0.38142560608685017,
+      "seconds_per_request": 0.5149227851070464,
+      "peak_allocated_gib": 59.56412982940674,
+      "resident_weight_gib": 56.95269536972046,
+      "activation_gib": 2.6114344596862793,
+      "all_total_seconds": [
+        0.5149227851070464,
+        0.5150195308960974,
+        0.5148860951885581
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "status": "ok",
+      "total_seconds": 0.38674000510945916,
+      "forward_seconds": 0.13361056800931692,
+      "backward_seconds": 0.2531782719306648,
+      "seconds_per_request": 0.38674000510945916,
+      "peak_allocated_gib": 80.79994058609009,
+      "resident_weight_gib": 56.95269536972046,
+      "activation_gib": 23.84724521636963,
+      "all_total_seconds": [
+        0.42224772879853845,
+        0.38674000510945916,
+        0.38672452000901103
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "status": "error",
+      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/A7OLTMDB63UXPBJ7XSCHSWSMULIVMVSXOHGGPSIHTFRGQN4WTBPQ'"
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 8192,
+      "status": "error",
+      "error": "OSError: [Errno 28] No space left on device: '/home/yi217029.ucf/.quack/cache/A7OLTMDB63UXPBJ7XSCHSWSMULIVMVSXOHGGPSIHTFRGQN4WTBPQ'"
+    },
+    {
+      "arm": "hf_ckpt",
+      "kernel": "hf",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 16384,
+      "status": "ok",
+      "total_seconds": 1.3307051686570048,
+      "forward_seconds": 0.3263850579969585,
+      "backward_seconds": 1.0042415582574904,
+      "seconds_per_request": 1.3307051686570048,
+      "peak_allocated_gib": 62.48646354675293,
+      "resident_weight_gib": 57.265562534332275,
+      "activation_gib": 5.220901012420654,
+      "all_total_seconds": [
+        1.3307051686570048,
+        1.330367213115096,
+        1.330930310767144
+      ]
+    },
+    {
+      "arm": "hf_nockpt",
+      "kernel": "hf",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 16384,
+      "status": "ok",
+      "total_seconds": 1.0156675451435149,
+      "forward_seconds": 0.32658002618700266,
+      "backward_seconds": 0.6890875189565122,
+      "seconds_per_request": 1.0156675451435149,
+      "peak_allocated_gib": 104.96684217453003,
+      "resident_weight_gib": 57.265562534332275,
+      "activation_gib": 47.701279640197754,
+      "all_total_seconds": [
+        1.0156675451435149,
+        1.015638204291463,
+        1.0157744800671935
+      ]
+    },
+    {
+      "arm": "sonic_ckpt",
+      "kernel": "sonic",
+      "checkpointing": true,
+      "batch_size": 1,
+      "prompt_tokens": 16384,
+      "status": "ok",
+      "total_seconds": 1.0969837275333703,
+      "forward_seconds": 0.2567588509991765,
+      "backward_seconds": 0.8400725699029863,
+      "seconds_per_request": 1.0969837275333703,
+      "peak_allocated_gib": 61.22932195663452,
+      "resident_weight_gib": 57.265562534332275,
+      "activation_gib": 3.963759422302246,
+      "all_total_seconds": [
+        1.0969837275333703,
+        1.0964453513734043,
+        1.097104505635798
+      ]
+    },
+    {
+      "arm": "sonic_nockpt",
+      "kernel": "sonic",
+      "checkpointing": false,
+      "batch_size": 1,
+      "prompt_tokens": 16384,
+      "status": "ok",
+      "total_seconds": 0.8418361805379391,
+      "forward_seconds": 0.2565993811003864,
+      "backward_seconds": 0.5850229477509856,
+      "seconds_per_request": 0.8418361805379391,
+      "peak_allocated_gib": 89.17951202392578,
+      "resident_weight_gib": 56.95281744003296,
+      "activation_gib": 32.22669458389282,
+      "all_total_seconds": [
+        0.8415195760317147,
+        0.8418361805379391,
+        0.8422181745991111
+      ]
+    }
+  ]
+}
