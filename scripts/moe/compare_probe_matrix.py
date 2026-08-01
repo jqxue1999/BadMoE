@@ -255,35 +255,64 @@ def _vllm_worker_reset_peak_memory(worker) -> None:
         worker_torch.cuda.reset_peak_memory_stats()
 
 
-def _vllm_worker_weight_gib(worker):
-    """Bytes of resident model weights inside a vLLM worker, in GiB."""
-    total = sum(
-        parameter.numel() * parameter.element_size()
-        for parameter in worker.model_runner.get_model().parameters()
-    )
-    return total / 2**30
+def _vllm_worker_memory_facts(worker):
+    """Weight footprint and KV-block geometry, as vLLM itself accounts for them.
 
+    Prefers model_runner.model_memory_usage, which is what vLLM records during
+    load and then uses for its own memory profiling, over summing parameters --
+    that sum misses buffers and any padding the loader applied.
 
-def kv_cache_gib(config, tokens: int, batch_size: int) -> float | None:
-    """KV cache actually needed for these requests, in GiB.
-
-    Reported alongside the peak because the peak is dominated by preallocation:
-    vLLM claims gpu_memory_utilization of the device up front and hands whatever
-    is left after the weights to its KV pool, so at batch 1 the measured peak
-    reflects that setting rather than any per-request demand -- about 160 GiB
-    against a real requirement near 57 GiB. Comparing that peak against the
-    probe's would wrongly suggest generation needs three times the memory.
+    Also returns the per-block KV bytes and block size so the KV requirement can be
+    derived from vLLM's real block geometry rather than a hand-written formula:
+    allocation is paged, so a request rounds up to whole blocks.
     """
+    facts = {}
+    runner = worker.model_runner
+    usage = getattr(runner, "model_memory_usage", None)
+    if usage:
+        facts["weights_gib"] = float(usage) / 2**30
+    else:
+        model = runner.get_model()
+        total = sum(t.numel() * t.element_size()
+                    for t in list(model.parameters()) + list(model.buffers()))
+        facts["weights_gib"] = total / 2**30
+        facts["weights_source"] = "parameter+buffer sum (fallback)"
+    facts.setdefault("weights_source", "vllm model_memory_usage")
+
     try:
-        layers = config.num_hidden_layers
-        kv_heads = getattr(config, "num_key_value_heads", None) or config.num_attention_heads
-        head_dim = getattr(config, "head_dim", None) or (
-            config.hidden_size // config.num_attention_heads
+        specs = runner.get_kv_cache_spec()
+        facts["kv_page_bytes_total"] = sum(
+            getattr(spec, "page_size_bytes", 0) for spec in specs.values()
         )
-    except AttributeError:
+        facts["kv_num_layers"] = len(specs)
+        first = next(iter(specs.values()), None)
+        facts["kv_block_size"] = getattr(first, "block_size", None)
+    except Exception as error:  # noqa: BLE001
+        facts["kv_spec_error"] = f"{type(error).__name__}: {error}"
+    return facts
+
+
+def kv_cache_from_blocks(facts: dict, tokens: int, batch_size: int) -> float | None:
+    """KV cache these requests actually need, from vLLM's own block geometry.
+
+    Derived from the per-block byte size vLLM reports rather than a hand-written
+    layer/head formula, so it follows whatever the engine really configured
+    (including KV dtype) and accounts for paging: a request rounds up to whole
+    blocks. Returns None when the geometry is unavailable, so a missing value is
+    visible instead of being silently replaced by an estimate.
+
+    This is reported alongside the peak because the peak is dominated by
+    preallocation: gpu_memory_utilization=0.9 makes vLLM claim 90% of the device up
+    front and give the KV pool everything left after the weights, so at batch 1 the
+    peak reflects that setting, not demand -- roughly 160 GiB reserved against a real
+    requirement near 57 GiB.
+    """
+    page_bytes = facts.get("kv_page_bytes_total")
+    block_size = facts.get("kv_block_size")
+    if not page_bytes or not block_size:
         return None
-    # key and value, 2 bytes per bf16 element
-    return 2 * layers * tokens * kv_heads * head_dim * 2 * batch_size / 2**30
+    blocks_per_request = -(-tokens // block_size)  # ceil: allocation is paged
+    return blocks_per_request * page_bytes * batch_size / 2**30
 
 
 def run_vllm_arm(args) -> dict:
@@ -327,15 +356,16 @@ def run_vllm_arm(args) -> dict:
         # Weight footprint measured inside the worker. Read before generating so it
         # reflects the weights alone, not the KV pool vLLM has already reserved.
         try:
-            values = [
-                value for value in llm.collective_rpc(_vllm_worker_weight_gib)
-                if isinstance(value, (int, float))
-            ]
-            resident_gib = max(values) if values else None
+            facts_list = [f for f in llm.collective_rpc(_vllm_worker_memory_facts)
+                          if isinstance(f, dict)]
+            memory_facts = facts_list[0] if facts_list else {}
         except Exception as error:  # noqa: BLE001
-            print(f"warning: could not read worker weight footprint: {error}")
-            resident_gib = None
-        hf_config = llm.llm_engine.model_config.hf_config
+            print(f"warning: could not read worker memory facts: {error}")
+            memory_facts = {}
+        resident_gib = memory_facts.get("weights_gib")
+        print(f"  weights {resident_gib:.2f} GiB "
+              f"({memory_facts.get('weights_source', 'unknown')})"
+              if resident_gib else "  weights: unavailable")
         ids = tokenizer.encode(text, add_special_tokens=False)
         prompt_ids = (ids * ((prompt_tokens + len(ids) - 1) // len(ids)))[:prompt_tokens]
         sampling = SamplingParams(temperature=0.0, max_tokens=output_tokens,
@@ -359,7 +389,7 @@ def run_vllm_arm(args) -> dict:
                 print(f"warning: could not reset worker peak memory: {error}")
 
         for batch_size in args.batch_sizes:
-            kv_needed = kv_cache_gib(hf_config, max_len, batch_size)
+            kv_needed = kv_cache_from_blocks(memory_facts, max_len, batch_size)
             prompts = [{"prompt_token_ids": prompt_ids} for _ in range(batch_size)]
             llm.generate(prompts, SamplingParams(temperature=0.0, max_tokens=1,
                                                  ignore_eos=True), use_tqdm=False)
