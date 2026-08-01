@@ -8,6 +8,9 @@ slurm-*.out
 slurm-*.err
 logs/
 timing_results/
+# run_feasibility.sh force-adds its own result directory, so ignoring this by
+# default keeps stray local runs out of commits without blocking the ones we want.
+results/
 
 # Python and editor noise
 __pycache__/
