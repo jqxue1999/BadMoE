@@ -1,6 +1,12 @@
 .venv
 .venv/
+.venv-vllm/
 .codex
+
+# setup_env.sh redirects the uv/pip/HF/Triton caches here so they stay off a
+# small home quota. Several GiB of wheels; never commit.
+.cache/
+.uv-cache/
 
 # Local crash dumps and scheduler outputs
 core.*

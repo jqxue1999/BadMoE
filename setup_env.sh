@@ -66,12 +66,49 @@ echo "=================================================================="
 PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
 TORCH_VERSION="${TORCH_VERSION:-}"     # empty = let uv pick a build for this CUDA
 
-# On clusters the uv cache and the project usually sit on different filesystems
-# (home vs scratch), so hardlinking is unavailable and uv warns on every install.
-# Copying is what it falls back to anyway; saying so up front keeps the log clean.
-export UV_LINK_MODE="${UV_LINK_MODE:-copy}"
+# ---- keep caches off the home filesystem ------------------------------------
+# uv, pip, HF and the CUDA compilers all default to $HOME regardless of where the
+# project lives, so running from scratch storage still fills a small home quota
+# ("No space left on device" while writing ~/.cache/uv). Everything is therefore
+# redirected next to the repository by default. Putting the cache on the same
+# filesystem as .venv also restores hardlinking, which makes installs much faster
+# than the copy fallback.
+CACHE_BASE="${CACHE_BASE:-$REPO_ROOT/.cache}"
+export UV_CACHE_DIR="${UV_CACHE_DIR:-$CACHE_BASE/uv}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$CACHE_BASE/pip}"
+export HF_HOME="${HF_HOME:-$CACHE_BASE/huggingface}"
+export TORCH_HOME="${TORCH_HOME:-$CACHE_BASE/torch}"
+export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_BASE/triton}"
+export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
+# grouped_gemm compiles CUTLASS from source; its scratch files are large and would
+# otherwise land in /tmp or $HOME.
+export TMPDIR="${TMPDIR_OVERRIDE:-$CACHE_BASE/tmp}"
+mkdir -p "$UV_CACHE_DIR" "$PIP_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" \
+         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$TMPDIR"
+# Same filesystem as the venv now, so hardlinks work; copy remains the fallback.
+export UV_LINK_MODE="${UV_LINK_MODE:-hardlink}"
 
 step() { echo; echo "=== $* ==="; }
+
+# ---- disk space ---------------------------------------------------------------
+# The full install is roughly 15-20 GiB (torch + CUDA libraries in two venvs, plus
+# the wheel cache). Checked up front because running out mid-install leaves a
+# half-populated venv that then fails in confusing ways.
+step "disk space"
+echo "caches and venvs will be written under: $CACHE_BASE"
+AVAIL=$(df -BG --output=avail "$REPO_ROOT" 2>/dev/null | tail -1 | tr -dc '0-9')
+MOUNT=$(df -h --output=target "$REPO_ROOT" 2>/dev/null | tail -1 | xargs)
+HOME_AVAIL=$(df -BG --output=avail "$HOME" 2>/dev/null | tail -1 | tr -dc '0-9')
+echo "  repo   $REPO_ROOT"
+echo "         mount ${MOUNT:-unknown}, ${AVAIL:-?} GiB free"
+echo "  home   $HOME"
+echo "         ${HOME_AVAIL:-?} GiB free  (not used for caches; see above)"
+if [[ -n "$AVAIL" && "$AVAIL" -lt 25 ]]; then
+  echo
+  echo "WARNING: only ${AVAIL} GiB free where the venvs will go. The full install"
+  echo "         needs roughly 15-20 GiB. Point CACHE_BASE at somewhere larger,"
+  echo "         e.g.  CACHE_BASE=/scratch/\$USER/.cache bash setup_env.sh"
+fi
 
 # ---- uv ---------------------------------------------------------------------
 if ! command -v uv >/dev/null 2>&1; then
