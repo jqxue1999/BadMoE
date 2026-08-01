@@ -4,6 +4,11 @@
 #   bash run_experiments.sh              # everything, in order
 #   bash run_experiments.sh step1        # probe backends only
 #   bash run_experiments.sh step2        # serving arms only
+#   bash run_experiments.sh matrix       # ONLY the 5-arm probe cost matrix
+#
+# Use `matrix` once step1/step2 results are already in hand: it collects the
+# HF-vs-SonicMoE x checkpointing sweep without repeating measurements that cost
+# tens of minutes and have not changed.
 #
 # Two steps, matching what the rebuttal needs:
 #
@@ -48,6 +53,7 @@ cd "$REPO_ROOT"
 WHICH="${1:-all}"
 case "$WHICH" in
   all|step1|step2) ;;
+  matrix) ;;
   -h|--help) sed -n '2,41p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
   *) echo "unknown step: $WHICH (expected all, step1 or step2)" >&2; exit 2 ;;
 esac
@@ -587,6 +593,26 @@ HEARTBEAT_PID=$!
 trap 'kill -- -$HEARTBEAT_PID 2>/dev/null || kill $HEARTBEAT_PID 2>/dev/null' \
   EXIT INT TERM
 
+if [[ "$WHICH" == "matrix" ]]; then
+  echo "### probe cost matrix only ###"
+  echo
+  "$HF_PY" scripts/moe/compare_probe_matrix.py \
+    --model "$MODEL" --probe-layer "$PROBE_LAYER" \
+    --prompt-tokens "${MATRIX_PROMPT_TOKENS:-4096}" \
+    --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
+    --output "$OUT/probe_matrix.json"
+  MATRIX_STATUS=$?
+  echo
+  echo "arm 5 (vLLM Original) needs the vLLM environment; run separately:"
+  echo "  <vllm python> scripts/moe/compare_probe_matrix.py --vllm-only \\"
+  echo "    --prompt-tokens ${MATRIX_PROMPT_TOKENS:-4096} \\"
+  echo "    --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \\"
+  echo "    --output $OUT/probe_matrix_vllm.json"
+  STEP1_STATUS=$MATRIX_STATUS
+  STEP2_STATUS="skipped"
+  WHICH="matrix-done"
+fi
+
 STEP1_STATUS="skipped"
 STEP2_STATUS="skipped"
 
@@ -649,6 +675,10 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
   # 2x2 kernel x checkpointing matrix at one prompt length, swept over batch.
   # Reports activation memory alongside the raw peak: resident weights (~57 GiB)
   # dominate the peak so completely that a kernel change is invisible in it.
+  # Opt-in: this repeats nothing above, but the rest of step 1 does, so a full
+  # rerun just to collect the matrix wastes the measurements already in hand.
+  # Run it directly, or set RUN_MATRIX=1.
+  if [[ "${RUN_MATRIX:-0}" == "1" ]]; then
   echo "--- probe matrix: HF vs SonicMoE, with/without checkpointing ---"
   "$HF_PY" scripts/moe/compare_probe_matrix.py \
     --model "$MODEL" \
@@ -657,6 +687,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
     --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
     --output "$OUT/probe_matrix.json"
   echo
+  fi
 fi
 
 # --------------------------------------------------------------------------- #
@@ -726,6 +757,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
     # Arm 5 of the probe matrix: Original generation with no probe, at the same
     # prompt length and batch sizes, so the probe cost has a denominator measured
     # on the same hardware. Runs here because it needs the vLLM environment.
+    if [[ "${RUN_MATRIX:-0}" == "1" ]]; then
     echo "--- probe matrix arm 5: vLLM Original at matrix batch sizes ---"
     "$VLLM_PY" scripts/moe/compare_probe_matrix.py --vllm-only \
       --model "$MODEL" \
@@ -733,6 +765,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
       --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
       --output-tokens "${MATRIX_OUTPUT_TOKENS:-256}" \
       --output "$OUT/probe_matrix_vllm.json"
+    fi
     echo
     echo "grid exit status: $STEP2_STATUS"
     echo
