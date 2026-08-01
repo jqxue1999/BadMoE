@@ -322,6 +322,26 @@ def self_check() -> int:
             f"grouped sort/scatter disagrees with hf_loop by {difference:.3e}"
         )
 
+    # Guard against comparing backends on different inputs. A previous version
+    # allocated a fresh x per backend, which reported the distance between
+    # unrelated random tensors (~1e0) rather than between implementations
+    # (~1e-7), making every numeric comparison meaningless while looking
+    # plausible. This asserts the two cases are distinguishable.
+    other = torch.randn_like(x)
+    mismatched = moe_hf_loop(other, w_gate, w_up, w_down, topk_weights, topk_ids)
+    scale = reference.abs().amax().clamp_min(1e-12)
+    same_input = (reference - batched).abs().amax() / scale
+    different_input = (reference - mismatched).abs().amax() / scale
+    print(
+        f"  shared-input rel_diff          {same_input:.3e}  "
+        f"(vs {different_input:.3e} for different inputs)"
+    )
+    if different_input < 100 * same_input.clamp_min(1e-12):
+        failures.append(
+            "the input-sharing guard is not discriminating; a comparison bug "
+            "would go unnoticed"
+        )
+
     print()
     if failures:
         for failure in failures:
@@ -405,13 +425,18 @@ def main() -> int:
         topk_weights, topk_ids = torch.topk(probabilities, args.top_k, dim=-1)
         topk_weights = (topk_weights / topk_weights.sum(-1, keepdim=True)).to(dtype)
 
+        # ONE input tensor shared by every backend. Generating a fresh x per
+        # backend would make the numeric comparison meaningless -- it would report
+        # the difference between unrelated random inputs (~1e0) instead of the
+        # difference between implementations (~1e-3 or smaller).
+        x_shared = torch.randn(seq_len, args.hidden, device=device, dtype=dtype)
+
         reference_output = None
         for name, fn in BACKENDS.items():
             if "unavailable" in str(report["availability"].get(name, "")):
                 continue
 
-            x = torch.randn(seq_len, args.hidden, device=device, dtype=dtype)
-            x.requires_grad_(True)
+            x = x_shared.clone().requires_grad_(True)
             call = (x, w_gate, w_up, w_down, topk_weights, topk_ids)
 
             record = {"backend": name, "seq_len": seq_len}
