@@ -3,9 +3,12 @@
 #
 #   bash setup_env.sh              # everything: both envs, every backend
 #   bash setup_env.sh --no-vllm    # probe env only; skips the slow vLLM install
+#   bash setup_env.sh --no-push    # log locally, do not push
 #
 # The default installs everything needed for the whole benchmark suite in one
-# pass, so there is no second setup round later.
+# pass, so there is no second setup round later. The full run is logged to
+# results/setup/<timestamp>-<host>/ and pushed, so install failures can be
+# reviewed without pasting terminal output.
 #
 # Two virtualenvs, because vLLM pins its own Transformers stack and the probe
 # needs a version it can hook:
@@ -28,19 +31,45 @@ cd "$REPO_ROOT"
 # need it, and provisioning both environments in one pass avoids a second setup
 # round later. --no-vllm skips it when only the feasibility probe is wanted.
 WANT_VLLM=1
+NO_PUSH="${NO_PUSH:-0}"
 for arg in "$@"; do
   case "$arg" in
     --no-vllm) WANT_VLLM=0 ;;
+    --no-push) NO_PUSH=1 ;;
     --vllm|--all) ;;   # accepted for compatibility; both are now the default
     -h|--help)
-      sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,22p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
 
+# ---- logging ----------------------------------------------------------------
+# The whole run is logged and pushed, because a FAILED backend build is itself a
+# result: grouped_gemm hardcodes ::cutlass::arch::Sm80, so whether it builds on
+# Blackwell -- and the exact compiler error when it does not -- is what decides
+# whether the grouped-GEMM route is viable at all.
+STAMP="$(date +%Y%m%d-%H%M%S)"
+HOST="$(hostname -s 2>/dev/null || echo unknown)"
+SETUP_DIR="results/setup/${STAMP}-${HOST}"
+mkdir -p "$SETUP_DIR"
+SETUP_LOG="$SETUP_DIR/setup.log"
+exec > >(tee -a "$SETUP_LOG") 2>&1
+
+echo "=================================================================="
+echo " PIRA environment setup"
+echo " started  $(date -Is)"
+echo " host     $HOST"
+echo " log      $SETUP_LOG"
+echo "=================================================================="
+
 PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
 TORCH_VERSION="${TORCH_VERSION:-}"     # empty = let uv pick a build for this CUDA
+
+# On clusters the uv cache and the project usually sit on different filesystems
+# (home vs scratch), so hardlinking is unavailable and uv warns on every install.
+# Copying is what it falls back to anyway; saying so up front keeps the log clean.
+export UV_LINK_MODE="${UV_LINK_MODE:-copy}"
 
 step() { echo; echo "=== $* ==="; }
 
@@ -176,3 +205,51 @@ If a grouped-GEMM backend failed to install, run the probe anyway. It reports
 which backends were importable and measures the rest; "does not build on this
 GPU" is one of the answers we need.
 EOF
+
+# ---- capture the environment as a file, then commit and push -----------------
+{
+  echo "date: $(date -Is)"
+  echo "host: $HOST"
+  echo "git:  $(git rev-parse --short HEAD 2>/dev/null) on $(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  echo "uv:   $(uv --version 2>/dev/null)"
+  echo
+  echo "--- nvidia-smi ---"
+  nvidia-smi 2>&1 | head -15 || echo "(unavailable)"
+  echo
+  echo "--- .venv packages ---"
+  uv pip list --python "$VPY" 2>/dev/null || echo "(unavailable)"
+  if [[ -x "$REPO_ROOT/.venv-vllm/bin/python" ]]; then
+    echo
+    echo "--- .venv-vllm packages ---"
+    uv pip list --python "$REPO_ROOT/.venv-vllm/bin/python" 2>/dev/null || echo "(unavailable)"
+  fi
+} > "$SETUP_DIR/environment.txt" 2>&1
+
+step "saving setup log"
+BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+# Force-added: results/ is gitignored so stray local runs stay out of commits,
+# but this log is the point of the run.
+git add -f "$SETUP_DIR" >/dev/null 2>&1
+
+if git diff --cached --quiet 2>/dev/null; then
+  echo "nothing to commit"
+else
+  git -c user.name="${GIT_NAME:-$(git config user.name || echo 'PIRA bench')}" \
+      -c user.email="${GIT_EMAIL:-$(git config user.email || echo 'bench@localhost')}" \
+      commit -q -m "Environment setup log: ${STAMP} on ${HOST}
+
+Package versions and backend availability from setup_env.sh, including any
+grouped-GEMM build failures." >/dev/null 2>&1
+  echo "committed $(git rev-parse --short HEAD)"
+
+  if [[ "$NO_PUSH" == "1" ]]; then
+    echo "--no-push set; push later with:  git push origin $BRANCH"
+  elif git push origin "$BRANCH" >/dev/null 2>&1; then
+    echo "pushed to origin/$BRANCH"
+  else
+    echo "push failed (log is committed locally; retry: git push origin $BRANCH)"
+  fi
+fi
+
+echo
+echo "setup log: $SETUP_LOG"
