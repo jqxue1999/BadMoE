@@ -143,3 +143,948 @@ environment.txt
 probe_matrix.json
 run.log
 
+committed a0fe209
+INFO 08-01 17:06:07 [arg_utils.py:779] HF_HUB_OFFLINE is True, replace model_id [Qwen/Qwen3-30B-A3B] to model_path [/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39]
+INFO 08-01 17:06:07 [api_utils.py:273] non-default args: {'trust_remote_code': True, 'dtype': 'bfloat16', 'max_model_len': 4352, 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4352, 'max_num_seqs': 32, 'disable_log_stats': True, 'model': '/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39'}
+INFO 08-01 17:06:08 [model.py:623] Resolved architecture: Qwen3MoeForCausalLM
+INFO 08-01 17:06:08 [model.py:1788] Using max model len 4352
+INFO 08-01 17:06:08 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=4352.
+INFO 08-01 17:06:08 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 08-01 17:06:08 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1225473) INFO 08-01 17:06:10 [core.py:116] Initializing a V1 LLM engine (v0.26.0) with config: model='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', speculative_config=None, tokenizer='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4352, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [4352], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 64, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330] EngineCore failed to start.
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330] Traceback (most recent call last):
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1299, in run_engine_core
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1065, in __init__
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     super().__init__(
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 125, in __init__
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 109, in __init__
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     self._init_executor()
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 63, in _init_executor
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     self.driver_worker.init_device()
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 331, in init_device
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     self.worker.init_device()  # type: ignore
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 361, in init_device
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     torch.accelerator.set_device_index(self.device)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 191, in set_device_index
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     torch._C._accelerator_setDeviceIndex(device_index)
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/cuda/__init__.py", line 466, in _lazy_init
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330]     raise RuntimeError(
+(EngineCore pid=1225473) ERROR 08-01 17:06:11 [core.py:1330] RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+(EngineCore pid=1225473) Process EngineCore:
+(EngineCore pid=1225473) Traceback (most recent call last):
+(EngineCore pid=1225473)   File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=1225473)     self.run()
+(EngineCore pid=1225473)   File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore pid=1225473)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1334, in run_engine_core
+(EngineCore pid=1225473)     raise e
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1299, in run_engine_core
+(EngineCore pid=1225473)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=1225473)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1225473)     return func(*args, **kwargs)
+(EngineCore pid=1225473)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1065, in __init__
+(EngineCore pid=1225473)     super().__init__(
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 125, in __init__
+(EngineCore pid=1225473)     self.model_executor = executor_class(vllm_config)
+(EngineCore pid=1225473)                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1225473)     return func(*args, **kwargs)
+(EngineCore pid=1225473)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 109, in __init__
+(EngineCore pid=1225473)     self._init_executor()
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 63, in _init_executor
+(EngineCore pid=1225473)     self.driver_worker.init_device()
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 331, in init_device
+(EngineCore pid=1225473)     self.worker.init_device()  # type: ignore
+(EngineCore pid=1225473)     ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1225473)     return func(*args, **kwargs)
+(EngineCore pid=1225473)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 361, in init_device
+(EngineCore pid=1225473)     torch.accelerator.set_device_index(self.device)
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 191, in set_device_index
+(EngineCore pid=1225473)     torch._C._accelerator_setDeviceIndex(device_index)
+(EngineCore pid=1225473)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/cuda/__init__.py", line 466, in _lazy_init
+(EngineCore pid=1225473)     raise RuntimeError(
+(EngineCore pid=1225473) RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+Traceback (most recent call last):
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_matrix.py", line 345, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_matrix.py", line 320, in main
+    payload = run_vllm_arm(args) if args.vllm_only else run_probe_arms(args)
+              ^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_matrix.py", line 238, in run_vllm_arm
+    llm = LLM(
+          ^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/entrypoints/llm.py", line 338, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 179, in from_engine_args
+    return cls(
+           ^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 105, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 103, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 786, in __init__
+    super().__init__(
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 573, in __init__
+    with launch_core_engines(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/utils.py", line 1213, in launch_core_engines
+    wait_for_engine_startup(
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/utils.py", line 1272, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {'EngineCore': 1}
+INFO 08-01 17:06:56 [arg_utils.py:779] HF_HUB_OFFLINE is True, replace model_id [Qwen/Qwen3-30B-A3B] to model_path [/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39]
+INFO 08-01 17:06:56 [api_utils.py:273] non-default args: {'trust_remote_code': True, 'dtype': 'bfloat16', 'max_model_len': 4352, 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4352, 'max_num_seqs': 32, 'disable_log_stats': True, 'model': '/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39'}
+INFO 08-01 17:06:56 [model.py:623] Resolved architecture: Qwen3MoeForCausalLM
+INFO 08-01 17:06:56 [model.py:1788] Using max model len 4352
+INFO 08-01 17:06:56 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=4352.
+INFO 08-01 17:06:56 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 08-01 17:06:56 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1267959) INFO 08-01 17:07:02 [core.py:116] Initializing a V1 LLM engine (v0.26.0) with config: model='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', speculative_config=None, tokenizer='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4352, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [4352], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 64, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=1267959) INFO 08-01 17:07:03 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://10.13.171.205:41727 backend=nccl
+(EngineCore pid=1267959) INFO 08-01 17:07:03 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(EngineCore pid=1267959) INFO 08-01 17:07:05 [topk_topp_sampler.py:55] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=1267959) INFO 08-01 17:07:05 [gpu_model_runner.py:5250] Starting to load model /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39...
+(EngineCore pid=1267959) INFO 08-01 17:07:05 [cuda.py:482] Using FLASHINFER attention backend out of potential backends: ['FLASHINFER', 'FLASH_ATTN', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=1267959) INFO 08-01 17:07:05 [selector.py:202] Using HND KV cache layout for FLASHINFER backend.
+(EngineCore pid=1267959) INFO 08-01 17:07:06 [unquantized.py:302] Using FlashInfer TRTLLM Unquantized MoE backend out of potential backends: ['FlashInfer TRTLLM', 'FlashInfer CUTLASS', 'TRITON', 'BATCHED_TRITON'].
+(EngineCore pid=1267959) INFO 08-01 17:07:06 [weight_utils.py:869] Filesystem type for checkpoints: LUSTRE. Checkpoint size: 56.87 GiB. Available RAM: 1900.39 GiB.
+(EngineCore pid=1267959) INFO 08-01 17:07:06 [weight_utils.py:831] Prefetching checkpoint files into page cache started (in background, num_threads=8, block_size=16777216 bytes)
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:   0% Completed | 0/16 [00:00<?, ?it/s]
+(EngineCore pid=1267959) INFO 08-01 17:07:06 [weight_utils.py:803] Prefetching checkpoint files: 10% (2/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:08 [weight_utils.py:803] Prefetching checkpoint files: 20% (4/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:09 [weight_utils.py:803] Prefetching checkpoint files: 30% (5/16)
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:   6% Completed | 1/16 [00:02<00:42,  2.85s/it]
+(EngineCore pid=1267959) INFO 08-01 17:07:09 [weight_utils.py:803] Prefetching checkpoint files: 40% (7/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:09 [weight_utils.py:803] Prefetching checkpoint files: 50% (8/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:09 [weight_utils.py:803] Prefetching checkpoint files: 60% (10/16)
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  12% Completed | 2/16 [00:04<00:29,  2.10s/it]
+(EngineCore pid=1267959) INFO 08-01 17:07:11 [weight_utils.py:803] Prefetching checkpoint files: 70% (12/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:11 [weight_utils.py:803] Prefetching checkpoint files: 80% (13/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:12 [weight_utils.py:803] Prefetching checkpoint files: 90% (15/16)
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  19% Completed | 3/16 [00:05<00:23,  1.84s/it]
+(EngineCore pid=1267959) INFO 08-01 17:07:12 [weight_utils.py:803] Prefetching checkpoint files: 100% (16/16)
+(EngineCore pid=1267959) INFO 08-01 17:07:12 [weight_utils.py:826] Prefetching checkpoint files into page cache finished in 6.07s
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  25% Completed | 4/16 [00:07<00:20,  1.74s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  31% Completed | 5/16 [00:09<00:18,  1.69s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  38% Completed | 6/16 [00:10<00:16,  1.66s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  44% Completed | 7/16 [00:12<00:14,  1.62s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  50% Completed | 8/16 [00:13<00:12,  1.61s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  56% Completed | 9/16 [00:15<00:11,  1.60s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  62% Completed | 10/16 [00:17<00:09,  1.61s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  69% Completed | 11/16 [00:18<00:07,  1.60s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  75% Completed | 12/16 [00:20<00:06,  1.60s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  81% Completed | 13/16 [00:21<00:04,  1.59s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  88% Completed | 14/16 [00:23<00:03,  1.58s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards:  94% Completed | 15/16 [00:25<00:01,  1.61s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:25<00:00,  1.27s/it]
+(EngineCore pid=1267959) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:25<00:00,  1.60s/it]
+(EngineCore pid=1267959) 
+(EngineCore pid=1267959) INFO 08-01 17:07:31 [default_loader.py:430] Loading weights took 25.57 seconds
+(EngineCore pid=1267959) INFO 08-01 17:07:31 [unquantized.py:374] Using MoEPrepareAndFinalizeNoDPEPMonolithic
+(EngineCore pid=1267959) INFO 08-01 17:07:31 [unquantized.py:375] Using TrtLlmBf16ExpertsMonolithic MoE backend
+(EngineCore pid=1267959) INFO 08-01 17:07:32 [gpu_model_runner.py:5347] Model loading took 56.88 GiB memory and 26.532211 seconds
+(EngineCore pid=1267959) INFO 08-01 17:07:32 [utils.py:90] `_KV_CACHE_LAYOUT_OVERRIDE` variable detected. Setting KV cache layout to HND.
+(EngineCore pid=1267959) INFO 08-01 17:07:39 [backends.py:1094] Using cache directory: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/761ac7e0b1/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=1267959) INFO 08-01 17:07:39 [backends.py:1155] Dynamo bytecode transform time: 6.94 s
+(EngineCore pid=1267959) INFO 08-01 17:07:41 [backends.py:378] Cache the graph of compile range (1, 4352) for later use
+(EngineCore pid=1267959) INFO 08-01 17:07:43 [backends.py:393] Compiling a graph for compile range (1, 4352) takes 3.90 s
+(EngineCore pid=1267959) INFO 08-01 17:07:46 [decorators.py:708] saved AOT compiled function to /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/torch_aot_compile/736df8a018a69da74d4f5cf2e5f41a51d2f0bff14383522276caa98a4d29fad6/rank_0_0/model
+(EngineCore pid=1267959) INFO 08-01 17:07:46 [monitor.py:53] torch.compile took 14.07 s in total
+[2026-08-01 17:07:47.023] [info] TRT-LLM fused MoE cooperative launch SM allocation: 140 SMs used for MoE, 8 SMs reserved for overlapping kernels (total SMs: 148)
+(EngineCore pid=1267959) 2026-08-01 17:07:47,028 - WARNING - core.py:2978 - flashinfer.jit: the single torch.Tensor return type is deprecated and will be replaced with List[torch.Tensor] in the v0.8.0.
+(EngineCore pid=1267959) INFO 08-01 17:07:47 [monitor.py:81] Initial profiling/warmup run took 0.41 s
+(EngineCore pid=1267959) INFO 08-01 17:07:47 [flashinfer.py:822] FlashInfer resolved query dtypes: prefill=torch.bfloat16, decode=torch.bfloat16, decode_backend=trtllm-gen, kv_cache_dtype=torch.bfloat16, arch=sm100
+(EngineCore pid=1267959) INFO 08-01 17:07:47 [gpu_model_runner.py:6612] Profiling CUDA graph memory: PIECEWISE=11 (largest=64), FULL=7 (largest=32)
+(EngineCore pid=1267959) WARNING 08-01 17:07:47 [flashinfer.py:503] Using TRTLLM prefill attention (auto-detected).
+(EngineCore pid=1267959) INFO 08-01 17:07:48 [gpu_model_runner.py:6737] Estimated CUDA graph memory: 0.54 GiB total
+(EngineCore pid=1267959) INFO 08-01 17:07:48 [gpu_worker.py:560] Available KV cache memory: 102.22 GiB
+(EngineCore pid=1267959) INFO 08-01 17:07:48 [gpu_worker.py:575] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.9000 is equivalent to --gpu-memory-utilization=0.8970 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.9030. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.
+(EngineCore pid=1267959) INFO 08-01 17:07:48 [kv_cache_utils.py:2177] GPU KV cache size: 1,116,464 tokens
+(EngineCore pid=1267959) INFO 08-01 17:07:48 [kv_cache_utils.py:2178] Maximum concurrency for 4,352 tokens per request: 256.54x
+(EngineCore pid=1267959) INFO 08-01 17:07:48 [kernel_warmup.py:227] Using FlashInfer autotune cache file: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/flashinfer_autotune_cache/0.6.14/100a/0db16b078f22f28a0645a2d9549948ed9473fb147dc1dd0da021a7e53d1d9d2f/autotune_configs.json
+(EngineCore pid=1267959) 2026-08-01 17:07:48,827 - INFO - autotuner.py:651 - flashinfer.jit: [Autotuner]: Autotuning process starts ...
+(EngineCore pid=1267959) [AutoTuner]: Tuning flashinfer::trtllm_bf16_moe:   0%|          | 0/21 [00:00<?, ?profile/s]2026-08-01 17:07:49,049 - INFO - autotuner.py:1351 - flashinfer.jit: [Autotuner]: Skipped 352 unsupported tactic(s) for flashinfer::trtllm_bf16_moe (enable debug logs to see details)
+(EngineCore pid=1267959) [AutoTuner]: Tuning flashinfer::trtllm_bf16_moe:   5%|▍         | 1/21 [00:00<00:02,  6.85profile/s]2026-08-01 17:07:49,050 - INFO - autotuner.py:674 - flashinfer.jit: [Autotuner]: Autotuning process ends
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] EngineCore failed to start.
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] Traceback (most recent call last):
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1299, in run_engine_core
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1065, in __init__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     super().__init__(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 136, in __init__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 324, in _initialize_kv_caches
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     self.model_executor.initialize_from_config(kv_cache_configs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 124, in initialize_from_config
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     compilation_times: list[CompilationTimes] = self.collective_rpc(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                                                 ^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 92, in collective_rpc
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     result = run_method(self.driver_worker, method, args, kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/serial_utils.py", line 510, in run_method
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 780, in compile_or_warm_up_model
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     kernel_warmup(self)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/warmup/kernel_warmup.py", line 121, in kernel_warmup
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     flashinfer_autotune(worker.model_runner)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/warmup/kernel_warmup.py", line 244, in flashinfer_autotune
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     runner._dummy_run(**dummy_run_kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return func(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 6084, in _dummy_run
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     outputs = self.model(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]               ^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/cuda_graph.py", line 254, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.runnable(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self._call_impl(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return forward_call(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_moe.py", line 643, in forward
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     hidden_states = self.model(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                     ^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 520, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.aot_compiled_fn(self, *args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_dynamo/aot_compile.py", line 224, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.fn(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_moe.py", line 485, in forward
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     def forward(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/caching.py", line 217, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.optimized_call(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "<string>", line 255, in execution_fn
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/cuda_graph.py", line 254, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.runnable(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/piecewise_backend.py", line 380, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return range_entry.runnable(*args)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_inductor/standalone_compile.py", line 122, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self._compiled_fn(*args)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return fn(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1200, in forward
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return compiled_fn(full_args)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 580, in runtime_wrapper
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     all_outs = call_func_at_runtime_with_args(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     out = normalize_as_list(f(args))
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                             ^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2298, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.compiled_fn(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 783, in wrapper
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return compiled_fn(runtime_args)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1011, in inner_fn
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     outs = compiled_fn(args)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.current_callable(inputs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     out = model(new_inputs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]           ^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/torch_aot_compile/736df8a018a69da74d4f5cf2e5f41a51d2f0bff14383522276caa98a4d29fad6/inductor_cache/az/cazjtvimljvqetrhmg2saiinnm44kyd2f6pmaujw6fi3kychsfaz.py", line 1078, in call
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     buf4 = torch.ops.vllm.moe_forward.default(buf2, buf3, None, None, arg5_1, 0)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_ops.py", line 865, in __call__
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self._op(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/runner/moe_runner.py", line 127, in _moe_forward
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return layer._forward_impl(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/runner/moe_runner.py", line 830, in _forward_impl
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     shared_output, hidden_states = self._apply_quant_method(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/runner/moe_runner.py", line 566, in _apply_quant_method
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     fused_out = self.routed_experts.forward_monolithic(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/routed_experts.py", line 1213, in forward_monolithic
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.quant_method.apply_monolithic(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/unquantized_fused_moe_method.py", line 385, in apply_monolithic
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.moe_kernel.apply_monolithic(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/modular_kernel.py", line 1634, in apply_monolithic
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return self.impl.apply(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/modular_kernel.py", line 1515, in apply
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     fused_out = self.fused_experts.apply(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/experts/trtllm_bf16_moe.py", line 249, in apply
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return flashinfer.fused_moe.trtllm_bf16_moe(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/api_logging.py", line 2333, in _auto_dump_wrapper
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return _inner(*args, **kwargs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/fused_moe/core.py", line 2945, in trtllm_bf16_moe
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     result = get_trtllm_moe_sm100_module().trtllm_bf16_moe(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/fused_moe/core.py", line 1706, in trtllm_bf16_moe_op
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     _, tactic = tuner.choose_one(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                 ^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/autotuner.py", line 1269, in choose_one
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     tensors = self._prepare_input_tensors(p, inputs)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/autotuner.py", line 1693, in _prepare_input_tensors
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     tensor = self._create_tensor_like(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]              ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/autotuner.py", line 1677, in _create_tensor_like
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     return initializer(shapes, dtype, device)
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/fused_moe/core.py", line 1227, in <lambda>
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]     spec["routing_logits"] = lambda shapes, dtype, device: torch.rand(
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330]                                                            ^^^^^^^^^^^
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+(EngineCore pid=1267959) ERROR 08-01 17:07:49 [core.py:1330] 
+(EngineCore pid=1267959) Process EngineCore:
+(EngineCore pid=1267959) Traceback (most recent call last):
+(EngineCore pid=1267959)   File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+(EngineCore pid=1267959)     self.run()
+(EngineCore pid=1267959)   File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/multiprocessing/process.py", line 108, in run
+(EngineCore pid=1267959)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1334, in run_engine_core
+(EngineCore pid=1267959)     raise e
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1299, in run_engine_core
+(EngineCore pid=1267959)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+(EngineCore pid=1267959)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1267959)     return func(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1065, in __init__
+(EngineCore pid=1267959)     super().__init__(
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 136, in __init__
+(EngineCore pid=1267959)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+(EngineCore pid=1267959)                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1267959)     return func(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 324, in _initialize_kv_caches
+(EngineCore pid=1267959)     self.model_executor.initialize_from_config(kv_cache_configs)
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 124, in initialize_from_config
+(EngineCore pid=1267959)     compilation_times: list[CompilationTimes] = self.collective_rpc(
+(EngineCore pid=1267959)                                                 ^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/executor/uniproc_executor.py", line 92, in collective_rpc
+(EngineCore pid=1267959)     result = run_method(self.driver_worker, method, args, kwargs)
+(EngineCore pid=1267959)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/serial_utils.py", line 510, in run_method
+(EngineCore pid=1267959)     return func(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+(EngineCore pid=1267959)     return func(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 780, in compile_or_warm_up_model
+(EngineCore pid=1267959)     kernel_warmup(self)
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/warmup/kernel_warmup.py", line 121, in kernel_warmup
+(EngineCore pid=1267959)     flashinfer_autotune(worker.model_runner)
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/warmup/kernel_warmup.py", line 244, in flashinfer_autotune
+(EngineCore pid=1267959)     runner._dummy_run(**dummy_run_kwargs)
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+(EngineCore pid=1267959)     return func(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/worker/gpu_model_runner.py", line 6084, in _dummy_run
+(EngineCore pid=1267959)     outputs = self.model(
+(EngineCore pid=1267959)               ^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/cuda_graph.py", line 254, in __call__
+(EngineCore pid=1267959)     return self.runnable(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+(EngineCore pid=1267959)     return self._call_impl(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+(EngineCore pid=1267959)     return forward_call(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_moe.py", line 643, in forward
+(EngineCore pid=1267959)     hidden_states = self.model(
+(EngineCore pid=1267959)                     ^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/decorators.py", line 520, in __call__
+(EngineCore pid=1267959)     return self.aot_compiled_fn(self, *args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_dynamo/aot_compile.py", line 224, in __call__
+(EngineCore pid=1267959)     return self.fn(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/models/qwen3_moe.py", line 485, in forward
+(EngineCore pid=1267959)     def forward(
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/caching.py", line 217, in __call__
+(EngineCore pid=1267959)     return self.optimized_call(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "<string>", line 255, in execution_fn
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/cuda_graph.py", line 254, in __call__
+(EngineCore pid=1267959)     return self.runnable(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/compilation/piecewise_backend.py", line 380, in __call__
+(EngineCore pid=1267959)     return range_entry.runnable(*args)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_inductor/standalone_compile.py", line 122, in __call__
+(EngineCore pid=1267959)     return self._compiled_fn(*args)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_dynamo/eval_frame.py", line 1263, in _fn
+(EngineCore pid=1267959)     return fn(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/aot_autograd.py", line 1200, in forward
+(EngineCore pid=1267959)     return compiled_fn(full_args)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 580, in runtime_wrapper
+(EngineCore pid=1267959)     all_outs = call_func_at_runtime_with_args(
+(EngineCore pid=1267959)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/utils.py", line 138, in call_func_at_runtime_with_args
+(EngineCore pid=1267959)     out = normalize_as_list(f(args))
+(EngineCore pid=1267959)                             ^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 2298, in __call__
+(EngineCore pid=1267959)     return self.compiled_fn(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 783, in wrapper
+(EngineCore pid=1267959)     return compiled_fn(runtime_args)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_functorch/_aot_autograd/runtime_wrappers.py", line 1011, in inner_fn
+(EngineCore pid=1267959)     outs = compiled_fn(args)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_inductor/output_code.py", line 656, in __call__
+(EngineCore pid=1267959)     return self.current_callable(inputs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_inductor/utils.py", line 3401, in run
+(EngineCore pid=1267959)     out = model(new_inputs)
+(EngineCore pid=1267959)           ^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/torch_aot_compile/736df8a018a69da74d4f5cf2e5f41a51d2f0bff14383522276caa98a4d29fad6/inductor_cache/az/cazjtvimljvqetrhmg2saiinnm44kyd2f6pmaujw6fi3kychsfaz.py", line 1078, in call
+(EngineCore pid=1267959)     buf4 = torch.ops.vllm.moe_forward.default(buf2, buf3, None, None, arg5_1, 0)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/_ops.py", line 865, in __call__
+(EngineCore pid=1267959)     return self._op(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/runner/moe_runner.py", line 127, in _moe_forward
+(EngineCore pid=1267959)     return layer._forward_impl(
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/runner/moe_runner.py", line 830, in _forward_impl
+(EngineCore pid=1267959)     shared_output, hidden_states = self._apply_quant_method(
+(EngineCore pid=1267959)                                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/runner/moe_runner.py", line 566, in _apply_quant_method
+(EngineCore pid=1267959)     fused_out = self.routed_experts.forward_monolithic(
+(EngineCore pid=1267959)                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/routed_experts.py", line 1213, in forward_monolithic
+(EngineCore pid=1267959)     return self.quant_method.apply_monolithic(
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/unquantized_fused_moe_method.py", line 385, in apply_monolithic
+(EngineCore pid=1267959)     return self.moe_kernel.apply_monolithic(
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/modular_kernel.py", line 1634, in apply_monolithic
+(EngineCore pid=1267959)     return self.impl.apply(
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/modular_kernel.py", line 1515, in apply
+(EngineCore pid=1267959)     fused_out = self.fused_experts.apply(
+(EngineCore pid=1267959)                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/model_executor/layers/fused_moe/experts/trtllm_bf16_moe.py", line 249, in apply
+(EngineCore pid=1267959)     return flashinfer.fused_moe.trtllm_bf16_moe(
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/api_logging.py", line 2333, in _auto_dump_wrapper
+(EngineCore pid=1267959)     return _inner(*args, **kwargs)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/fused_moe/core.py", line 2945, in trtllm_bf16_moe
+(EngineCore pid=1267959)     result = get_trtllm_moe_sm100_module().trtllm_bf16_moe(
+(EngineCore pid=1267959)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/fused_moe/core.py", line 1706, in trtllm_bf16_moe_op
+(EngineCore pid=1267959)     _, tactic = tuner.choose_one(
+(EngineCore pid=1267959)                 ^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/autotuner.py", line 1269, in choose_one
+(EngineCore pid=1267959)     tensors = self._prepare_input_tensors(p, inputs)
+(EngineCore pid=1267959)               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/autotuner.py", line 1693, in _prepare_input_tensors
+(EngineCore pid=1267959)     tensor = self._create_tensor_like(
+(EngineCore pid=1267959)              ^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/autotuner.py", line 1677, in _create_tensor_like
+(EngineCore pid=1267959)     return initializer(shapes, dtype, device)
+(EngineCore pid=1267959)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1267959)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/flashinfer/fused_moe/core.py", line 1227, in <lambda>
+(EngineCore pid=1267959)     spec["routing_logits"] = lambda shapes, dtype, device: torch.rand(
+(EngineCore pid=1267959)                                                            ^^^^^^^^^^^
+(EngineCore pid=1267959) torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+(EngineCore pid=1267959) Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+(EngineCore pid=1267959) CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+(EngineCore pid=1267959) For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+(EngineCore pid=1267959) Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+(EngineCore pid=1267959) 
+(EngineCore pid=1267959) [AutoTuner]: Tuning flashinfer::trtllm_bf16_moe:   5%|▍         | 1/21 [00:00<00:03,  6.53profile/s]
+terminate called after throwing an instance of 'c10::AcceleratorError'
+  what():  CUDA error: an illegal memory access was encountered
+Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+Exception raised from createEvent at /pytorch/c10/cuda/CUDAEvent.h:261 (most recent call first):
+frame #0: c10::Error::Error(c10::SourceLocation, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >) + 0x9d (0x1485eeb7305d in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #1: <unknown function> + 0xc114 (0x1485eef2e114 in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libc10_cuda.so)
+frame #2: <unknown function> + 0xcc4200 (0x14853a8c4200 in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+frame #3: <unknown function> + 0xcc7bec (0x14853a8c7bec in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libtorch_cuda.so)
+frame #4: <unknown function> + 0x7f8e4 (0x1485eeb548e4 in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #5: c10::TensorImpl::~TensorImpl() + 0x9 (0x1485eeb4e279 in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libc10.so)
+frame #6: <unknown function> + 0x869d55 (0x148567a69d55 in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libtorch_python.so)
+frame #7: <unknown function> + 0x869df1 (0x148567a69df1 in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/torch/lib/libtorch_python.so)
+frame #8: VLLM::EngineCore() [0x162f5ba]
+frame #9: <unknown function> + 0x14adad (0x148538f4adad in /tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/numpy/_core/_multiarray_umath.cpython-312-x86_64-linux-gnu.so)
+frame #10: VLLM::EngineCore() [0x162f705]
+frame #11: VLLM::EngineCore() [0x162f705]
+frame #12: VLLM::EngineCore() [0x16019d1]
+frame #13: VLLM::EngineCore() [0x162f6b1]
+frame #14: VLLM::EngineCore() [0x162ee92]
+frame #15: VLLM::EngineCore() [0x162f68b]
+frame #16: VLLM::EngineCore() [0x162ee92]
+frame #17: VLLM::EngineCore() [0x162f68b]
+frame #18: VLLM::EngineCore() [0x162ee92]
+frame #19: VLLM::EngineCore() [0x162f68b]
+frame #20: VLLM::EngineCore() [0x162f705]
+frame #21: VLLM::EngineCore() [0x162f705]
+frame #22: VLLM::EngineCore() [0x184ae5e]
+frame #23: _PyEval_EvalFrameDefault + 0x834c (0x161c3cc in VLLM::EngineCore)
+frame #24: PyEval_EvalCode + 0xe2 (0x1697322 in VLLM::EngineCore)
+frame #25: VLLM::EngineCore() [0x16ac1c2]
+frame #26: PyRun_StringFlags + 0x7e (0x16ac040 in VLLM::EngineCore)
+frame #27: PyRun_SimpleStringFlags + 0x3d (0x17392fd in VLLM::EngineCore)
+frame #28: VLLM::EngineCore() [0x1739291]
+frame #29: Py_RunMain + 0x291 (0x1738b67 in VLLM::EngineCore)
+frame #30: VLLM::EngineCore() [0x175c9fa]
+frame #31: VLLM::EngineCore() [0x175c7ed]
+frame #32: <unknown function> + 0x2a610 (0x1485efa2a610 in /lib64/libc.so.6)
+frame #33: __libc_start_main + 0x80 (0x1485efa2a6c0 in /lib64/libc.so.6)
+frame #34: _start + 0x29 (0x17cb6e9 in VLLM::EngineCore)
+
+Traceback (most recent call last):
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_matrix.py", line 345, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_matrix.py", line 320, in main
+    payload = run_vllm_arm(args) if args.vllm_only else run_probe_arms(args)
+              ^^^^^^^^^^^^^^^^^^
+  File "/orange/qi855292.ucf/yi217029.ucf/BadMoE/scripts/moe/compare_probe_matrix.py", line 238, in run_vllm_arm
+    llm = LLM(
+          ^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/entrypoints/llm.py", line 338, in __init__
+    self.llm_engine = LLMEngine.from_engine_args(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 179, in from_engine_args
+    return cls(
+           ^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/llm_engine.py", line 105, in __init__
+    self.engine_core = EngineCoreClient.make_client(
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 103, in make_client
+    return SyncMPClient(vllm_config, executor_class, log_stats)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 786, in __init__
+    super().__init__(
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 573, in __init__
+    with launch_core_engines(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/contextlib.py", line 144, in __exit__
+    next(self.gen)
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/utils.py", line 1213, in launch_core_engines
+    wait_for_engine_startup(
+  File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/v1/engine/utils.py", line 1272, in wait_for_engine_startup
+    raise RuntimeError(
+RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}
+=== arm 5 retry: spawn + skip unsafe FlashInfer trtllm_bf16_moe autotuning; heuristic tactic ===
+INFO 08-01 17:09:17 [arg_utils.py:779] HF_HUB_OFFLINE is True, replace model_id [Qwen/Qwen3-30B-A3B] to model_path [/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39]
+INFO 08-01 17:09:17 [api_utils.py:273] non-default args: {'trust_remote_code': True, 'dtype': 'bfloat16', 'max_model_len': 4352, 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4352, 'max_num_seqs': 32, 'disable_log_stats': True, 'model': '/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39'}
+INFO 08-01 17:09:17 [model.py:623] Resolved architecture: Qwen3MoeForCausalLM
+INFO 08-01 17:09:17 [model.py:1788] Using max model len 4352
+INFO 08-01 17:09:17 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=4352.
+INFO 08-01 17:09:17 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 08-01 17:09:17 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1461884) INFO 08-01 17:09:23 [core.py:116] Initializing a V1 LLM engine (v0.26.0) with config: model='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', speculative_config=None, tokenizer='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4352, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [4352], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 64, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=1461884) INFO 08-01 17:09:23 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://10.13.171.205:42391 backend=nccl
+(EngineCore pid=1461884) INFO 08-01 17:09:23 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(EngineCore pid=1461884) INFO 08-01 17:09:24 [topk_topp_sampler.py:55] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=1461884) INFO 08-01 17:09:24 [gpu_model_runner.py:5250] Starting to load model /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39...
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [cuda.py:482] Using FLASHINFER attention backend out of potential backends: ['FLASHINFER', 'FLASH_ATTN', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [selector.py:202] Using HND KV cache layout for FLASHINFER backend.
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [unquantized.py:302] Using FlashInfer TRTLLM Unquantized MoE backend out of potential backends: ['FlashInfer TRTLLM', 'FlashInfer CUTLASS', 'TRITON', 'BATCHED_TRITON'].
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [weight_utils.py:869] Filesystem type for checkpoints: LUSTRE. Checkpoint size: 56.87 GiB. Available RAM: 1897.37 GiB.
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [weight_utils.py:831] Prefetching checkpoint files into page cache started (in background, num_threads=8, block_size=16777216 bytes)
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:   0% Completed | 0/16 [00:00<?, ?it/s]
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [weight_utils.py:803] Prefetching checkpoint files: 10% (2/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [weight_utils.py:803] Prefetching checkpoint files: 20% (4/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:25 [weight_utils.py:803] Prefetching checkpoint files: 30% (5/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 40% (7/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 50% (8/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 60% (10/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 70% (12/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 80% (13/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 90% (15/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:803] Prefetching checkpoint files: 100% (16/16)
+(EngineCore pid=1461884) INFO 08-01 17:09:26 [weight_utils.py:826] Prefetching checkpoint files into page cache finished in 1.17s
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:   6% Completed | 1/16 [00:01<00:25,  1.71s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  12% Completed | 2/16 [00:03<00:22,  1.62s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  19% Completed | 3/16 [00:04<00:20,  1.60s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  25% Completed | 4/16 [00:06<00:19,  1.59s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  31% Completed | 5/16 [00:07<00:17,  1.58s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  38% Completed | 6/16 [00:09<00:15,  1.58s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  44% Completed | 7/16 [00:11<00:14,  1.57s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  50% Completed | 8/16 [00:12<00:12,  1.57s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  56% Completed | 9/16 [00:14<00:11,  1.58s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  62% Completed | 10/16 [00:15<00:09,  1.58s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  69% Completed | 11/16 [00:17<00:07,  1.57s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  75% Completed | 12/16 [00:18<00:06,  1.56s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  81% Completed | 13/16 [00:20<00:04,  1.55s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  88% Completed | 14/16 [00:22<00:03,  1.55s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards:  94% Completed | 15/16 [00:23<00:01,  1.54s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:24<00:00,  1.21s/it]
+(EngineCore pid=1461884) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:24<00:00,  1.50s/it]
+(EngineCore pid=1461884) 
+(EngineCore pid=1461884) INFO 08-01 17:09:49 [default_loader.py:430] Loading weights took 24.02 seconds
+(EngineCore pid=1461884) INFO 08-01 17:09:49 [unquantized.py:374] Using MoEPrepareAndFinalizeNoDPEPMonolithic
+(EngineCore pid=1461884) INFO 08-01 17:09:49 [unquantized.py:375] Using TrtLlmBf16ExpertsMonolithic MoE backend
+(EngineCore pid=1461884) INFO 08-01 17:09:50 [gpu_model_runner.py:5347] Model loading took 56.88 GiB memory and 24.757738 seconds
+(EngineCore pid=1461884) INFO 08-01 17:09:50 [utils.py:90] `_KV_CACHE_LAYOUT_OVERRIDE` variable detected. Setting KV cache layout to HND.
+(EngineCore pid=1461884) INFO 08-01 17:09:52 [backends.py:1094] Using cache directory: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/761ac7e0b1/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=1461884) INFO 08-01 17:09:52 [backends.py:1155] Dynamo bytecode transform time: 2.01 s
+(EngineCore pid=1461884) INFO 08-01 17:09:53 [backends.py:292] Directly load the compiled graph(s) for compile range (1, 4352) from the cache, took 1.026 s
+(EngineCore pid=1461884) INFO 08-01 17:09:53 [decorators.py:311] Directly load AOT compilation from path /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/torch_aot_compile/736df8a018a69da74d4f5cf2e5f41a51d2f0bff14383522276caa98a4d29fad6/rank_0_0/model
+(EngineCore pid=1461884) INFO 08-01 17:09:53 [monitor.py:53] torch.compile took 3.28 s in total
+[2026-08-01 17:09:53.755] [info] TRT-LLM fused MoE cooperative launch SM allocation: 140 SMs used for MoE, 8 SMs reserved for overlapping kernels (total SMs: 148)
+(EngineCore pid=1461884) 2026-08-01 17:09:53,760 - WARNING - core.py:2978 - flashinfer.jit: the single torch.Tensor return type is deprecated and will be replaced with List[torch.Tensor] in the v0.8.0.
+(EngineCore pid=1461884) INFO 08-01 17:09:53 [monitor.py:81] Initial profiling/warmup run took 0.31 s
+(EngineCore pid=1461884) INFO 08-01 17:09:54 [flashinfer.py:822] FlashInfer resolved query dtypes: prefill=torch.bfloat16, decode=torch.bfloat16, decode_backend=trtllm-gen, kv_cache_dtype=torch.bfloat16, arch=sm100
+(EngineCore pid=1461884) INFO 08-01 17:09:54 [gpu_model_runner.py:6612] Profiling CUDA graph memory: PIECEWISE=11 (largest=64), FULL=7 (largest=32)
+(EngineCore pid=1461884) WARNING 08-01 17:09:54 [flashinfer.py:503] Using TRTLLM prefill attention (auto-detected).
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [gpu_model_runner.py:6737] Estimated CUDA graph memory: 0.54 GiB total
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [gpu_worker.py:560] Available KV cache memory: 102.42 GiB
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [gpu_worker.py:575] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.9000 is equivalent to --gpu-memory-utilization=0.8970 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.9030. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [kv_cache_utils.py:2177] GPU KV cache size: 1,118,640 tokens
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [kv_cache_utils.py:2178] Maximum concurrency for 4,352 tokens per request: 257.04x
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [kernel_warmup.py:200] Skipping FlashInfer autotuning for ops ['flashinfer::trtllm_bf16_moe']
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [kernel_warmup.py:227] Using FlashInfer autotune cache file: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/flashinfer_autotune_cache/0.6.14/100a/0db16b078f22f28a0645a2d9549948ed9473fb147dc1dd0da021a7e53d1d9d2f/autotune_configs.json
+(EngineCore pid=1461884) 2026-08-01 17:09:55,256 - INFO - autotuner.py:651 - flashinfer.jit: [Autotuner]: Autotuning process starts ...
+(EngineCore pid=1461884) 2026-08-01 17:09:55,293 - INFO - autotuner.py:674 - flashinfer.jit: [Autotuner]: Autotuning process ends
+(EngineCore pid=1461884) WARNING 08-01 17:09:55 [kernel_warmup.py:258] No FlashInfer autotune cache entries found.Falling back to default tactics.
+(EngineCore pid=1461884) INFO 08-01 17:09:55 [kernel_warmup.py:65] Warming up ll_bf16 router GEMM kernels.
+(EngineCore pid=1461884) INFO 08-01 17:10:01 [kernel_warmup.py:147] Warming up FlashInfer attention.
+(EngineCore pid=1461884) INFO 08-01 17:10:01 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(EngineCore pid=1461884) INFO 08-01 17:10:01 [gpu_model_runner.py:6798] Rank 0: Torch profiler disabled for CUDA graph capture
+(EngineCore pid=1461884) Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   0%|          | 0/11 [00:00<?, ?it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   9%|▉         | 1/11 [00:00<00:01,  8.51it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  18%|█▊        | 2/11 [00:00<00:01,  8.56it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  27%|██▋       | 3/11 [00:00<00:00,  8.38it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  36%|███▋      | 4/11 [00:00<00:00,  8.29it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  45%|████▌     | 5/11 [00:00<00:00,  8.32it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  55%|█████▍    | 6/11 [00:00<00:00,  8.32it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  64%|██████▎   | 7/11 [00:00<00:00,  8.32it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  73%|███████▎  | 8/11 [00:00<00:00,  8.28it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  82%|████████▏ | 9/11 [00:01<00:00,  8.28it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  91%|█████████ | 10/11 [00:01<00:00,  8.27it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 11/11 [00:01<00:00,  7.88it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 11/11 [00:01<00:00,  8.19it/s]
+(EngineCore pid=1461884) Capturing CUDA graphs (decode, FULL):   0%|          | 0/7 [00:00<?, ?it/s]Capturing CUDA graphs (decode, FULL):  14%|█▍        | 1/7 [00:00<00:00,  8.70it/s]Capturing CUDA graphs (decode, FULL):  29%|██▊       | 2/7 [00:00<00:00,  8.80it/s]Capturing CUDA graphs (decode, FULL):  43%|████▎     | 3/7 [00:00<00:00,  8.81it/s]Capturing CUDA graphs (decode, FULL):  57%|█████▋    | 4/7 [00:00<00:00,  8.84it/s]Capturing CUDA graphs (decode, FULL):  71%|███████▏  | 5/7 [00:00<00:00,  8.75it/s]Capturing CUDA graphs (decode, FULL):  86%|████████▌ | 6/7 [00:00<00:00,  8.66it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 7/7 [00:00<00:00,  8.72it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 7/7 [00:00<00:00,  8.74it/s]
+(EngineCore pid=1461884) INFO 08-01 17:10:04 [gpu_model_runner.py:6844] Graph capturing finished in 3 secs, took 0.17 GiB
+(EngineCore pid=1461884) INFO 08-01 17:10:04 [gpu_worker.py:793] CUDA graph pool memory: 0.17 GiB (actual), 0.54 GiB (estimated), difference: 0.38 GiB (225.9%).
+(EngineCore pid=1461884) INFO 08-01 17:10:04 [gpu_worker.py:857] Free memory on device (177.74/178.35 GiB) on startup. Desired GPU memory utilization is (0.9, 160.52 GiB). Actual usage is 56.88 GiB for weight, 0.41 GiB for peak activation, 0.26 GiB for non-torch memory, and 0.17 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=110212691354` (102.64 GiB) to fit into requested memory, or `--kv-cache-memory=128706911232` (119.87 GiB) to fully utilize gpu memory. Current kv cache memory in use is 102.42 GiB.
+(EngineCore pid=1461884) INFO 08-01 17:10:05 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=1461884) INFO 08-01 17:10:05 [core.py:340] init engine (profile, create kv cache, warmup model) took 15.11 s (compilation: 3.28 s)
+(EngineCore pid=1461884) INFO 08-01 17:10:05 [vllm.py:1109] Asynchronous scheduling is enabled.
+(EngineCore pid=1461884) INFO 08-01 17:10:05 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+  vllm_original  b1      0.790 s  (0.7905 s/req)  peak None
+  vllm_original  b4      1.168 s  (0.2919 s/req)  peak None
+  vllm_original  b8      1.503 s  (0.1878 s/req)  peak None
+  vllm_original  b16     2.137 s  (0.1336 s/req)  peak None
+  vllm_original  b32     3.155 s  (0.0986 s/req)  peak None
+(EngineCore pid=1461884) INFO 08-01 17:10:34 [core.py:1313] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=1461884) INFO 08-01 17:10:34 [core.py:1432] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=1461884) INFO 08-01 17:10:34 [core.py:1463] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=1461884) INFO 08-01 17:10:34 [core.py:1326] [shutdown] EngineCore: exiting busy loop
+
+=== summary ===
+arm             batch   time(s)   act GiB  peak GiB
+---------------------------------------------------
+vllm_original       1     0.790       nan       nan
+vllm_original       4     1.168       nan       nan
+vllm_original       8     1.503       nan       nan
+vllm_original      16     2.137       nan       nan
+vllm_original      32     3.155       nan       nan
+
+wrote results/experiments/20260801-164912-c0910a-s15/probe_matrix_vllm.json
+=== arm 5 final rerun: fixed spawn-safe memory RPC ===
+INFO 08-01 17:12:32 [arg_utils.py:779] HF_HUB_OFFLINE is True, replace model_id [Qwen/Qwen3-30B-A3B] to model_path [/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39]
+INFO 08-01 17:12:32 [api_utils.py:273] non-default args: {'trust_remote_code': True, 'dtype': 'bfloat16', 'max_model_len': 4352, 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4352, 'max_num_seqs': 32, 'disable_log_stats': True, 'model': '/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39'}
+INFO 08-01 17:12:32 [model.py:623] Resolved architecture: Qwen3MoeForCausalLM
+INFO 08-01 17:12:32 [model.py:1788] Using max model len 4352
+INFO 08-01 17:12:32 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=4352.
+INFO 08-01 17:12:32 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 08-01 17:12:32 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=1741877) INFO 08-01 17:12:38 [core.py:116] Initializing a V1 LLM engine (v0.26.0) with config: model='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', speculative_config=None, tokenizer='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4352, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [4352], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 64, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=1741877) INFO 08-01 17:12:38 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://10.13.171.205:34291 backend=nccl
+(EngineCore pid=1741877) INFO 08-01 17:12:38 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(EngineCore pid=1741877) INFO 08-01 17:12:39 [topk_topp_sampler.py:55] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=1741877) INFO 08-01 17:12:39 [gpu_model_runner.py:5250] Starting to load model /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39...
+(EngineCore pid=1741877) INFO 08-01 17:12:39 [cuda.py:482] Using FLASHINFER attention backend out of potential backends: ['FLASHINFER', 'FLASH_ATTN', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=1741877) INFO 08-01 17:12:39 [selector.py:202] Using HND KV cache layout for FLASHINFER backend.
+(EngineCore pid=1741877) Exception in thread Thread-1 (_report_usage_worker):
+(EngineCore pid=1741877) Traceback (most recent call last):
+(EngineCore pid=1741877)   File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+(EngineCore pid=1741877)     self.run()
+(EngineCore pid=1741877)   File "/home/yi217029.ucf/.local/share/uv/python/cpython-3.12.11-linux-x86_64-gnu/lib/python3.12/threading.py", line 1012, in run
+(EngineCore pid=1741877)     self._target(*self._args, **self._kwargs)
+(EngineCore pid=1741877)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/usage/usage_lib.py", line 173, in _report_usage_worker
+(EngineCore pid=1741877)     self._report_usage_once(model_architecture, usage_context, extra_kvs)
+(EngineCore pid=1741877)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/usage/usage_lib.py", line 246, in _report_usage_once
+(EngineCore pid=1741877)     self._write_to_file(data)
+(EngineCore pid=1741877)   File "/tmp/badmoe-vllm-yi217029.ucf/venv-vllm/lib/python3.12/site-packages/vllm/usage/usage_lib.py", line 277, in _write_to_file
+(EngineCore pid=1741877)     with open(_USAGE_STATS_JSON_PATH, "a") as f:
+(EngineCore pid=1741877)          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(EngineCore pid=1741877) OSError: [Errno 28] No space left on device
+(EngineCore pid=1741877) INFO 08-01 17:12:40 [unquantized.py:302] Using FlashInfer TRTLLM Unquantized MoE backend out of potential backends: ['FlashInfer TRTLLM', 'FlashInfer CUTLASS', 'TRITON', 'BATCHED_TRITON'].
+(EngineCore pid=1741877) INFO 08-01 17:12:40 [weight_utils.py:869] Filesystem type for checkpoints: LUSTRE. Checkpoint size: 56.87 GiB. Available RAM: 1897.33 GiB.
+(EngineCore pid=1741877) INFO 08-01 17:12:40 [weight_utils.py:831] Prefetching checkpoint files into page cache started (in background, num_threads=8, block_size=16777216 bytes)
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:   0% Completed | 0/16 [00:00<?, ?it/s]
+(EngineCore pid=1741877) INFO 08-01 17:12:40 [weight_utils.py:803] Prefetching checkpoint files: 10% (2/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:40 [weight_utils.py:803] Prefetching checkpoint files: 20% (4/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:40 [weight_utils.py:803] Prefetching checkpoint files: 30% (5/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 40% (7/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 50% (8/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 60% (10/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 70% (12/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 80% (13/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 90% (15/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:803] Prefetching checkpoint files: 100% (16/16)
+(EngineCore pid=1741877) INFO 08-01 17:12:41 [weight_utils.py:826] Prefetching checkpoint files into page cache finished in 1.14s
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:   6% Completed | 1/16 [00:01<00:22,  1.52s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  12% Completed | 2/16 [00:03<00:21,  1.54s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  19% Completed | 3/16 [00:04<00:20,  1.58s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  25% Completed | 4/16 [00:06<00:18,  1.57s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  31% Completed | 5/16 [00:07<00:17,  1.57s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  38% Completed | 6/16 [00:09<00:15,  1.57s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  44% Completed | 7/16 [00:10<00:14,  1.56s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  50% Completed | 8/16 [00:12<00:12,  1.54s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  56% Completed | 9/16 [00:14<00:10,  1.55s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  62% Completed | 10/16 [00:15<00:09,  1.56s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  69% Completed | 11/16 [00:17<00:07,  1.56s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  75% Completed | 12/16 [00:18<00:06,  1.55s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  81% Completed | 13/16 [00:20<00:04,  1.54s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  88% Completed | 14/16 [00:21<00:03,  1.54s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards:  94% Completed | 15/16 [00:23<00:01,  1.54s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:23<00:00,  1.21s/it]
+(EngineCore pid=1741877) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:23<00:00,  1.48s/it]
+(EngineCore pid=1741877) 
+(EngineCore pid=1741877) INFO 08-01 17:13:04 [default_loader.py:430] Loading weights took 23.72 seconds
+(EngineCore pid=1741877) INFO 08-01 17:13:04 [unquantized.py:374] Using MoEPrepareAndFinalizeNoDPEPMonolithic
+(EngineCore pid=1741877) INFO 08-01 17:13:04 [unquantized.py:375] Using TrtLlmBf16ExpertsMonolithic MoE backend
+(EngineCore pid=1741877) INFO 08-01 17:13:04 [gpu_model_runner.py:5347] Model loading took 56.88 GiB memory and 24.688040 seconds
+(EngineCore pid=1741877) INFO 08-01 17:13:04 [utils.py:90] `_KV_CACHE_LAYOUT_OVERRIDE` variable detected. Setting KV cache layout to HND.
+(EngineCore pid=1741877) INFO 08-01 17:13:06 [backends.py:1094] Using cache directory: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/761ac7e0b1/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=1741877) INFO 08-01 17:13:06 [backends.py:1155] Dynamo bytecode transform time: 2.02 s
+(EngineCore pid=1741877) INFO 08-01 17:13:08 [backends.py:292] Directly load the compiled graph(s) for compile range (1, 4352) from the cache, took 1.096 s
+(EngineCore pid=1741877) INFO 08-01 17:13:08 [decorators.py:311] Directly load AOT compilation from path /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/torch_aot_compile/736df8a018a69da74d4f5cf2e5f41a51d2f0bff14383522276caa98a4d29fad6/rank_0_0/model
+(EngineCore pid=1741877) INFO 08-01 17:13:08 [monitor.py:53] torch.compile took 3.36 s in total
+[2026-08-01 17:13:08.485] [info] TRT-LLM fused MoE cooperative launch SM allocation: 140 SMs used for MoE, 8 SMs reserved for overlapping kernels (total SMs: 148)
+(EngineCore pid=1741877) 2026-08-01 17:13:08,490 - WARNING - core.py:2978 - flashinfer.jit: the single torch.Tensor return type is deprecated and will be replaced with List[torch.Tensor] in the v0.8.0.
+(EngineCore pid=1741877) INFO 08-01 17:13:08 [monitor.py:81] Initial profiling/warmup run took 0.31 s
+(EngineCore pid=1741877) INFO 08-01 17:13:08 [flashinfer.py:822] FlashInfer resolved query dtypes: prefill=torch.bfloat16, decode=torch.bfloat16, decode_backend=trtllm-gen, kv_cache_dtype=torch.bfloat16, arch=sm100
+(EngineCore pid=1741877) INFO 08-01 17:13:08 [gpu_model_runner.py:6612] Profiling CUDA graph memory: PIECEWISE=11 (largest=64), FULL=7 (largest=32)
+(EngineCore pid=1741877) WARNING 08-01 17:13:09 [flashinfer.py:503] Using TRTLLM prefill attention (auto-detected).
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [gpu_model_runner.py:6737] Estimated CUDA graph memory: 0.54 GiB total
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [gpu_worker.py:560] Available KV cache memory: 102.42 GiB
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [gpu_worker.py:575] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.9000 is equivalent to --gpu-memory-utilization=0.8970 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.9030. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [kv_cache_utils.py:2177] GPU KV cache size: 1,118,640 tokens
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [kv_cache_utils.py:2178] Maximum concurrency for 4,352 tokens per request: 257.04x
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [kernel_warmup.py:200] Skipping FlashInfer autotuning for ops ['flashinfer::trtllm_bf16_moe']
+(EngineCore pid=1741877) INFO 08-01 17:13:09 [kernel_warmup.py:227] Using FlashInfer autotune cache file: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/flashinfer_autotune_cache/0.6.14/100a/0db16b078f22f28a0645a2d9549948ed9473fb147dc1dd0da021a7e53d1d9d2f/autotune_configs.json
+(EngineCore pid=1741877) 2026-08-01 17:13:09,975 - INFO - autotuner.py:651 - flashinfer.jit: [Autotuner]: Autotuning process starts ...
+(EngineCore pid=1741877) 2026-08-01 17:13:10,012 - INFO - autotuner.py:674 - flashinfer.jit: [Autotuner]: Autotuning process ends
+(EngineCore pid=1741877) WARNING 08-01 17:13:10 [kernel_warmup.py:258] No FlashInfer autotune cache entries found.Falling back to default tactics.
+(EngineCore pid=1741877) INFO 08-01 17:13:10 [kernel_warmup.py:65] Warming up ll_bf16 router GEMM kernels.
+(EngineCore pid=1741877) INFO 08-01 17:13:16 [kernel_warmup.py:147] Warming up FlashInfer attention.
+(EngineCore pid=1741877) INFO 08-01 17:13:16 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(EngineCore pid=1741877) INFO 08-01 17:13:16 [gpu_model_runner.py:6798] Rank 0: Torch profiler disabled for CUDA graph capture
+(EngineCore pid=1741877) Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   0%|          | 0/11 [00:00<?, ?it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   9%|▉         | 1/11 [00:00<00:01,  8.37it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  18%|█▊        | 2/11 [00:00<00:01,  8.40it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  27%|██▋       | 3/11 [00:00<00:00,  8.25it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  36%|███▋      | 4/11 [00:00<00:00,  8.15it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  45%|████▌     | 5/11 [00:00<00:00,  8.15it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  55%|█████▍    | 6/11 [00:00<00:00,  8.17it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  64%|██████▎   | 7/11 [00:00<00:00,  8.18it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  73%|███████▎  | 8/11 [00:00<00:00,  8.16it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  82%|████████▏ | 9/11 [00:01<00:00,  8.16it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  91%|█████████ | 10/11 [00:01<00:00,  8.16it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 11/11 [00:01<00:00,  7.75it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 11/11 [00:01<00:00,  8.05it/s]
+(EngineCore pid=1741877) Capturing CUDA graphs (decode, FULL):   0%|          | 0/7 [00:00<?, ?it/s]Capturing CUDA graphs (decode, FULL):  14%|█▍        | 1/7 [00:00<00:00,  8.57it/s]Capturing CUDA graphs (decode, FULL):  29%|██▊       | 2/7 [00:00<00:00,  8.70it/s]Capturing CUDA graphs (decode, FULL):  43%|████▎     | 3/7 [00:00<00:00,  8.70it/s]Capturing CUDA graphs (decode, FULL):  57%|█████▋    | 4/7 [00:00<00:00,  8.72it/s]Capturing CUDA graphs (decode, FULL):  71%|███████▏  | 5/7 [00:00<00:00,  8.66it/s]Capturing CUDA graphs (decode, FULL):  86%|████████▌ | 6/7 [00:00<00:00,  8.69it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 7/7 [00:00<00:00,  8.72it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 7/7 [00:00<00:00,  8.70it/s]
+(EngineCore pid=1741877) INFO 08-01 17:13:18 [gpu_model_runner.py:6844] Graph capturing finished in 3 secs, took 0.17 GiB
+(EngineCore pid=1741877) INFO 08-01 17:13:18 [gpu_worker.py:793] CUDA graph pool memory: 0.17 GiB (actual), 0.54 GiB (estimated), difference: 0.38 GiB (225.9%).
+(EngineCore pid=1741877) INFO 08-01 17:13:18 [gpu_worker.py:857] Free memory on device (177.74/178.35 GiB) on startup. Desired GPU memory utilization is (0.9, 160.52 GiB). Actual usage is 56.88 GiB for weight, 0.41 GiB for peak activation, 0.26 GiB for non-torch memory, and 0.17 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=110212691354` (102.64 GiB) to fit into requested memory, or `--kv-cache-memory=128706911232` (119.87 GiB) to fully utilize gpu memory. Current kv cache memory in use is 102.42 GiB.
+(EngineCore pid=1741877) INFO 08-01 17:13:19 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=1741877) INFO 08-01 17:13:19 [core.py:340] init engine (profile, create kv cache, warmup model) took 14.71 s (compilation: 3.36 s)
+(EngineCore pid=1741877) INFO 08-01 17:13:19 [vllm.py:1109] Asynchronous scheduling is enabled.
+(EngineCore pid=1741877) INFO 08-01 17:13:19 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+warning: could not reset vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+warning: could not read vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+  vllm_original  b1      0.792 s  (0.7921 s/req)  peak None
+warning: could not reset vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+warning: could not read vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+  vllm_original  b4      1.174 s  (0.2936 s/req)  peak None
+warning: could not reset vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+warning: could not read vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+  vllm_original  b8      1.506 s  (0.1882 s/req)  peak None
+warning: could not reset vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+warning: could not read vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+  vllm_original  b16     2.140 s  (0.1338 s/req)  peak None
+warning: could not reset vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+warning: could not read vLLM worker peak memory: Object of type <class 'function'> is not serializableSet VLLM_ALLOW_INSECURE_SERIALIZATION=1 to allow fallback to pickle-based serialization.
+  vllm_original  b32     3.169 s  (0.0990 s/req)  peak None
+(EngineCore pid=1741877) INFO 08-01 17:13:48 [core.py:1313] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=1741877) INFO 08-01 17:13:48 [core.py:1432] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=1741877) INFO 08-01 17:13:48 [core.py:1463] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=1741877) INFO 08-01 17:13:48 [core.py:1326] [shutdown] EngineCore: exiting busy loop
+
+=== summary ===
+arm             batch   time(s)   act GiB  peak GiB
+---------------------------------------------------
+vllm_original       1     0.792       nan       nan
+vllm_original       4     1.174       nan       nan
+vllm_original       8     1.506       nan       nan
+vllm_original      16     2.140       nan       nan
+vllm_original      32     3.169       nan       nan
+
+wrote results/experiments/20260801-164912-c0910a-s15/probe_matrix_vllm.json
+=== arm 5 definitive run: spawn-safe trusted memory RPC, usage telemetry disabled ===
+INFO 08-01 17:15:12 [arg_utils.py:779] HF_HUB_OFFLINE is True, replace model_id [Qwen/Qwen3-30B-A3B] to model_path [/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39]
+INFO 08-01 17:15:12 [api_utils.py:273] non-default args: {'trust_remote_code': True, 'dtype': 'bfloat16', 'max_model_len': 4352, 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 4352, 'max_num_seqs': 32, 'disable_log_stats': True, 'model': '/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39'}
+INFO 08-01 17:15:12 [model.py:623] Resolved architecture: Qwen3MoeForCausalLM
+INFO 08-01 17:15:12 [model.py:1788] Using max model len 4352
+INFO 08-01 17:15:12 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=4352.
+INFO 08-01 17:15:12 [vllm.py:1109] Asynchronous scheduling is enabled.
+INFO 08-01 17:15:12 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(EngineCore pid=2007565) INFO 08-01 17:15:18 [core.py:116] Initializing a V1 LLM engine (v0.26.0) with config: model='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', speculative_config=None, tokenizer='/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4352, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=False, enable_return_routed_experts=False, kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.VLLM_COMPILE: 3>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['none'], 'ir_enable_torch_wrap': True, 'splitting_ops': ['vllm::unified_attention_with_output', 'vllm::unified_mla_attention_with_output', 'vllm::mamba_mixer2', 'vllm::mamba_mixer', 'vllm::short_conv', 'vllm::linear_attention', 'vllm::plamo2_mamba_mixer', 'vllm::qwen_gdn_attention_core', 'vllm::gdn_attention_core_xpu', 'vllm::olmo_hybrid_gdn_full_forward', 'vllm::kda_attention', 'vllm::sparse_attn_indexer', 'vllm::rocm_aiter_sparse_attn_indexer', 'vllm::deepseek_v4_attention', 'vllm::hpc_rope_norm_forward', 'vllm::unified_kv_cache_update', 'vllm::unified_mla_kv_cache_update'], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [4352], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'size_asserts': False, 'alignment_asserts': False, 'scalar_asserts': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'cudagraph_num_of_warmups': 1, 'cudagraph_capture_sizes': [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': False, 'fuse_act_quant': False, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 64, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='auto', linear_backend='auto')
+(EngineCore pid=2007565) INFO 08-01 17:15:19 [parallel_state.py:1615] world_size=1 rank=0 local_rank=0 distributed_init_method=tcp://10.13.171.205:56245 backend=nccl
+(EngineCore pid=2007565) INFO 08-01 17:15:19 [parallel_state.py:1946] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(EngineCore pid=2007565) INFO 08-01 17:15:19 [topk_topp_sampler.py:55] Using FlashInfer for top-p & top-k sampling.
+(EngineCore pid=2007565) INFO 08-01 17:15:19 [gpu_model_runner.py:5250] Starting to load model /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub/models--Qwen--Qwen3-30B-A3B/snapshots/ad44e777bcd18fa416d9da3bd8f70d33ebb85d39...
+(EngineCore pid=2007565) INFO 08-01 17:15:20 [cuda.py:482] Using FLASHINFER attention backend out of potential backends: ['FLASHINFER', 'FLASH_ATTN', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+(EngineCore pid=2007565) INFO 08-01 17:15:20 [selector.py:202] Using HND KV cache layout for FLASHINFER backend.
+(EngineCore pid=2007565) INFO 08-01 17:15:20 [unquantized.py:302] Using FlashInfer TRTLLM Unquantized MoE backend out of potential backends: ['FlashInfer TRTLLM', 'FlashInfer CUTLASS', 'TRITON', 'BATCHED_TRITON'].
+(EngineCore pid=2007565) INFO 08-01 17:15:20 [weight_utils.py:869] Filesystem type for checkpoints: LUSTRE. Checkpoint size: 56.87 GiB. Available RAM: 1897.24 GiB.
+(EngineCore pid=2007565) INFO 08-01 17:15:20 [weight_utils.py:831] Prefetching checkpoint files into page cache started (in background, num_threads=8, block_size=16777216 bytes)
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:   0% Completed | 0/16 [00:00<?, ?it/s]
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 10% (2/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 20% (4/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 30% (5/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 40% (7/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 50% (8/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 60% (10/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 70% (12/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:21 [weight_utils.py:803] Prefetching checkpoint files: 80% (13/16)
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:   6% Completed | 1/16 [00:01<00:22,  1.51s/it]
+(EngineCore pid=2007565) INFO 08-01 17:15:22 [weight_utils.py:803] Prefetching checkpoint files: 90% (15/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:22 [weight_utils.py:803] Prefetching checkpoint files: 100% (16/16)
+(EngineCore pid=2007565) INFO 08-01 17:15:22 [weight_utils.py:826] Prefetching checkpoint files into page cache finished in 2.15s
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  12% Completed | 2/16 [00:03<00:21,  1.55s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  19% Completed | 3/16 [00:04<00:20,  1.56s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  25% Completed | 4/16 [00:06<00:18,  1.56s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  31% Completed | 5/16 [00:07<00:17,  1.58s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  38% Completed | 6/16 [00:09<00:15,  1.58s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  44% Completed | 7/16 [00:10<00:14,  1.57s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  50% Completed | 8/16 [00:12<00:12,  1.57s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  56% Completed | 9/16 [00:14<00:11,  1.57s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  62% Completed | 10/16 [00:15<00:09,  1.57s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  69% Completed | 11/16 [00:17<00:07,  1.57s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  75% Completed | 12/16 [00:18<00:06,  1.56s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  81% Completed | 13/16 [00:20<00:04,  1.55s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  88% Completed | 14/16 [00:21<00:03,  1.55s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards:  94% Completed | 15/16 [00:23<00:01,  1.55s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:23<00:00,  1.21s/it]
+(EngineCore pid=2007565) Loading safetensors checkpoint shards: 100% Completed | 16/16 [00:23<00:00,  1.49s/it]
+(EngineCore pid=2007565) 
+(EngineCore pid=2007565) INFO 08-01 17:15:44 [default_loader.py:430] Loading weights took 23.88 seconds
+(EngineCore pid=2007565) INFO 08-01 17:15:44 [unquantized.py:374] Using MoEPrepareAndFinalizeNoDPEPMonolithic
+(EngineCore pid=2007565) INFO 08-01 17:15:44 [unquantized.py:375] Using TrtLlmBf16ExpertsMonolithic MoE backend
+(EngineCore pid=2007565) INFO 08-01 17:15:45 [gpu_model_runner.py:5347] Model loading took 56.88 GiB memory and 24.588424 seconds
+(EngineCore pid=2007565) INFO 08-01 17:15:45 [utils.py:90] `_KV_CACHE_LAYOUT_OVERRIDE` variable detected. Setting KV cache layout to HND.
+(EngineCore pid=2007565) INFO 08-01 17:15:51 [backends.py:1094] Using cache directory: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/5fc1384be1/rank_0_0/backbone for vLLM's torch.compile
+(EngineCore pid=2007565) INFO 08-01 17:15:51 [backends.py:1155] Dynamo bytecode transform time: 5.85 s
+(EngineCore pid=2007565) INFO 08-01 17:15:52 [backends.py:378] Cache the graph of compile range (1, 4352) for later use
+(EngineCore pid=2007565) INFO 08-01 17:15:54 [backends.py:393] Compiling a graph for compile range (1, 4352) takes 3.25 s
+(EngineCore pid=2007565) INFO 08-01 17:15:57 [decorators.py:708] saved AOT compiled function to /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/torch_compile_cache/torch_aot_compile/e4e516419fe2dad8c4186c968fd147e7a835c5c8cb2b160ad68f063ad342a9d8/rank_0_0/model
+(EngineCore pid=2007565) INFO 08-01 17:15:57 [monitor.py:53] torch.compile took 12.54 s in total
+[2026-08-01 17:15:58.044] [info] TRT-LLM fused MoE cooperative launch SM allocation: 140 SMs used for MoE, 8 SMs reserved for overlapping kernels (total SMs: 148)
+(EngineCore pid=2007565) 2026-08-01 17:15:58,049 - WARNING - core.py:2978 - flashinfer.jit: the single torch.Tensor return type is deprecated and will be replaced with List[torch.Tensor] in the v0.8.0.
+(EngineCore pid=2007565) INFO 08-01 17:15:58 [monitor.py:81] Initial profiling/warmup run took 0.40 s
+(EngineCore pid=2007565) INFO 08-01 17:15:58 [flashinfer.py:822] FlashInfer resolved query dtypes: prefill=torch.bfloat16, decode=torch.bfloat16, decode_backend=trtllm-gen, kv_cache_dtype=torch.bfloat16, arch=sm100
+(EngineCore pid=2007565) INFO 08-01 17:15:58 [gpu_model_runner.py:6612] Profiling CUDA graph memory: PIECEWISE=11 (largest=64), FULL=7 (largest=32)
+(EngineCore pid=2007565) WARNING 08-01 17:15:58 [flashinfer.py:503] Using TRTLLM prefill attention (auto-detected).
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [gpu_model_runner.py:6737] Estimated CUDA graph memory: 0.54 GiB total
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [gpu_worker.py:560] Available KV cache memory: 102.22 GiB
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [gpu_worker.py:575] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.9000 is equivalent to --gpu-memory-utilization=0.8970 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.9030. To disable, set VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=0.
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [kv_cache_utils.py:2177] GPU KV cache size: 1,116,464 tokens
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [kv_cache_utils.py:2178] Maximum concurrency for 4,352 tokens per request: 256.54x
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [kernel_warmup.py:200] Skipping FlashInfer autotuning for ops ['flashinfer::trtllm_bf16_moe']
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [kernel_warmup.py:227] Using FlashInfer autotune cache file: /tmp/badmoe-vllm-yi217029.ucf/runtime/vllm/flashinfer_autotune_cache/0.6.14/100a/8bf2f90e6a30ba17ea8766ffee5c85bb77b07673c374bff167c2bdb9017e6704/autotune_configs.json
+(EngineCore pid=2007565) 2026-08-01 17:15:59,868 - INFO - autotuner.py:651 - flashinfer.jit: [Autotuner]: Autotuning process starts ...
+(EngineCore pid=2007565) 2026-08-01 17:15:59,905 - INFO - autotuner.py:674 - flashinfer.jit: [Autotuner]: Autotuning process ends
+(EngineCore pid=2007565) WARNING 08-01 17:15:59 [kernel_warmup.py:258] No FlashInfer autotune cache entries found.Falling back to default tactics.
+(EngineCore pid=2007565) INFO 08-01 17:15:59 [kernel_warmup.py:65] Warming up ll_bf16 router GEMM kernels.
+(EngineCore pid=2007565) INFO 08-01 17:16:06 [kernel_warmup.py:147] Warming up FlashInfer attention.
+(EngineCore pid=2007565) INFO 08-01 17:16:06 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(EngineCore pid=2007565) INFO 08-01 17:16:06 [gpu_model_runner.py:6798] Rank 0: Torch profiler disabled for CUDA graph capture
+(EngineCore pid=2007565) Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   0%|          | 0/11 [00:00<?, ?it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):   9%|▉         | 1/11 [00:00<00:01,  8.46it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  18%|█▊        | 2/11 [00:00<00:01,  8.49it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  27%|██▋       | 3/11 [00:00<00:00,  8.33it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  36%|███▋      | 4/11 [00:00<00:00,  8.25it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  45%|████▌     | 5/11 [00:00<00:00,  8.31it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  55%|█████▍    | 6/11 [00:00<00:00,  8.31it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  64%|██████▎   | 7/11 [00:00<00:00,  8.30it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  73%|███████▎  | 8/11 [00:00<00:00,  8.28it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  82%|████████▏ | 9/11 [00:01<00:00,  8.28it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE):  91%|█████████ | 10/11 [00:01<00:00,  8.28it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 11/11 [00:01<00:00,  7.89it/s]Capturing CUDA graphs (mixed prefill-decode, PIECEWISE): 100%|██████████| 11/11 [00:01<00:00,  8.18it/s]
+(EngineCore pid=2007565) Capturing CUDA graphs (decode, FULL):   0%|          | 0/7 [00:00<?, ?it/s]Capturing CUDA graphs (decode, FULL):  14%|█▍        | 1/7 [00:00<00:00,  8.69it/s]Capturing CUDA graphs (decode, FULL):  29%|██▊       | 2/7 [00:00<00:00,  8.81it/s]Capturing CUDA graphs (decode, FULL):  43%|████▎     | 3/7 [00:00<00:00,  8.81it/s]Capturing CUDA graphs (decode, FULL):  57%|█████▋    | 4/7 [00:00<00:00,  8.84it/s]Capturing CUDA graphs (decode, FULL):  71%|███████▏  | 5/7 [00:00<00:00,  8.84it/s]Capturing CUDA graphs (decode, FULL):  86%|████████▌ | 6/7 [00:00<00:00,  8.81it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 7/7 [00:00<00:00,  8.84it/s]Capturing CUDA graphs (decode, FULL): 100%|██████████| 7/7 [00:00<00:00,  8.83it/s]
+(EngineCore pid=2007565) INFO 08-01 17:16:08 [gpu_model_runner.py:6844] Graph capturing finished in 3 secs, took 0.17 GiB
+(EngineCore pid=2007565) INFO 08-01 17:16:08 [gpu_worker.py:793] CUDA graph pool memory: 0.17 GiB (actual), 0.54 GiB (estimated), difference: 0.38 GiB (225.9%).
+(EngineCore pid=2007565) INFO 08-01 17:16:08 [gpu_worker.py:857] Free memory on device (177.74/178.35 GiB) on startup. Desired GPU memory utilization is (0.9, 160.52 GiB). Actual usage is 56.88 GiB for weight, 0.61 GiB for peak activation, 0.26 GiB for non-torch memory, and 0.17 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=109999617434` (102.45 GiB) to fit into requested memory, or `--kv-cache-memory=128493837312` (119.67 GiB) to fully utilize gpu memory. Current kv cache memory in use is 102.22 GiB.
+(EngineCore pid=2007565) INFO 08-01 17:16:09 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=2007565) INFO 08-01 17:16:09 [core.py:340] init engine (profile, create kv cache, warmup model) took 24.22 s (compilation: 12.54 s)
+(EngineCore pid=2007565) WARNING 08-01 17:16:09 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1
+(EngineCore pid=2007565) INFO 08-01 17:16:09 [vllm.py:1109] Asynchronous scheduling is enabled.
+(EngineCore pid=2007565) INFO 08-01 17:16:09 [kernel.py:295] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+WARNING 08-01 17:16:09 [serial_utils.py:79] Allowing insecure serialization using pickle due to VLLM_ALLOW_INSECURE_SERIALIZATION=1
+  vllm_original  b1      0.787 s  (0.7872 s/req)  peak 159.92641830444336
+  vllm_original  b4      1.171 s  (0.2929 s/req)  peak 159.94735050201416
+  vllm_original  b8      1.504 s  (0.1880 s/req)  peak 159.94735050201416
+  vllm_original  b16     2.155 s  (0.1347 s/req)  peak 159.94735050201416
+  vllm_original  b32     3.179 s  (0.0993 s/req)  peak 159.94735050201416
+(EngineCore pid=2007565) INFO 08-01 17:16:38 [core.py:1313] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=2007565) INFO 08-01 17:16:38 [core.py:1432] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=2007565) INFO 08-01 17:16:38 [core.py:1463] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=2007565) INFO 08-01 17:16:38 [core.py:1326] [shutdown] EngineCore: exiting busy loop
+
+=== summary ===
+arm             batch   time(s)   act GiB  peak GiB
+---------------------------------------------------
+vllm_original       1     0.787       nan    159.93
+vllm_original       4     1.171       nan    159.95
+vllm_original       8     1.504       nan    159.95
+vllm_original      16     2.155       nan    159.95
+vllm_original      32     3.179       nan    159.95
+
+wrote results/experiments/20260801-164912-c0910a-s15/probe_matrix_vllm.json

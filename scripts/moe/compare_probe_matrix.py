@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import statistics
 import sys
 from pathlib import Path
@@ -224,6 +225,23 @@ def run_probe_arms(args) -> dict:
 # --------------------------------------------------------------------------- #
 
 
+def _vllm_worker_peak_memory_gib(worker) -> float:
+    """Return the worker's CUDA allocator peak through vLLM collective RPC."""
+    import torch as worker_torch
+
+    if not worker_torch.cuda.is_available():
+        return 0.0
+    return worker_torch.cuda.max_memory_allocated() / 2**30
+
+
+def _vllm_worker_reset_peak_memory(worker) -> None:
+    """Reset the worker's CUDA allocator peak through vLLM collective RPC."""
+    import torch as worker_torch
+
+    if worker_torch.cuda.is_available():
+        worker_torch.cuda.reset_peak_memory_stats()
+
+
 def run_vllm_arm(args) -> dict:
     """Original vLLM generation, no probe. Measured in its own process.
 
@@ -254,24 +272,22 @@ def run_vllm_arm(args) -> dict:
                               ignore_eos=True)
 
     def peak_gib():
-        def _peak(worker):
-            import torch as _torch
-            return _torch.cuda.max_memory_allocated() / 2**30 if _torch.cuda.is_available() else 0.0
         try:
-            values = [v for v in llm.collective_rpc(_peak) if isinstance(v, (int, float))]
+            values = [
+                value
+                for value in llm.collective_rpc(_vllm_worker_peak_memory_gib)
+                if isinstance(value, (int, float))
+            ]
             return max(values) if values else None
-        except Exception:  # noqa: BLE001
+        except Exception as error:  # noqa: BLE001
+            print(f"warning: could not read vLLM worker peak memory: {error}")
             return None
 
     def reset_peak():
-        def _reset(worker):
-            import torch as _torch
-            if _torch.cuda.is_available():
-                _torch.cuda.reset_peak_memory_stats()
         try:
-            llm.collective_rpc(_reset)
-        except Exception:  # noqa: BLE001
-            pass
+            llm.collective_rpc(_vllm_worker_reset_peak_memory)
+        except Exception as error:  # noqa: BLE001
+            print(f"warning: could not reset vLLM worker peak memory: {error}")
 
     records = []
     for batch_size in args.batch_sizes:
@@ -303,6 +319,15 @@ def run_vllm_arm(args) -> dict:
             "output_tokens": args.output_tokens, "batch_sizes": args.batch_sizes,
             "repeats": args.repeats,
             "gpu_memory_utilization": args.gpu_memory_utilization,
+            "worker_multiproc_method": os.environ.get(
+                "VLLM_WORKER_MULTIPROC_METHOD", "fork"
+            ),
+            "allow_insecure_serialization": os.environ.get(
+                "VLLM_ALLOW_INSECURE_SERIALIZATION"
+            ),
+            "flashinfer_autotune_skip_ops": os.environ.get(
+                "VLLM_FLASHINFER_AUTOTUNE_SKIP_OPS"
+            ),
         },
         "measurements": records,
     }
@@ -310,6 +335,14 @@ def run_vllm_arm(args) -> dict:
 
 def main() -> int:
     args = parse_args()
+    # This script checks CUDA before constructing LLM. vLLM's default `fork`
+    # cannot safely reinitialize that CUDA context in EngineCore, so make the
+    # printed standalone --vllm-only command work without an extra env override.
+    if args.vllm_only:
+        os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+        # collective_rpc must serialize the two local, trusted CUDA-memory
+        # callbacks above. vLLM 0.26 requires an explicit opt-in for callables.
+        os.environ.setdefault("VLLM_ALLOW_INSECURE_SERIALIZATION", "1")
     if not torch.cuda.is_available():
         print("CUDA is required.", file=sys.stderr)
         return 2

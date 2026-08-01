@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "arm": "vllm_original",
+    "prompt_tokens": 4096,
+    "output_tokens": 256,
+    "batch_sizes": [
+      1,
+      4,
+      8,
+      16,
+      32
+    ],
+    "repeats": 3,
+    "gpu_memory_utilization": 0.9,
+    "worker_multiproc_method": "spawn",
+    "allow_insecure_serialization": "1",
+    "flashinfer_autotune_skip_ops": "flashinfer::trtllm_bf16_moe"
+  },
+  "measurements": [
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 1,
+      "prompt_tokens": 4096,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 0.7872058372013271,
+      "seconds_per_request": 0.7872058372013271,
+      "peak_allocated_gib": 159.92641830444336,
+      "all_total_seconds": [
+        0.7906988528557122,
+        0.7869441453367472,
+        0.7872058372013271
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 4,
+      "prompt_tokens": 4096,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 1.171441666316241,
+      "seconds_per_request": 0.29286041657906026,
+      "peak_allocated_gib": 159.94735050201416,
+      "all_total_seconds": [
+        1.168223038315773,
+        1.180771408136934,
+        1.171441666316241
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 8,
+      "prompt_tokens": 4096,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 1.5039530899375677,
+      "seconds_per_request": 0.18799413624219596,
+      "peak_allocated_gib": 159.94735050201416,
+      "all_total_seconds": [
+        1.5078573487699032,
+        1.4997409456409514,
+        1.5039530899375677
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 16,
+      "prompt_tokens": 4096,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 2.1545308399945498,
+      "seconds_per_request": 0.13465817749965936,
+      "peak_allocated_gib": 159.94735050201416,
+      "all_total_seconds": [
+        2.1342512760311365,
+        2.1545308399945498,
+        2.156861464958638
+      ]
+    },
+    {
+      "arm": "vllm_original",
+      "kernel": "vllm",
+      "checkpointing": null,
+      "batch_size": 32,
+      "prompt_tokens": 4096,
+      "output_tokens": 256,
+      "status": "ok",
+      "total_seconds": 3.178616134915501,
+      "seconds_per_request": 0.0993317542161094,
+      "peak_allocated_gib": 159.94735050201416,
+      "all_total_seconds": [
+        3.1932923272252083,
+        3.178616134915501,
+        3.1495278128422797
+      ]
+    }
+  ]
+}
