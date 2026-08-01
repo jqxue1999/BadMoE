@@ -242,6 +242,42 @@ def verify_bias_budget(
     }
 
 
+def gpu_peak_memory_gib(llm) -> float | None:
+    """Peak GPU memory across the workers, in GiB, or None if unavailable.
+
+    Read from inside the workers rather than with nvidia-smi: under Slurm the
+    allocated device is often not index 0, so a host-side query can report an
+    unrelated card. torch's own peak counter is also unaffected by other tenants.
+    """
+    def _peak(worker):
+        import torch as _torch
+
+        if not _torch.cuda.is_available():
+            return 0.0
+        return _torch.cuda.max_memory_allocated() / 2**30
+
+    try:
+        values = llm.collective_rpc(_peak)
+    except Exception:  # noqa: BLE001 - diagnostics must never fail the benchmark
+        return None
+    values = [v for v in (values or []) if isinstance(v, (int, float))]
+    return max(values) if values else None
+
+
+def reset_gpu_peak_memory(llm) -> None:
+    """Zero the workers' peak counters so each cell is measured on its own."""
+    def _reset(worker):
+        import torch as _torch
+
+        if _torch.cuda.is_available():
+            _torch.cuda.reset_peak_memory_stats()
+
+    try:
+        llm.collective_rpc(_reset)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def run_wave(
     llm,
     pira,
@@ -489,6 +525,7 @@ def main() -> int:
                     if method == "PIRA":
                         pira.reset_counters(llm)
 
+                    reset_gpu_peak_memory(llm)
                     durations = []
                     for repeat in range(args.repeats):
                         elapsed, produced = run_cell(
@@ -532,6 +569,7 @@ def main() -> int:
                         "seconds_per_request": median / total,
                         "request_throughput": total / median,
                         "output_token_throughput": total * output_length / median,
+                        "peak_gpu_gib": gpu_peak_memory_gib(llm),
                     }
                     suffix = ""
                     if method == "PIRA":
@@ -593,7 +631,7 @@ def main() -> int:
     print("\n=== routing-intervention overhead (generation only, probe excluded) ===")
     header = (
         f"{'in':>6} {'out':>5} {'conc':>5} {'Original(s)':>12} "
-        f"{'PIRA(s)':>10} {'overhead':>9}"
+        f"{'PIRA(s)':>10} {'overhead':>9} {'peak GiB O/P':>14}"
     )
     print(header)
     print("-" * len(header))
@@ -629,6 +667,8 @@ def main() -> int:
                         "pira_seconds_per_request": biased["seconds_per_request"],
                         "routing_overhead_fraction": ratio,
                         "routing_overhead_percent": 100.0 * ratio,
+                        "original_peak_gpu_gib": original.get("peak_gpu_gib"),
+                        "pira_peak_gpu_gib": biased.get("peak_gpu_gib"),
                         "rows_biased": biased.get("rows_biased", 0),
                         "forward_passes": biased.get("forward_passes", 0),
                         "expected_min_forward_passes": biased.get(
@@ -637,11 +677,18 @@ def main() -> int:
                         "hook_live": biased.get("hook_live", False),
                     }
                 )
+                orig_mem = original.get("peak_gpu_gib")
+                pira_mem = biased.get("peak_gpu_gib")
+                memory = (
+                    f"{orig_mem:>6.1f}/{pira_mem:<6.1f}"
+                    if orig_mem is not None and pira_mem is not None
+                    else f"{'n/a':>13}"
+                )
                 print(
                     f"{input_length:>6} {output_length:>5} {concurrency:>5} "
                     f"{original['median_seconds']:>12.3f} "
                     f"{biased['median_seconds']:>10.3f} "
-                    f"{100.0 * ratio:>8.1f}%"
+                    f"{100.0 * ratio:>8.1f}% {memory}"
                     + ("" if biased.get("hook_live") else "   <-- HOOK NOT LIVE")
                 )
 

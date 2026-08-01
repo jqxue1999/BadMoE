@@ -79,15 +79,30 @@ heartbeat() {
     local minutes=$(( (SECONDS - started) / 60 ))
     local gpu="n/a"
     if command -v nvidia-smi >/dev/null 2>&1; then
-      gpu=$(nvidia-smi --query-gpu=utilization.gpu,memory.used \
-            --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ')
-      gpu="util=${gpu%,*}% mem=${gpu#*,}MiB"
+      # Sum across all visible devices rather than reading index 0: under Slurm
+      # the allocated GPU is often not device 0, and reporting the wrong card
+      # shows mem=0MiB while the job is in fact loading weights.
+      gpu=$(nvidia-smi --query-gpu=index,utilization.gpu,memory.used \
+            --format=csv,noheader,nounits 2>/dev/null \
+            | awk -F', *' '{u=($2>u?$2:u); m+=$3; n++}
+                           END {printf "util_max=%d%% mem_total=%dMiB gpus=%d", u, m, n}')
+      [[ -z "$gpu" ]] && gpu="nvidia-smi failed"
+    fi
+    # Process state distinguishes "computing" from "blocked on I/O": R=running,
+    # D=uninterruptible sleep (the state a dead Lustre mount produces), S=sleeping.
+    local proc="none"
+    local child
+    child=$(pgrep -P $parent -n . 2>/dev/null || pgrep -f "scripts/moe/rebuttal" 2>/dev/null | head -1)
+    if [[ -n "$child" ]]; then
+      proc=$(ps -o stat=,%cpu=,rss= -p "$child" 2>/dev/null \
+             | awk '{printf "stat=%s cpu=%s%% rss=%.1fGiB", $1, $2, $3/1048576}')
+      [[ -z "$proc" ]] && proc="child $child gone"
     fi
     local cache
     cache=$(du -sm "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" \
             "$FLASHINFER_WORKSPACE_BASE/.cache/flashinfer" 2>/dev/null \
             | awk '{s+=$1} END {print s+0}')
-    echo "  [heartbeat ${minutes}m] $gpu compile_cache=${cache}MiB"
+    echo "  [heartbeat ${minutes}m] $gpu compile_cache=${cache}MiB $proc"
   done
 }
 
@@ -608,11 +623,16 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
   echo
 
   echo "--- probe scaling and activation memory (arm C) ---"
+  # Batch sizes match the generation concurrencies (1, 8, 32) so the probe cost
+  # can be compared against the serving arms at equal batch. With only 1 and 4
+  # measured, a batch-4 probe had to stand in for concurrency 32, which inflated
+  # the reported overhead: probe throughput improves ~4x from batch 1 to 4
+  # (0.122 -> 0.030 s/req), so the substitution was far from neutral.
   "$HF_PY" scripts/moe/rebuttal_probe_scaling.py \
     --model "$MODEL" \
     --probe-layer "$PROBE_LAYER" \
     --prompt-tokens $PROMPT_TOKENS \
-    --batch-sizes 1 4 \
+    --batch-sizes ${PROBE_BATCH_SIZES:-1 4 8 32} \
     --compare-checkpointing \
     --output "$OUT/probe_scaling.json"
   echo
