@@ -79,9 +79,18 @@ else
   fi
   export HF_HOME="$CACHE_BASE/huggingface"
 fi
-# Same reasoning: these override HF_HOME when set, so a stale export would split
-# the caches across filesystems.
-unset HF_XET_CACHE HF_HUB_CACHE HUGGINGFACE_HUB_CACHE TRANSFORMERS_CACHE
+# Every HF cache variable is re-pointed, not merely unset. Each of these overrides
+# HF_HOME when present, and they are inherited by the vLLM worker subprocesses, so
+# one stale export is enough to send part of the I/O to another filesystem. That is
+# what happened: HF_HOME was correctly ignored and the weights landed on orange,
+# but TRANSFORMERS_CACHE and HF_DATASETS_CACHE still pointed at a blue allocation,
+# and the worker died reading it (Lustre "operation ost_read ... rc = -116").
+export HF_HUB_CACHE="$HF_HOME/hub"
+export HF_XET_CACHE="$HF_HOME/xet"
+export HUGGINGFACE_HUB_CACHE="$HF_HOME/hub"
+export TRANSFORMERS_CACHE="$HF_HOME"
+export HF_DATASETS_CACHE="$HF_HOME/datasets"
+export HF_MODULES_CACHE="$HF_HOME/modules"
 export TORCH_HOME="${TORCH_HOME:-$CACHE_BASE/torch}"
 export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_BASE/triton}"
 export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_BASE/inductor}"
@@ -119,11 +128,68 @@ check_space() {
   return 0
 }
 
+# A capacity check cannot tell a healthy filesystem from a broken one. A previous
+# run had the weights on orange but other HF variables pointing at a blue
+# allocation whose Lustre mount was failing (rc = -116 / ESTALE); the worker hung
+# on unfinishable I/O and vanished with no traceback. Actually writing and reading
+# a file surfaces that in a second.
+check_writable() {
+  local path="$1" label="$2"
+  local probe="$path/.pira_write_test.$$"
+  mkdir -p "$path" 2>/dev/null
+  # Redirection failures are reported by the shell itself, so they are silenced
+  # here and surfaced through the message below instead.
+  if ! { printf 'ok' > "$probe"; } 2>/dev/null; then
+    echo "  $label: NOT WRITABLE ($path)"
+    return 1
+  fi
+  if [[ "$(cat "$probe" 2>/dev/null)" != "ok" ]]; then
+    rm -f "$probe" 2>/dev/null
+    echo "  $label: write succeeded but read back wrong ($path)"
+    return 1
+  fi
+  rm -f "$probe" 2>/dev/null
+  echo "  $label: read/write ok   ($(df -h --output=target "$path" 2>/dev/null | tail -1 | xargs))"
+  return 0
+}
+
 check_disk_space() {
-  echo "--- disk space ---"
-  echo "  model cache dir: $HF_HOME"
+  echo "--- cache locations ---"
+  # Printed in full because the failure mode is a variable quietly pointing
+  # somewhere else, which is invisible unless the resolved paths are shown.
+  for name in HF_HOME HF_HUB_CACHE HF_XET_CACHE TRANSFORMERS_CACHE \
+              HF_DATASETS_CACHE TORCH_HOME TRITON_CACHE_DIR \
+              TORCHINDUCTOR_CACHE_DIR VLLM_CACHE_ROOT TMPDIR; do
+    local value="${!name:-}"
+    local warn=""
+    [[ "$value" == "$HOME"* ]] && warn="   <-- ON HOME"
+    [[ -n "$value" && "$value" != "$CACHE_BASE"* && "$value" != "$HOME"* ]] \
+      && warn="   <-- OUTSIDE CACHE_BASE"
+    printf "  %-24s %s%s\n" "$name" "${value:-(unset)}" "$warn"
+  done
+  echo
+
+  echo "--- filesystem health ---"
   local failed=0
-  check_space "$HF_HOME" 120 "model cache" || failed=1
+  check_writable "$HF_HOME" "model cache" || failed=1
+  check_writable "$TMPDIR" "tmp / compile" || failed=1
+  echo
+
+  echo "--- disk space ---"
+  # Once the weights are cached the download headroom is no longer needed, and
+  # demanding it would block a run that can actually proceed. orange sat at 100%
+  # with 144 GiB free after the 57 GiB download, so the threshold has to reflect
+  # what is still to be fetched rather than the model size.
+  local cached_gib=0
+  if [[ -d "$HF_HOME/hub" ]]; then
+    cached_gib=$(du -sBG "$HF_HOME/hub" 2>/dev/null | tr -dc '0-9' || echo 0)
+  fi
+  local need=120
+  if [[ ${cached_gib:-0} -ge 50 ]]; then
+    need=20
+    echo "  model already cached (~${cached_gib} GiB), so only working room is needed"
+  fi
+  check_space "$HF_HOME" "$need" "model cache" || failed=1
   check_space "$TMPDIR" 20 "tmp / compile" || failed=1
   check_space "$HOME" 5 "home (python, misc)" || true
 
