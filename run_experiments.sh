@@ -50,6 +50,38 @@ OUT="results/experiments/${STAMP}-${HOST}"
 mkdir -p "$OUT"
 exec > >(tee -a "$OUT/run.log") 2>&1
 
+# Heartbeat. vLLM's compile phase can run 20+ minutes with almost no output, which
+# is indistinguishable from a hang -- and a previous run really did die silently
+# there. This prints elapsed time, GPU state and compile-cache growth every minute,
+# so "still working" and "stuck" can be told apart without another terminal.
+# Compile-cache size is the load-bearing signal: it grew not at all in the run that
+# died, and grows steadily during a healthy compile.
+heartbeat() {
+  local started=$SECONDS
+  local parent=$$
+  while true; do
+    # Sleep in short slices and re-check the parent, so the loop cannot outlive
+    # the script. Killing the subshell alone would leave a long `sleep` behind.
+    local waited=0
+    while [[ $waited -lt 60 ]]; do
+      sleep 5
+      waited=$((waited + 5))
+      kill -0 "$parent" 2>/dev/null || return 0
+    done
+    local minutes=$(( (SECONDS - started) / 60 ))
+    local gpu="n/a"
+    if command -v nvidia-smi >/dev/null 2>&1; then
+      gpu=$(nvidia-smi --query-gpu=utilization.gpu,memory.used \
+            --format=csv,noheader,nounits 2>/dev/null | head -1 | tr -d ' ')
+      gpu="util=${gpu%,*}% mem=${gpu#*,}MiB"
+    fi
+    local cache
+    cache=$(du -sm "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" 2>/dev/null \
+            | awk '{s+=$1} END {print s+0}')
+    echo "  [heartbeat ${minutes}m] $gpu compile_cache=${cache}MiB"
+  done
+}
+
 MODEL="${MODEL:-Qwen/Qwen3-30B-A3B}"
 PROBE_LAYER="${PROBE_LAYER:-24}"
 TOP_K="${TOP_K:-25}"
@@ -99,6 +131,17 @@ export TMPDIR="${TMPDIR:-$CACHE_BASE/tmp}"
 export PYTHONPATH="$REPO_ROOT/scripts/moe${PYTHONPATH:+:$PYTHONPATH}"
 export TOKENIZERS_PARALLELISM=false
 export PYTHONUNBUFFERED=1
+# Output is piped through tee, so Python would otherwise switch stdout from
+# line-buffered to fully buffered and hold several KB back -- which is why the
+# compile phase looked like a 20-minute hang with nothing printed.
+export PYTHONFAULTHANDLER=1
+# vLLM logs through `logging`, which has its own buffering and a quiet default.
+# INFO reports each compilation and capture step, so progress is visible instead
+# of inferred.
+export VLLM_LOGGING_LEVEL="${VLLM_LOGGING_LEVEL:-INFO}"
+export VLLM_LOG_STATS_INTERVAL="${VLLM_LOG_STATS_INTERVAL:-5}"
+# Announce each compiled/captured shape rather than only the totals.
+export VLLM_LOG_BATCHSIZE_INTERVAL="${VLLM_LOG_BATCHSIZE_INTERVAL:-10}"
 # Callable collective_rpc falls back to pickle in vLLM 0.19.0; needed for the
 # bias-registration and diagnostics RPCs. Local trusted code only.
 export VLLM_ALLOW_INSECURE_SERIALIZATION="${VLLM_ALLOW_INSECURE_SERIALIZATION:-1}"
@@ -246,6 +289,16 @@ echo "=================================================================="
 nvidia-smi 2>&1 | head -12 || echo "(nvidia-smi unavailable)"
 echo
 check_disk_space
+
+# Started only now: the heartbeat reports compile-cache growth, and the cache
+# variables above must be exported first or it would always print 0 MiB and look
+# like nothing was happening.
+heartbeat &
+HEARTBEAT_PID=$!
+# Kill the whole process group: killing the subshell alone leaves its `sleep`
+# child running, which then outlives the script.
+trap 'kill -- -$HEARTBEAT_PID 2>/dev/null || kill $HEARTBEAT_PID 2>/dev/null' \
+  EXIT INT TERM
 
 STEP1_STATUS="skipped"
 STEP2_STATUS="skipped"
