@@ -77,8 +77,55 @@ export PYTHONUNBUFFERED=1
 # Callable collective_rpc falls back to pickle in vLLM 0.19.0; needed for the
 # bias-registration and diagnostics RPCs. Local trusted code only.
 export VLLM_ALLOW_INSECURE_SERIALIZATION="${VLLM_ALLOW_INSECURE_SERIALIZATION:-1}"
-mkdir -p "$HF_HOME" "$TORCH_HOME" "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" \
-         "$VLLM_CACHE_ROOT" "$TMPDIR"
+# HuggingFace's Xet backend keeps its own cache, separate from HF_HOME/hub, and
+# both are read at import time. It is set explicitly because a download that
+# exceeds quota fails deep inside xet_get with only "Disk quota exceeded", after
+# tens of GiB have already been fetched.
+export HF_XET_CACHE="${HF_XET_CACHE:-$HF_HOME/xet}"
+export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
+mkdir -p "$HF_HOME" "$HF_XET_CACHE" "$HF_HUB_CACHE" "$TORCH_HOME" \
+         "$TRITON_CACHE_DIR" "$TORCHINDUCTOR_CACHE_DIR" "$VLLM_CACHE_ROOT" "$TMPDIR"
+
+# Qwen3-30B-A3B is ~60 GiB in bf16, and Xet stages chunks before assembling, so
+# the download needs roughly 120 GiB of headroom. Checking here turns a failure
+# 40 minutes into the run into a message before anything starts.
+check_space() {
+  local path="$1" need="$2" label="$3"
+  local avail
+  avail=$(df -BG --output=avail "$path" 2>/dev/null | tail -1 | tr -dc '0-9')
+  if [[ -z "$avail" ]]; then
+    echo "  $label: could not determine free space ($path)"
+    return 0
+  fi
+  printf "  %-22s %5s GiB free   (need ~%s GiB)   %s\n" \
+    "$label" "$avail" "$need" "$([[ $avail -lt $need ]] && echo '<-- TOO SMALL' || echo ok)"
+  [[ $avail -lt $need ]] && return 1
+  return 0
+}
+
+check_disk_space() {
+  echo "--- disk space ---"
+  echo "  model cache dir: $HF_HOME"
+  local failed=0
+  check_space "$HF_HOME" 120 "model cache" || failed=1
+  check_space "$TMPDIR" 20 "tmp / compile" || failed=1
+  check_space "$HOME" 5 "home (python, misc)" || true
+  if [[ $failed -ne 0 ]]; then
+    echo
+    echo "Not enough room for the model weights (~60 GiB, and Xet stages chunks"
+    echo "before assembling them). The previous run died with 'Disk quota"
+    echo "exceeded' partway through fetching them."
+    echo
+    echo "Re-run with the caches somewhere larger:"
+    echo "    CACHE_BASE=/path/with/space bash run_experiments.sh $WHICH"
+    echo
+    echo "Note: an already-exported HF_HOME takes precedence over CACHE_BASE, so"
+    echo "unset it first if it points somewhere small."
+    echo "Reclaim space with:  rm -rf $HF_XET_CACHE   (staging only; safe)"
+    exit 3
+  fi
+  echo
+}
 
 echo "=================================================================="
 echo " PIRA measurements: $WHICH"
@@ -88,6 +135,7 @@ echo " results $OUT"
 echo "=================================================================="
 nvidia-smi 2>&1 | head -12 || echo "(nvidia-smi unavailable)"
 echo
+check_disk_space
 
 STEP1_STATUS="skipped"
 STEP2_STATUS="skipped"
