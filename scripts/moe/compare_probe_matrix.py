@@ -29,14 +29,19 @@ backward, which measured 9.1x less activation memory for about 34% more time at
 4096 tokens. Expect the no-checkpointing arms to OOM first as batch grows;
 that boundary is a result, so an OOM is recorded rather than treated as an error.
 
-Usage (HF env, arms 1-4):
+Both --prompt-tokens and --batch-sizes accept several values, so one run covers a
+context sweep, a batch sweep, or the full cross product. The vLLM arm rebuilds its
+engine per prompt length, because max_model_len has to bound prompt+output.
+
+Usage (HF env, arms 1-4) -- context sweep at batch 1:
     python scripts/moe/compare_probe_matrix.py \
-        --prompt-tokens 4096 --batch-sizes 1 4 8 16 32 \
+        --prompt-tokens 2048 4096 8192 16384 --batch-sizes 1 \
         --output timing_results/probe_matrix.json
 
-Usage (vLLM env, arm 5):
+Usage (vLLM env, arm 5) -- same contexts, 256-token completions:
     python scripts/moe/compare_probe_matrix.py --vllm-only \
-        --prompt-tokens 4096 --batch-sizes 1 4 8 16 32 \
+        --prompt-tokens 2048 4096 8192 16384 --batch-sizes 1 \
+        --output-tokens 256 \
         --output timing_results/probe_matrix_vllm.json
 """
 
@@ -58,10 +63,16 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="Qwen/Qwen3-30B-A3B")
     parser.add_argument("--probe-layer", type=int, default=24)
-    parser.add_argument("--prompt-tokens", type=int, default=4096)
+    parser.add_argument(
+        "--prompt-tokens", type=int, nargs="+", default=[4096],
+        help="One or more prompt lengths to sweep.",
+    )
     parser.add_argument("--batch-sizes", type=int, nargs="+", default=[1, 4, 8, 16, 32])
-    parser.add_argument("--output-tokens", type=int, default=256,
-                        help="Generation length for the vLLM baseline arm only.")
+    parser.add_argument(
+        "--output-tokens", default="256",
+        help="Generation length for the vLLM baseline arm. 'match' sets it equal "
+        "to each prompt length.",
+    )
     parser.add_argument("--top-k", type=int, default=25)
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--seed", type=int, default=0)
@@ -173,9 +184,10 @@ def run_probe_arms(args) -> dict:
     print()
 
     records = []
-    for batch_size in args.batch_sizes:
+    for prompt_tokens in args.prompt_tokens:
+     for batch_size in args.batch_sizes:
         batch = build_prompt_batch(
-            tokenizer, prompt_tokens=args.prompt_tokens,
+            tokenizer, prompt_tokens=prompt_tokens,
             batch_size=batch_size, device=device, seed=args.seed,
         )
         for kernel_name, implementation, checkpoint in arms:
@@ -191,17 +203,18 @@ def run_probe_arms(args) -> dict:
             )
             record = {
                 "arm": arm, "kernel": kernel_name, "checkpointing": checkpoint,
-                "batch_size": batch_size, "prompt_tokens": args.prompt_tokens,
+                "batch_size": batch_size, "prompt_tokens": prompt_tokens,
                 **result,
             }
             records.append(record)
             if result["status"] == "ok":
-                print(f"  {arm:<14} b{batch_size:<3} "
+                print(f"  {arm:<14} in{prompt_tokens:<6} b{batch_size:<3} "
                       f"{result['total_seconds']:>8.3f} s  "
                       f"act {result['activation_gib']:>7.2f} GiB  "
                       f"peak {result['peak_allocated_gib']:>7.2f} GiB")
             else:
-                print(f"  {arm:<14} b{batch_size:<3} {result['status'].upper()}")
+                print(f"  {arm:<14} in{prompt_tokens:<6} b{batch_size:<3} "
+                      f"{result['status'].upper()}")
         del batch
         free_cuda()
         print()
@@ -245,72 +258,93 @@ def _vllm_worker_reset_peak_memory(worker) -> None:
 def run_vllm_arm(args) -> dict:
     """Original vLLM generation, no probe. Measured in its own process.
 
-    Separate because vLLM's inference path has no autograd, so it cannot host the
-    probe; this arm exists to give the probe cost a denominator.
+    Separate because vLLM's inference path has no autograd and cannot host the
+    probe; this arm supplies the denominator for the probe cost.
+
+    One engine per prompt length: max_model_len has to bound prompt+output, and
+    changing it means rebuilding the engine.
     """
     import time
 
     from vllm import LLM, SamplingParams
 
-    max_len = args.prompt_tokens + args.output_tokens
-    llm = LLM(
-        model=args.model, dtype="bfloat16", tensor_parallel_size=1,
-        gpu_memory_utilization=args.gpu_memory_utilization,
-        max_model_len=max_len, max_num_seqs=max(args.batch_sizes),
-        max_num_batched_tokens=max_len,
-        enable_prefix_caching=False, trust_remote_code=True, seed=args.seed,
-    )
-    tokenizer = llm.get_tokenizer()
     text = ("The mixture-of-experts layer routes each token to a small subset of "
             "feed-forward experts, which lets the model grow its parameter count "
             "without a proportional increase in compute per token. ")
-    ids = tokenizer.encode(text, add_special_tokens=False)
-    prompt_ids = (ids * ((args.prompt_tokens + len(ids) - 1) // len(ids)))[
-        : args.prompt_tokens
-    ]
-    sampling = SamplingParams(temperature=0.0, max_tokens=args.output_tokens,
-                              ignore_eos=True)
-
-    def peak_gib():
-        try:
-            values = [
-                value
-                for value in llm.collective_rpc(_vllm_worker_peak_memory_gib)
-                if isinstance(value, (int, float))
-            ]
-            return max(values) if values else None
-        except Exception as error:  # noqa: BLE001
-            print(f"warning: could not read vLLM worker peak memory: {error}")
-            return None
-
-    def reset_peak():
-        try:
-            llm.collective_rpc(_vllm_worker_reset_peak_memory)
-        except Exception as error:  # noqa: BLE001
-            print(f"warning: could not reset vLLM worker peak memory: {error}")
 
     records = []
-    for batch_size in args.batch_sizes:
-        prompts = [{"prompt_token_ids": prompt_ids} for _ in range(batch_size)]
-        llm.generate(prompts, SamplingParams(temperature=0.0, max_tokens=1,
-                                             ignore_eos=True), use_tqdm=False)
-        reset_peak()
-        totals = []
-        for _ in range(args.repeats):
-            started = time.perf_counter()
-            llm.generate(prompts, sampling, use_tqdm=False)
-            totals.append(time.perf_counter() - started)
-        median = statistics.median(totals)
-        record = {
-            "arm": "vllm_original", "kernel": "vllm", "checkpointing": None,
-            "batch_size": batch_size, "prompt_tokens": args.prompt_tokens,
-            "output_tokens": args.output_tokens, "status": "ok",
-            "total_seconds": median, "seconds_per_request": median / batch_size,
-            "peak_allocated_gib": peak_gib(), "all_total_seconds": totals,
-        }
-        records.append(record)
-        print(f"  vllm_original  b{batch_size:<3} {median:>8.3f} s  "
-              f"({median / batch_size:.4f} s/req)  peak {record['peak_allocated_gib']}")
+    for prompt_tokens in args.prompt_tokens:
+        output_tokens = (
+            prompt_tokens if str(args.output_tokens) == "match"
+            else int(args.output_tokens)
+        )
+        max_len = prompt_tokens + output_tokens
+        print(f"  building engine for in={prompt_tokens} out={output_tokens}",
+              flush=True)
+        llm = LLM(
+            model=args.model, dtype="bfloat16", tensor_parallel_size=1,
+            gpu_memory_utilization=args.gpu_memory_utilization,
+            max_model_len=max_len, max_num_seqs=max(args.batch_sizes),
+            # max_num_batched_tokens is left to vLLM. Pinning it to max_len starves
+            # prefill at larger batch, and the grid that runs cleanly does not set
+            # it either.
+            **({"max_num_batched_tokens": args.max_num_batched_tokens}
+               if getattr(args, "max_num_batched_tokens", None) else {}),
+            enable_prefix_caching=False, trust_remote_code=True, seed=args.seed,
+        )
+        tokenizer = llm.get_tokenizer()
+        ids = tokenizer.encode(text, add_special_tokens=False)
+        prompt_ids = (ids * ((prompt_tokens + len(ids) - 1) // len(ids)))[:prompt_tokens]
+        sampling = SamplingParams(temperature=0.0, max_tokens=output_tokens,
+                                  ignore_eos=True)
+
+        def peak_gib():
+            try:
+                values = [
+                    value for value in llm.collective_rpc(_vllm_worker_peak_memory_gib)
+                    if isinstance(value, (int, float))
+                ]
+                return max(values) if values else None
+            except Exception as error:  # noqa: BLE001
+                print(f"warning: could not read worker peak memory: {error}")
+                return None
+
+        def reset_peak():
+            try:
+                llm.collective_rpc(_vllm_worker_reset_peak_memory)
+            except Exception as error:  # noqa: BLE001
+                print(f"warning: could not reset worker peak memory: {error}")
+
+        for batch_size in args.batch_sizes:
+            prompts = [{"prompt_token_ids": prompt_ids} for _ in range(batch_size)]
+            llm.generate(prompts, SamplingParams(temperature=0.0, max_tokens=1,
+                                                 ignore_eos=True), use_tqdm=False)
+            reset_peak()
+            totals = []
+            for _ in range(args.repeats):
+                started = time.perf_counter()
+                llm.generate(prompts, sampling, use_tqdm=False)
+                totals.append(time.perf_counter() - started)
+            median = statistics.median(totals)
+            record = {
+                "arm": "vllm_original", "kernel": "vllm", "checkpointing": None,
+                "batch_size": batch_size, "prompt_tokens": prompt_tokens,
+                "output_tokens": output_tokens, "status": "ok",
+                "total_seconds": median, "seconds_per_request": median / batch_size,
+                "peak_allocated_gib": peak_gib(), "all_total_seconds": totals,
+            }
+            records.append(record)
+            print(f"  vllm_original  in{prompt_tokens:<6} b{batch_size:<3} "
+                  f"{median:>8.3f} s  ({median / batch_size:.4f} s/req)  "
+                  f"peak {record['peak_allocated_gib']}")
+
+        # Free the engine before building the next one, or the second allocation
+        # fails: vLLM preallocates a KV cache pool sized to gpu_memory_utilization.
+        del llm
+        import gc
+        gc.collect()
+        torch.cuda.empty_cache()
+        print()
 
     return {
         "metadata": {
@@ -319,15 +353,6 @@ def run_vllm_arm(args) -> dict:
             "output_tokens": args.output_tokens, "batch_sizes": args.batch_sizes,
             "repeats": args.repeats,
             "gpu_memory_utilization": args.gpu_memory_utilization,
-            "worker_multiproc_method": os.environ.get(
-                "VLLM_WORKER_MULTIPROC_METHOD", "fork"
-            ),
-            "allow_insecure_serialization": os.environ.get(
-                "VLLM_ALLOW_INSECURE_SERIALIZATION"
-            ),
-            "flashinfer_autotune_skip_ops": os.environ.get(
-                "VLLM_FLASHINFER_AUTOTUNE_SKIP_OPS"
-            ),
         },
         "measurements": records,
     }
@@ -365,17 +390,19 @@ def main() -> int:
     payload = run_vllm_arm(args) if args.vllm_only else run_probe_arms(args)
 
     print("\n=== summary ===")
-    header = f"{'arm':<15}{'batch':>6}{'time(s)':>10}{'act GiB':>10}{'peak GiB':>10}"
+    header = (f"{'arm':<15}{'input':>7}{'batch':>6}{'time(s)':>10}"
+              f"{'act GiB':>10}{'peak GiB':>10}")
     print(header)
     print("-" * len(header))
     for record in payload["measurements"]:
         if record["status"] != "ok":
-            print(f"{record['arm']:<15}{record['batch_size']:>6}"
-                  f"{record['status'].upper():>10}")
+            print(f"{record['arm']:<15}{record['prompt_tokens']:>7}"
+                  f"{record['batch_size']:>6}{record['status'].upper():>10}")
             continue
         activation = record.get("activation_gib")
         peak = record.get("peak_allocated_gib")
-        print(f"{record['arm']:<15}{record['batch_size']:>6}"
+        print(f"{record['arm']:<15}{record['prompt_tokens']:>7}"
+              f"{record['batch_size']:>6}"
               f"{record['total_seconds']:>10.3f}"
               f"{activation if activation is not None else float('nan'):>10.2f}"
               f"{peak if peak is not None else float('nan'):>10.2f}")
