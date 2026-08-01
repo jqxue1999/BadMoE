@@ -598,7 +598,7 @@ if [[ "$WHICH" == "matrix" ]]; then
   echo
   "$HF_PY" scripts/moe/compare_probe_matrix.py \
     --model "$MODEL" --probe-layer "$PROBE_LAYER" \
-    --prompt-tokens "${MATRIX_PROMPT_TOKENS:-4096}" \
+    --prompt-tokens ${MATRIX_PROMPT_TOKENS:-4096} \
     --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
     --output "$OUT/probe_matrix.json"
   MATRIX_STATUS=$?
@@ -683,7 +683,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
   "$HF_PY" scripts/moe/compare_probe_matrix.py \
     --model "$MODEL" \
     --probe-layer "$PROBE_LAYER" \
-    --prompt-tokens "${MATRIX_PROMPT_TOKENS:-4096}" \
+    --prompt-tokens ${MATRIX_PROMPT_TOKENS:-4096} \
     --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
     --output "$OUT/probe_matrix.json"
   echo
@@ -761,7 +761,7 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
     echo "--- probe matrix arm 5: vLLM Original at matrix batch sizes ---"
     "$VLLM_PY" scripts/moe/compare_probe_matrix.py --vllm-only \
       --model "$MODEL" \
-      --prompt-tokens "${MATRIX_PROMPT_TOKENS:-4096}" \
+      --prompt-tokens ${MATRIX_PROMPT_TOKENS:-4096} \
       --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
       --output-tokens "${MATRIX_OUTPUT_TOKENS:-256}" \
       --output "$OUT/probe_matrix_vllm.json"
