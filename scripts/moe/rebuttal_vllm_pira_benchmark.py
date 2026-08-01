@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import statistics
 import sys
 import time
@@ -80,6 +81,19 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--beta", type=float, default=10.0)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument(
+        "--enforce-eager",
+        action="store_true",
+        help="Diagnostic only: disable compilation and CUDA graphs. Confirms the "
+        "hook works, but understates engine throughput, so it must not be the "
+        "reported comparison.",
+    )
+    parser.add_argument(
+        "--no-pira-worker",
+        action="store_true",
+        help="Do not install PiraWorker. Expected to fail the liveness check on "
+        "the compiled path; useful only to demonstrate that failure.",
+    )
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
     parser.add_argument("--max-model-len", type=int, default=None)
     parser.add_argument("--seed", type=int, default=0)
@@ -343,8 +357,26 @@ def main() -> int:
     max_input = max(args.input_lengths)
     max_output = max(args.output_lengths)
     max_len = args.max_model_len or (max_input + max_output)
+    layers = list(range(args.probe_layer + 1))
 
-    llm = LLM(
+    # The hooks must be installed before torch.compile tracing and CUDA graph
+    # capture, both of which happen inside LLM(...). A custom worker class is the
+    # supported way to run code at that point: PiraWorker installs during
+    # load_model, so the bias-add is part of the captured graphs. Installing after
+    # LLM(...) returns leaves the graphs unbiased -- the failure mode where the
+    # wrapper is present on every router yet runs only a handful of times.
+    #
+    # PIRA_LAYERS reaches the worker through the environment because vLLM
+    # constructs the worker itself. The Original arm uses the SAME worker class
+    # with the hooks inert, so both arms share one compiled path.
+    os.environ["PIRA_LAYERS"] = f"{layers[0]}-{layers[-1]}"
+    os.environ["PIRA_BETA"] = str(args.beta)
+    os.environ["PIRA_STRICT"] = "1"
+    # Callable collective_rpc falls back to pickle in vLLM 0.19.0. Acceptable for
+    # a trusted local benchmark; it is required for register/diagnostics RPCs.
+    os.environ.setdefault("VLLM_ALLOW_INSECURE_SERIALIZATION", "1")
+
+    engine_kwargs = dict(
         model=args.model,
         dtype="bfloat16",
         tensor_parallel_size=1,
@@ -355,6 +387,15 @@ def main() -> int:
         trust_remote_code=True,
         seed=args.seed,
     )
+    if not args.no_pira_worker:
+        engine_kwargs["worker_cls"] = "pira_vllm_worker.PiraWorker"
+    if args.enforce_eager:
+        # Diagnostic only. The reviewer-facing comparison must run the normal
+        # compiled path, since eager mode understates the engine's throughput and
+        # would flatter PIRA's relative overhead.
+        engine_kwargs["enforce_eager"] = True
+
+    llm = LLM(**engine_kwargs)
     tokenizer = llm.get_tokenizer()
 
     config = llm.llm_engine.model_config.hf_config
@@ -362,7 +403,6 @@ def main() -> int:
     if num_experts <= 0:
         print("could not determine the model's expert count", file=sys.stderr)
         return 2
-    layers = list(range(args.probe_layer + 1))
 
     print(
         f"model={args.model} experts={num_experts} "
@@ -370,16 +410,34 @@ def main() -> int:
         f"suppressed_expert_layer_pairs_per_request={args.top_k} (global)"
     )
 
-    # Installed once, with the layer set passed explicitly. It cannot be derived
-    # from registered biases, because request ids -- and therefore biases -- only
-    # exist after the engine is running.
-    installed = pira.install_in_worker(
-        llm, layers, beta=args.beta, strict=True
-    )
-    if not installed:
-        print("no MoE layer was hooked", file=sys.stderr)
-        return 2
-    print(f"hooked {len(installed)} MoE layers: {installed[0]}..{installed[-1]}")
+    # With PiraWorker the hooks were already installed during load_model, before
+    # compile/capture, so nothing is installed here -- doing so would double-patch
+    # the routers. Only the --no-pira-worker path (which exists to demonstrate the
+    # compiled-path failure) installs late.
+    if args.no_pira_worker:
+        installed = pira.install_in_worker(llm, layers, beta=args.beta, strict=True)
+        if not installed:
+            print("no MoE layer was hooked", file=sys.stderr)
+            return 2
+        print(
+            f"hooked {len(installed)} MoE layers AFTER capture "
+            f"({installed[0]}..{installed[-1]}) -- expected to fail liveness"
+        )
+    else:
+        hook_report_early = pira.verify_hooks(llm)
+        installed = sorted(layers)
+        if not hook_report_early.get("installed"):
+            print(
+                "PiraWorker did not install the routing hooks. Check that "
+                "scripts/moe is on PYTHONPATH inside the worker process and that "
+                "PIRA_LAYERS reached it.",
+                file=sys.stderr,
+            )
+            return 2
+        print(
+            f"PiraWorker installed hooks before capture on "
+            f"{hook_report_early.get('hooked_layers')} routers"
+        )
 
     hook_report = pira.verify_hooks(llm)
     print(f"hook verification: {hook_report}")
@@ -480,20 +538,32 @@ def main() -> int:
                         record["diagnostics"] = cell_diagnostics
                         rows = (cell_diagnostics or {}).get("rows_biased", 0)
                         passes = (cell_diagnostics or {}).get("forward_passes", 0)
+                        fills = (cell_diagnostics or {}).get("buffer_fills", 0)
+                        tokens = (cell_diagnostics or {}).get("tokens_biased", 0)
                         waves = record["waves"]
 
-                        # rows_biased > 0 alone is weak: a compiled graph could
-                        # invoke the Python hook once while tracing and then bypass
-                        # it on every replay, which would still report a positive
-                        # count. Every decoded token needs its own forward pass, so
-                        # with exact-length generation the hook must run at least
-                        # repeats * waves * output_length times. Prefill adds more;
+                        # Liveness must be judged by buffer_fills, not by how often
+                        # the router wrapper ran. With CUDA graphs enabled the
+                        # wrapper executes only while a shape is being captured --
+                        # replays re-run the recorded kernels with no Python at all
+                        # -- so forward_passes legitimately stays small even when
+                        # the intervention is fully active. buffer_fills counts the
+                        # per-step host-side fill, which happens on every engine
+                        # step including replayed ones.
+                        #
+                        # Every decoded token needs its own step, so with
+                        # exact-length generation there must be at least
+                        # repeats * waves * output_length fills. Prefill adds more;
                         # this is a deliberately conservative floor.
                         expected = args.repeats * waves * output_length
                         record["rows_biased"] = rows
                         record["forward_passes"] = passes
+                        record["buffer_fills"] = fills
+                        record["tokens_biased"] = tokens
+                        record["expected_min_buffer_fills"] = expected
+                        # Retained for older readers of this JSON.
                         record["expected_min_forward_passes"] = expected
-                        live = bool(rows) and passes >= expected
+                        live = bool(tokens) and fills >= expected
                         record["hook_live"] = live
                         if not live:
                             unbiased_cells.append(
@@ -501,14 +571,15 @@ def main() -> int:
                                     input_length,
                                     output_length,
                                     concurrency,
-                                    rows,
-                                    passes,
+                                    tokens,
+                                    fills,
                                     expected,
                                 )
                             )
                         diagnostics = cell_diagnostics
                         suffix = (
-                            f"  rows_biased={rows} passes={passes}/{expected}"
+                            f"  fills={fills}/{expected} tokens_biased={tokens} "
+                            f"captures={passes}"
                             + ("" if live else "  <-- HOOK NOT LIVE")
                         )
                     records.append(record)
@@ -587,14 +658,14 @@ def main() -> int:
             file=sys.stderr,
         )
         for cell in unbiased_cells:
-            input_length, output_length, concurrency, rows, passes, expected = cell
-            if not rows:
-                reason = "no biased row at all"
+            input_length, output_length, concurrency, tokens, fills, expected = cell
+            if not tokens:
+                reason = "no token row ever received a bias"
             else:
                 reason = (
-                    f"only {passes} forward passes, expected at least {expected} "
-                    "-- consistent with a compiled graph that traced the hook once "
-                    "and then replayed without it"
+                    f"only {fills} per-step buffer fills, expected at least "
+                    f"{expected} -- the per-step hook did not run on every engine "
+                    "step"
                 )
             print(
                 f"  input={input_length} output={output_length} "
@@ -602,11 +673,13 @@ def main() -> int:
                 file=sys.stderr,
             )
         print(
-            "\nCheck that request ids match InputBatch.req_ids, that the MoE "
-            "backend is modular, and that the compiled/CUDA-graph path does not "
-            "bypass the Python hook. If forward_passes is small but nonzero, try "
-            "enforce_eager=True to confirm, then install the hook before graph "
-            "capture.",
+            "\nMost likely causes: the engine was built without "
+            'worker_cls="pira_vllm_worker.PiraWorker", so the hooks were installed '
+            "after CUDA graph capture and are not part of the captured graphs; or "
+            "PIRA_LAYERS was not exported to the worker; or the MoE backend is "
+            "monolithic and bypasses select_experts. Confirm with "
+            "enforce_eager=True as a diagnostic only -- the reviewer-facing "
+            "comparison must run the normal compiled path.",
             file=sys.stderr,
         )
 
@@ -653,7 +726,9 @@ def main() -> int:
     args.output.write_text(json.dumps(payload, indent=2) + "\n")
     print(f"wrote {args.output}")
 
-    pira.uninstall_in_worker(llm)
+    # The process exits immediately after this, so uninstalling is cosmetic; it is
+    # also unsafe once graphs have captured the hooked path, since the captured
+    # kernels still reference the persistent buffers. Left installed deliberately.
     return 0 if not unbiased_cells else 1
 
 

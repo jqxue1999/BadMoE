@@ -89,11 +89,18 @@ class PiraBiasState:
         # that share it.
         self._matrix_cache: dict[tuple, torch.Tensor] = {}
         self._cache_key: tuple | None = None
+        # Persistent per-token bias buffers, one per layer. Addresses must stay
+        # fixed for CUDA graph replay to see updated contents.
+        self._token_bias: dict[int, torch.Tensor] | None = None
+        self._token_capacity = 0
+        self._token_experts = 0
         # Diagnostics. Kept as host ints and only updated from already-known
         # host values, so reading them never forces a device synchronization.
         self.forward_passes = 0
         self.rows_biased = 0
         self.rows_unbiased = 0
+        self.buffer_fills = 0
+        self.tokens_biased = 0
         self.missing_request_ids: set[str] = set()
 
     # -- registration -------------------------------------------------------
@@ -188,6 +195,85 @@ class PiraBiasState:
         self._matrix_cache[key] = matrix
         return matrix
 
+    # -- persistent per-token buffers (CUDA-graph safe) ---------------------
+    def ensure_token_buffers(
+        self, layers, max_tokens: int, num_experts: int, device, dtype=torch.float32
+    ) -> None:
+        """Allocate one persistent [max_tokens, num_experts] buffer per layer.
+
+        These are allocated ONCE and never reallocated, because CUDA graph capture
+        records the tensor *addresses* used during capture. Replay re-executes the
+        recorded kernels against those same addresses without running any Python,
+        so the only way an intervention can affect a replayed step is to write new
+        contents into the same buffers before the replay. Allocating a fresh
+        tensor per step would be captured as a dead address and silently ignored.
+        """
+        if self._token_bias is not None:
+            return
+        self._token_bias = {
+            int(layer): torch.zeros(
+                max_tokens, num_experts, device=device, dtype=dtype
+            )
+            for layer in layers
+        }
+        self._token_capacity = max_tokens
+        self._token_experts = num_experts
+
+    @property
+    def token_buffers(self) -> dict[int, torch.Tensor] | None:
+        return self._token_bias
+
+    def fill_token_buffers(
+        self,
+        ordered_request_ids: list[str | None],
+        token_starts,
+        num_tokens: int,
+    ) -> int:
+        """Write this step's per-token biases into the persistent buffers.
+
+        Called from a per-step Python hook (before the model runs), never from
+        inside the compiled region. token_starts is a host-side cumulative
+        token-count array of length num_reqs + 1, so the row spans are computed
+        without reading any device tensor.
+
+        Returns the number of token rows that received a nonzero bias.
+        """
+        if self._token_bias is None:
+            return 0
+
+        # Zero only the region that will be read this step.
+        span = min(num_tokens, self._token_capacity)
+        for buffer in self._token_bias.values():
+            buffer[:span].zero_()
+
+        biased_tokens = 0
+        for row, request_id in enumerate(ordered_request_ids):
+            if request_id is None:
+                continue
+            entry = self._by_request.get(request_id)
+            if entry is None:
+                self.missing_request_ids.add(request_id)
+                continue
+            if row + 1 >= len(token_starts):
+                continue
+            start = int(token_starts[row])
+            end = int(token_starts[row + 1])
+            if end <= start:
+                continue
+            start = min(start, span)
+            end = min(end, span)
+            if end <= start:
+                continue
+            for layer, buffer in self._token_bias.items():
+                vector = entry.get(layer)
+                if vector is not None:
+                    buffer[start:end] = vector
+            biased_tokens += end - start
+
+        self.buffer_fills += 1
+        self.tokens_biased += biased_tokens
+        return biased_tokens
+
     def rows_with_bias(self, ordered_request_ids: list[str | None]) -> int:
         """How many rows of this order carry a registered bias.
 
@@ -220,6 +306,37 @@ class _TokenRouting:
         if ids is None:
             return None
         return list(ids)
+
+    @staticmethod
+    def token_starts(model_runner, num_requests: int):
+        """Host-side cumulative token counts, length num_requests + 1, or None.
+
+        Read from ``GPUModelRunner.query_start_loc``, which is backend
+        independent: the runner fills it from the scheduler's per-request token
+        counts before every forward pass, whatever attention backend is active.
+        The earlier approach went through the attention metadata's
+        query_start_loc, which FlashInferMetadata does not expose, so mixed
+        prefill/decode batches failed outright on that backend.
+
+        Prefers the numpy mirror (``.np``), so no device tensor is read and the
+        timed path never synchronizes.
+        """
+        buffer = getattr(model_runner, "query_start_loc", None)
+        if buffer is None:
+            return None
+        host = getattr(buffer, "np", None)
+        if host is not None and len(host) >= num_requests + 1:
+            return host[: num_requests + 1]
+        cpu = getattr(buffer, "cpu", None)
+        if cpu is not None and cpu.numel() >= num_requests + 1:
+            return cpu[: num_requests + 1].tolist()
+        gpu = getattr(buffer, "gpu", None)
+        if gpu is not None and gpu.numel() >= num_requests + 1:
+            # Last resort: this does synchronize, so it is only a fallback.
+            return gpu[: num_requests + 1].tolist()
+        if isinstance(buffer, torch.Tensor) and buffer.numel() >= num_requests + 1:
+            return buffer[: num_requests + 1].tolist()
+        return None
 
     @staticmethod
     def from_forward_context(num_token_rows: int) -> torch.Tensor | None:
@@ -461,70 +578,43 @@ def pira_routing(
             _first=first_layer,
             **kwargs,
         ):
-            if len(state) == 0:
+            # Read the PERSISTENT buffer for this layer, sliced to the current
+            # token count. Its address is fixed, so when this call is captured
+            # into a CUDA graph the replayed kernels read whatever the per-step
+            # hook most recently wrote there. Nothing here allocates, indexes by
+            # request, or touches Python state that a replay would skip -- all of
+            # that happens in _fill_step_buffers before the model runs.
+            buffers = state.token_buffers
+            if buffers is None:
                 return _original(hidden_states, router_logits, *args, **kwargs)
-
-            # Re-read the request order for THIS forward pass. A cached order is
-            # unsafe: continuous batching swaps and condenses rows between steps.
-            order = (
-                _TokenRouting.request_order(model_runner)
-                if model_runner is not None
-                else None
-            )
-            if order is None:
-                # Without the engine's row order the only safe cases are a single
-                # registered request, or none at all.
-                if len(state) != 1:
-                    if strict:
-                        raise RuntimeError(
-                            "PIRA routing needs the engine request order to map "
-                            f"biases to rows, but {len(state)} requests are "
-                            "registered and the model runner did not expose an "
-                            "input batch. Run one request at a time, or pass "
-                            "strict=False to fall back to unbiased routing."
-                        )
-                    return _original(hidden_states, router_logits, *args, **kwargs)
-                order = state.request_ids
-
-            biased_rows = state.rows_with_bias(order)
-            if biased_rows == 0:
+            buffer = buffers.get(_layer)
+            if buffer is None:
                 return _original(hidden_states, router_logits, *args, **kwargs)
 
             num_rows = router_logits.shape[0]
-            mapping = _TokenRouting.from_forward_context(num_rows)
-            bias = state.matrix_for(
-                _layer,
-                order,
-                router_logits.shape[-1],
-                device=router_logits.device,
-            )
-            expanded = expand_bias_to_tokens(bias, num_rows, mapping)
-            if expanded is None:
+            if num_rows > buffer.shape[0]:
                 if strict:
                     raise RuntimeError(
-                        "PIRA routing could not map "
-                        f"{num_rows} router rows onto {bias.shape[0]} batch rows; "
-                        "the forward context exposed no token->request mapping."
+                        f"PIRA routing buffer holds {buffer.shape[0]} token rows "
+                        f"but the router received {num_rows}. Raise "
+                        "max_num_batched_tokens capacity at install time."
                     )
                 return _original(hidden_states, router_logits, *args, **kwargs)
 
             if _layer == _first:
-                # Counted once per forward pass, from host-side values only.
                 state.forward_passes += 1
-                state.rows_biased += biased_rows
-                state.rows_unbiased += max(0, len(order) - biased_rows)
 
-            # Delegate to vLLM's own selector with pre-biased logits. This is the
-            # whole point: PIRA's intervention *is* an additive bias on router
-            # logits before softmax and top-k, so adding it to router_logits and
-            # letting the engine route keeps the fused kernel, the EPLB mapping,
-            # and the indices-dtype handling intact. Reimplementing softmax and
-            # top-k here would measure the prototype instead of the method, and
-            # would drift from whatever routing the model is actually configured
-            # for (sigmoid, grouped top-k, renormalization, scaling factors).
+            # Delegate to vLLM's own selector with pre-biased logits. PIRA's
+            # intervention *is* an additive bias on router logits before softmax
+            # and top-k, so adding it here and letting the engine route keeps the
+            # fused kernel, the EPLB mapping and the indices-dtype handling
+            # intact. Reimplementing softmax/top-k would measure the prototype
+            # instead of the method, and would silently ignore whatever routing
+            # the model is configured for (sigmoid, grouped top-k, renormalize,
+            # scaling factors).
             return _original(
                 hidden_states,
-                router_logits + expanded.to(router_logits.dtype),
+                router_logits + buffer[:num_rows].to(router_logits.dtype),
                 *args,
                 **kwargs,
             )
@@ -544,11 +634,71 @@ def pira_routing(
             "layers that can be intervened on."
         )
 
+    # Per-step buffer fill. This is the part that makes the intervention survive
+    # CUDA graph replay: execute_model is ordinary Python invoked once per engine
+    # step, before the (possibly graph-replayed) model call, so filling the
+    # persistent buffers here is guaranteed to happen even when the forward
+    # itself runs entirely as a replayed graph.
+    runner_patch: tuple[object, str, object] | None = None
+    if model_runner is not None and hasattr(model_runner, "execute_model"):
+        original_execute = model_runner.execute_model
+
+        def patched_execute(*args, _original=original_execute, **kwargs):
+            try:
+                _fill_step_buffers(model_runner, state, strict=strict)
+            except RuntimeError:
+                raise
+            except Exception:
+                # Never break generation because a diagnostic path failed; the
+                # forward_passes/tokens_biased counters will show it.
+                pass
+            return _original(*args, **kwargs)
+
+        model_runner.execute_model = patched_execute
+        runner_patch = (model_runner, "execute_model", original_execute)
+
     try:
         yield sorted(installed)
     finally:
         for router, original in patched:
             router.select_experts = original
+        if runner_patch is not None:
+            owner, attribute, original_attr = runner_patch
+            setattr(owner, attribute, original_attr)
+
+
+def _fill_step_buffers(model_runner, state: PiraBiasState, *, strict: bool) -> None:
+    """Write the current step's per-token biases into the persistent buffers.
+
+    Runs once per engine step, on the host, before the model executes. Uses the
+    backend-independent GPUModelRunner.query_start_loc (numpy mirror) rather than
+    the attention metadata, which differs per backend -- FlashInferMetadata, the
+    default on B200, exposes no query_start_loc at all.
+    """
+    if state.token_buffers is None or len(state) == 0:
+        return
+
+    order = _TokenRouting.request_order(model_runner)
+    if order is None:
+        return
+    # Trailing None entries are slots the batch has not filled.
+    while order and order[-1] is None:
+        order.pop()
+    if not order:
+        return
+
+    starts = _TokenRouting.token_starts(model_runner, len(order))
+    if starts is None:
+        if strict:
+            raise RuntimeError(
+                "PIRA routing could not read GPUModelRunner.query_start_loc, so "
+                "tokens cannot be attributed to requests. This vLLM build may "
+                "store the cumulative token counts elsewhere."
+            )
+        return
+
+    num_tokens = int(starts[len(order)])
+    state.fill_token_buffers(order, starts, num_tokens)
 
 
 # --------------------------------------------------------------------------- #
@@ -603,6 +753,32 @@ def _worker_install(worker, beta: float, strict: bool, layers):
     model = runner.get_model()
     device = next(model.parameters()).device
     state = PiraBiasState(beta=beta, device=device)
+
+    # Persistent buffers must exist before CUDA graph capture, and must be large
+    # enough for the largest batch the scheduler can build, because they are never
+    # reallocated afterwards -- a reallocation would strand the addresses recorded
+    # during capture.
+    config = getattr(model, "config", None)
+    num_experts = int(
+        getattr(config, "num_experts", 0)
+        or getattr(config, "n_routed_experts", 0)
+        or 0
+    )
+    if num_experts <= 0:
+        raise RuntimeError(
+            "could not determine the model's expert count for buffer allocation"
+        )
+    max_tokens = int(
+        getattr(runner, "max_num_tokens", 0)
+        or getattr(runner, "max_num_batched_tokens", 0)
+        or 0
+    )
+    if max_tokens <= 0:
+        raise RuntimeError(
+            "could not determine max_num_batched_tokens for buffer allocation"
+        )
+    state.ensure_token_buffers(target, max_tokens, num_experts, device)
+
     stack = _contextlib.ExitStack()
     installed = stack.enter_context(
         pira_routing(model, state, model_runner=runner, layers=target, strict=strict)
@@ -617,6 +793,20 @@ def _worker_install(worker, beta: float, strict: bool, layers):
     worker._pira_state = state
     worker._pira_handle = stack
     return installed
+
+
+def install_before_capture(worker, layers, *, beta: float = 10.0, strict: bool = True):
+    """Install PIRA routing from inside the worker, during load_model.
+
+    This is the supported ordering: called from Worker.load_model (see
+    pira_vllm_worker.PiraWorker), it runs after the weights exist but before
+    torch.compile tracing and CUDA graph capture, so the bias-add becomes part of
+    the captured graph rather than a Python patch the replay skips.
+
+    Installing after LLM(...) returns cannot work for the compiled path, which is
+    why _worker_install exists only for eager/diagnostic runs.
+    """
+    return _worker_install(worker, beta, strict, layers)
 
 
 def _worker_uninstall(worker):
@@ -650,7 +840,14 @@ def _worker_diagnostics(worker):
         return {}
     return {
         "registered_requests": len(state),
+        # Times the router wrapper ran. Under CUDA graph replay this counts only
+        # captures, so it is NOT a liveness signal on the compiled path.
         "forward_passes": state.forward_passes,
+        # Times the per-step buffer fill ran, and how many token rows it biased.
+        # These DO increment on every engine step, replayed or not, so they are
+        # the liveness signal that works with graphs enabled.
+        "buffer_fills": state.buffer_fills,
+        "tokens_biased": state.tokens_biased,
         "rows_biased": state.rows_biased,
         "rows_unbiased": state.rows_unbiased,
         "missing_request_ids": sorted(state.missing_request_ids),
@@ -665,6 +862,8 @@ def _worker_reset_counters(worker):
     state.forward_passes = 0
     state.rows_biased = 0
     state.rows_unbiased = 0
+    state.buffer_fills = 0
+    state.tokens_biased = 0
     state.missing_request_ids.clear()
     state.clear()
     return True
@@ -746,7 +945,14 @@ def install_in_worker(
 
 
 def uninstall_in_worker(llm) -> None:
-    """Remove PIRA routing from every worker."""
+    """Remove PIRA routing from every worker.
+
+    Only meaningful for eager runs. Once CUDA graphs have captured the hooked
+    routing path, the captured kernels still read the persistent bias buffers, so
+    "uninstalling" restores the Python wrapper but cannot un-capture the graphs;
+    generation would keep using whatever the buffers last held. Prefer ending the
+    process instead.
+    """
     llm.collective_rpc(_worker_uninstall)
 
 
@@ -999,9 +1205,30 @@ def verify_delegation(
         def __init__(self, ids):
             self._req_ids = list(ids)
 
+    class Buffer:
+        """Mimics CpuGpuBuffer: a numpy-like host mirror plus device tensors."""
+
+        def __init__(self, values):
+            self.cpu = torch.tensor(values, dtype=torch.int32)
+            self.gpu = self.cpu.clone()
+            self.np = self.cpu.numpy()
+
     class Runner:
-        def __init__(self, ids):
+        """Stands in for GPUModelRunner: request order + query_start_loc."""
+
+        def __init__(self, ids, starts):
             self.input_batch = InputBatch(ids)
+            self.query_start_loc = Buffer(starts)
+            self.max_num_tokens = 64
+            self.executed = 0
+
+        def execute_model(self, *args, **kwargs):
+            self.executed += 1
+            return None
+
+        def set_order(self, ids, starts):
+            self.input_batch._req_ids = list(ids)
+            self.query_start_loc = Buffer(starts)
 
     model = Model()
     state = PiraBiasState(beta=beta, device=device)
@@ -1014,8 +1241,12 @@ def verify_delegation(
         vectors[request_id] = vector
         state.add_request(request_id, {l: vector for l in range(num_layers)})
 
-    runner = Runner(request_ids)
-    logits = torch.randn(4, num_experts)  # 4 token rows over 2 requests
+    # Two token rows per request, matching query_start_loc [0, 2, 4].
+    runner = Runner(request_ids, [0, 2, 4, 4, 4])
+    state.ensure_token_buffers(
+        range(num_layers), runner.max_num_tokens, num_experts, device
+    )
+    logits = torch.randn(4, num_experts)
     mapping = torch.tensor([0, 0, 1, 1])
     expected_bias = torch.stack([vectors["r0"]] * 2 + [vectors["r1"]] * 2)
 
@@ -1025,6 +1256,18 @@ def verify_delegation(
     ) as installed:
         if sorted(installed) != list(range(num_layers)):
             failures.append(f"installed {installed}, expected 0..{num_layers - 1}")
+
+        # execute_model must be wrapped, since that is what fills the buffers on
+        # every engine step -- including steps that replay a CUDA graph.
+        buffer_address = state.token_buffers[0].data_ptr()
+        runner.execute_model()
+        if state.buffer_fills != 1:
+            failures.append(
+                f"the per-step fill did not run on execute_model "
+                f"(buffer_fills={state.buffer_fills})"
+            )
+        if state.token_buffers[0].data_ptr() != buffer_address:
+            failures.append("the persistent buffer was reallocated")
 
         received.clear()
         weights, indices = model.model.layers[0].router.select_experts(
@@ -1060,7 +1303,8 @@ def verify_delegation(
             failures.append(f"{suppressed_hits} suppressed experts were selected")
 
         # Reordering must be honoured through the live hook, not just in the table.
-        runner.input_batch._req_ids = list(reversed(request_ids))
+        runner.set_order(list(reversed(request_ids)), [0, 2, 4, 4, 4])
+        runner.execute_model()
         received.clear()
         model.model.layers[0].router.select_experts(torch.zeros(4, 8), logits)
         swapped = received[0] - logits
@@ -1071,11 +1315,96 @@ def verify_delegation(
     restored = model.model.layers[0].router.select_experts
     if getattr(restored, "__name__", "") == "patched_select":
         failures.append("the original selector was not restored on exit")
+    if getattr(runner.execute_model, "__name__", "") == "patched_execute":
+        failures.append("execute_model was not restored on exit")
 
     return {
         "layers_installed": num_layers,
         "delegates_to_original": bool(received),
-        "cache_entries": len(state._matrix_cache),
+        "buffer_fills": state.buffer_fills,
+        "tokens_biased": state.tokens_biased,
+        "failures": failures,
+        "passed": not failures,
+    }
+
+
+def verify_mixed_batch(
+    *,
+    num_experts: int = 16,
+    beta: float = 50.0,
+    prefill_length: int = 128,
+    num_prefills: int = 3,
+) -> dict:
+    """Check token attribution for a mixed prefill/decode batch.
+
+    Regression test for the B200 failure: a step with three 128-token prefills
+    plus one decode token produced 385 router rows, and the mapping was read from
+    the attention metadata's query_start_loc, which FlashInferMetadata (the
+    default on that hardware) does not expose. The mapping now comes from
+    GPUModelRunner.query_start_loc, which every backend populates.
+
+    Verifies that each token row carries exactly its own request's bias, including
+    at span boundaries, and that rows past the batch stay zero.
+    """
+    device = torch.device("cpu")
+    order = [f"r{index}" for index in range(num_prefills + 1)]
+
+    starts = [0]
+    for _ in range(num_prefills):
+        starts.append(starts[-1] + prefill_length)
+    starts.append(starts[-1] + 1)  # the single decode token
+    num_tokens = starts[-1]
+    # vLLM pads query_start_loc to be non-decreasing.
+    padded = starts + [num_tokens] * 8
+
+    class Buffer:
+        def __init__(self, values):
+            self.cpu = torch.tensor(values, dtype=torch.int32)
+            self.gpu = self.cpu.clone()
+            self.np = self.cpu.numpy()
+
+    class Runner:
+        def __init__(self):
+            self.input_batch = type("IB", (), {"_req_ids": list(order)})()
+            self.query_start_loc = Buffer(padded)
+            self.max_num_tokens = num_tokens + 64
+
+    runner = Runner()
+    state = PiraBiasState(beta=beta, device=device)
+    vectors = {}
+    for index, request_id in enumerate(order):
+        vector = torch.zeros(num_experts)
+        vector[[index % num_experts, (index + 4) % num_experts]] = -abs(beta)
+        vectors[request_id] = vector
+        state.add_request(request_id, {0: vector})
+    state.ensure_token_buffers([0], runner.max_num_tokens, num_experts, device)
+
+    resolved = _TokenRouting.token_starts(runner, len(order))
+    if resolved is None:
+        return {
+            "router_rows": num_tokens,
+            "failures": ["query_start_loc could not be read from the runner"],
+            "passed": False,
+        }
+
+    biased = state.fill_token_buffers(order, resolved, num_tokens)
+    buffer = state.token_buffers[0]
+
+    failures = []
+    if biased != num_tokens:
+        failures.append(f"biased {biased} token rows, expected {num_tokens}")
+    for index, request_id in enumerate(order):
+        low, high = starts[index], starts[index + 1]
+        for row in (low, high - 1):  # span boundaries are where off-by-ones show
+            if not torch.equal(buffer[row], vectors[request_id]):
+                failures.append(f"row {row} does not carry {request_id}'s bias")
+    if bool(buffer[num_tokens:].any()):
+        failures.append("rows beyond the batch received a bias")
+
+    return {
+        "router_rows": num_tokens,
+        "requests": len(order),
+        "token_rows_biased": biased,
         "failures": failures,
         "passed": not failures,
     }
@@ -1087,6 +1416,7 @@ if __name__ == "__main__":
         ("biased selection vs per-row reference", verify_against_reference()),
         ("bias follows request under reordering", verify_reordering()),
         ("hook delegates to vLLM's own selector", verify_delegation()),
+        ("mixed prefill/decode token attribution", verify_mixed_batch()),
     ):
         print(f"--- {title} ---")
         for key, value in report.items():

@@ -35,8 +35,14 @@ Measurement:
   probe, and the measured routing cost into `True Total`.
 - `scripts/moe/pira_vllm_routing.py`: applies PIRA's per-request, pre-softmax
   router bias inside vLLM's expert-selection path, keyed by engine request id so
-  it stays correct under continuous batching. Includes CPU self-checks
+  it stays correct under continuous batching, and held in persistent buffers so it
+  survives CUDA graph replay. Includes four CPU self-checks
   (`python scripts/moe/pira_vllm_routing.py`) that need neither GPU nor vLLM.
+- `scripts/moe/pira_vllm_worker.py`: `worker_cls` that installs the hooks during
+  `load_model`, i.e. before compilation and graph capture. Required for the
+  compiled path; see "Running PIRA Inside vLLM".
+- `scripts/moe/test_cudagraph_replay_cpu.py`: shows why the bias must live in
+  persistent buffers, by simulating capture/replay against both designs.
 - `scripts/moe/rebuttal_cost_benchmark.py`: batch-1 Original/PIRA timing,
   including probe time, prefill time, TTFT, total generation time, and CUDA
   peak memory.
@@ -82,29 +88,62 @@ whose gate weights come from the biased distribution, which is what
 
 ## Running PIRA Inside vLLM
 
-vLLM V1 runs the model in an EngineCore worker process, so the routing hooks are
-installed there via `collective_rpc`, not around `llm.generate()` in the driver:
+vLLM V1 runs the model in an EngineCore worker process, so the hooks live there
+rather than around `llm.generate()` in the driver, and biases are sent across with
+`collective_rpc`.
+
+**The hooks must be installed before CUDA graph capture.** vLLM's startup runs
+`load_model()`, then `torch.compile` tracing, then `capture_model()` — all inside
+`LLM.__init__`. Replaying a captured graph re-executes recorded kernels without
+running any Python, so a monkeypatch applied after `LLM(...)` returns is simply
+not in the replayed program. Measured on B200: the wrapper was present on all 25
+routers and ran 7 times out of an expected 256, and the resulting "PIRA is faster
+than Original" was an artifact.
+
+The engine is therefore built with a custom worker class that installs during
+`load_model`:
 
 ```python
-import pira_vllm_routing as pira
-
-# Layers are explicit and required. They cannot be inferred from registered
-# biases, because installation necessarily precedes any request existing.
-layers = pira.install_in_worker(llm, range(probe_layer + 1), beta=10.0, strict=True)
-print(pira.verify_hooks(llm))          # hooks sit on the live router objects?
+llm = LLM(
+    model=...,
+    worker_cls="pira_vllm_worker.PiraWorker",   # installs before compile/capture
+    # compiled + CUDA-graph path stays ON
+)
 
 for cell in cells:
     pira.reset_counters(llm)           # per-cell, so no cell hides behind another
     request_ids = llm.enqueue(prompts, sampling)   # real engine ids, not yet running
     pira.register_biases_in_worker(llm, biases_by_request_id)
     outputs = llm.wait_for_completion()            # now execute
-    assert pira.worker_diagnostics(llm)["rows_biased"] > 0
-
-pira.uninstall_in_worker(llm)
+    d = pira.worker_diagnostics(llm)
+    assert d["buffer_fills"] >= expected_steps and d["tokens_biased"] > 0
 ```
 
-Four details that are easy to get wrong:
+`PIRA_LAYERS`, `PIRA_BETA` and `PIRA_STRICT` reach the worker through the
+environment, since vLLM constructs it. With `PIRA_LAYERS` unset the class is the
+stock worker, so the Original arm runs the same class and the same compiled path.
+`worker_extension_cls` cannot be used here: vLLM asserts the extension shares no
+attribute names with the worker, so it can only add methods, not override
+`load_model`.
 
+Details that are easy to get wrong:
+
+- **Bias lives in persistent buffers.** Capture records tensor *addresses*, so a
+  freshly allocated bias tensor per step would be captured once and then ignored.
+  One buffer per layer is allocated at install time and never reallocated; a
+  per-step hook on `execute_model` fills it in place before each forward.
+  `test_cudagraph_replay_cpu.py` demonstrates both designs and shows the
+  per-allocation one silently reusing a stale bias.
+- **Liveness is `buffer_fills`, not `forward_passes`.** With graphs enabled the
+  router wrapper runs only while a shape is being captured, so a small
+  `forward_passes` is expected and healthy. `buffer_fills` increments on every
+  engine step including replays, and is checked against
+  `repeats x waves x output_length`.
+- **The token→request mapping comes from `GPUModelRunner.query_start_loc`.** The
+  attention metadata is backend-specific — `FlashInferMetadata`, the default on
+  B200, exposes no `query_start_loc`, which crashed the first concurrent-prefill
+  run. The runner's buffer is backend independent and has a numpy mirror, so the
+  mapping is read without a device synchronization.
 - **The layer set must be passed in.** Deriving it from the registered biases
   installs nothing: the engine assigns request ids only when requests are
   enqueued, which is necessarily after the hooks exist.
@@ -115,26 +154,27 @@ Four details that are easy to get wrong:
 - **Biases are keyed by request id, never by batch position.** Under continuous
   batching the scheduler swaps and condenses rows (`InputBatch.swap_states`,
   `condense`), so a position-indexed table would start applying one request's
-  suppression set to another. The engine's `req_ids` order is re-read every
-  forward pass. `verify_reordering()` tests exactly this and fails a
+  suppression set to another. `verify_reordering()` tests exactly this and fails a
   position-indexed implementation.
 - **The hook delegates to vLLM's own selector.** It adds the bias to
   `router_logits` and calls the original `select_experts`, so the engine keeps its
   fused routing kernel, EPLB mapping, and indices-dtype handling. Reimplementing
   softmax and top-k in Python would make the benchmark measure the prototype
-  rather than the method. Bias matrices are built on-device and cached per
-  (layer, row order); diagnostics are counted from host-side values so they add no
-  device synchronization to the timed path.
+  rather than the method.
 
-`worker_diagnostics()` reports `rows_biased` and `forward_passes` **per cell**, and
-both are checked. `rows_biased > 0` alone is weak: a compiled graph could invoke
-the hook once while tracing and then bypass it on every replay, still leaving a
-positive count. Since every decoded token needs its own forward pass, the hook must
-run at least `repeats x waves x output_length` times for this exact-length
-workload, so `forward_passes` is checked against that floor. A cell failing either
-check is named, makes the benchmark exit nonzero, and is dropped by the combiner.
-If `forward_passes` is small but nonzero, confirm with `enforce_eager=True` and
-then install the hooks before graph capture.
+`VLLM_ALLOW_INSECURE_SERIALIZATION=1` is required because callable
+`collective_rpc` falls back to pickle in vLLM 0.19.0. Acceptable for a local
+benchmark running only this repository's code; do not set it on a network-facing
+server. The launcher sets it, and also puts `scripts/moe` on `PYTHONPATH` so the
+worker process can resolve `pira_vllm_worker.PiraWorker` by name.
+
+`worker_diagnostics()` reports per cell, and the binding criterion is
+`buffer_fills >= repeats x waves x output_length` together with
+`tokens_biased > 0`. A cell failing either is named with its reason, makes the
+benchmark exit nonzero, and is dropped by the combiner. Two diagnostic modes exist
+for isolating a failure: `MODE=smoke-eager` disables compilation and graphs
+(confirms the hook, but its timings must not be reported), and
+`MODE=smoke-late-install` reproduces the post-capture failure on purpose.
 
 ## Binding Rebuttal Workload
 
@@ -249,7 +289,8 @@ shown to compute the same thing as the slow one.
 ```bash
 # 0. No GPU needed. Seconds. Run all three before submitting anything.
 python scripts/moe/test_probe_equivalence_cpu.py             # gradients bitwise-exact
-python scripts/moe/pira_vllm_routing.py                      # routing + reordering safety
+python scripts/moe/pira_vllm_routing.py                      # routing, reorder, mixed batch
+python scripts/moe/test_cudagraph_replay_cpu.py              # persistent-buffer design
 python scripts/moe/rebuttal_vllm_pira_benchmark.py --check-workload  # global-K budget
 
 # 1. Equivalence on the real model. Must pass before quoting any timing.

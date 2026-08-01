@@ -25,6 +25,12 @@ export PYTHONUNBUFFERED=1
 # generating unbiased.
 export VLLM_USE_V1="${VLLM_USE_V1:-1}"
 
+# Callable collective_rpc falls back to pickle serialization in vLLM 0.19.0, so
+# the register-biases and diagnostics RPCs need this. Acceptable here because
+# everything executing is local, trusted code from this repository; do not set it
+# for a network-facing server.
+export VLLM_ALLOW_INSECURE_SERIALIZATION="${VLLM_ALLOW_INSECURE_SERIALIZATION:-1}"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 OUTPUT_DIR="${OUTPUT_DIR:-$ROOT_DIR/timing_results}"
@@ -33,6 +39,21 @@ MODEL="${MODEL:-Qwen/Qwen3-30B-A3B}"
 PROBE_LAYER="${PROBE_LAYER:-24}"
 TOP_K="${TOP_K:-25}"
 BETA="${BETA:-10.0}"
+
+# worker_cls is resolved by qualified name inside the worker process, so this
+# directory must be importable there. Without it the engine starts unhooked and
+# every cell fails the liveness check.
+export PYTHONPATH="$SCRIPT_DIR${PYTHONPATH:+:$PYTHONPATH}"
+
+# Compilation caches can be large and are written per run. On clusters with a
+# small home quota, point them at scratch via CACHE_ROOT.
+if [[ -n "${CACHE_ROOT:-}" ]]; then
+  export VLLM_CACHE_ROOT="${VLLM_CACHE_ROOT:-$CACHE_ROOT/vllm}"
+  export TORCHINDUCTOR_CACHE_DIR="${TORCHINDUCTOR_CACHE_DIR:-$CACHE_ROOT/inductor}"
+  export TRITON_CACHE_DIR="${TRITON_CACHE_DIR:-$CACHE_ROOT/triton}"
+  mkdir -p "$VLLM_CACHE_ROOT" "$TORCHINDUCTOR_CACHE_DIR" "$TRITON_CACHE_DIR"
+fi
+
 mkdir -p "$OUTPUT_DIR"
 cd "$ROOT_DIR"
 
@@ -69,8 +90,34 @@ case "$MODE" in
       --requests-per-cell 16
     )
     ;;
+  # Diagnostic: same as smoke but with compilation and CUDA graphs disabled.
+  # Confirms the hook itself is correct, independent of graph capture. Its
+  # timings must NOT be reported -- eager mode understates engine throughput and
+  # would flatter PIRA's relative overhead.
+  smoke-eager)
+    WORKLOAD=(
+      --input-lengths 128
+      --output-lengths 32
+      --concurrency 1 4
+      --requests-per-cell 8
+      --repeats 1
+      --enforce-eager
+    )
+    ;;
+  # Diagnostic: installs the hooks AFTER the engine is built, reproducing the
+  # compiled-path failure on purpose. Expected to exit nonzero.
+  smoke-late-install)
+    WORKLOAD=(
+      --input-lengths 128
+      --output-lengths 32
+      --concurrency 1 4
+      --requests-per-cell 8
+      --repeats 1
+      --no-pira-worker
+    )
+    ;;
   *)
-    echo "Unknown MODE=$MODE; expected grid, smoke, or longctx" >&2
+    echo "Unknown MODE=$MODE; expected grid, smoke, longctx, smoke-eager, or smoke-late-install" >&2
     exit 2
     ;;
 esac
