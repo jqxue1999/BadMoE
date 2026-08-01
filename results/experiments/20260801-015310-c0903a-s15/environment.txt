@@ -1,0 +1,26 @@
+date: 2026-08-01T02:31:33-04:00
+host: c0903a-s15
+git:  b36462a on rebuttal-timing-minimal
+step: step2   step1=skipped step2=0
+
+Sat Aug  1 02:31:33 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:43:00.0 Off |                    0 |
+| N/A   35C    P0            245W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
+--- .venv ---
+(not queried for a step2-only run)
+
+--- .venv-vllm ---
+
+vLLM python: /tmp/badmoe-step2.ti9eEU/venv-vllm-fresh/bin/python
+ninja: /tmp/badmoe-step2.ti9eEU/venv-vllm-fresh/bin/ninja
+local runtime: /tmp/badmoe-step2.ti9eEU
