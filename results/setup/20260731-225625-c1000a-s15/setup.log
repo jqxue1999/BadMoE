@@ -1801,3 +1801,7 @@ which backends were importable and measures the rest; "does not build on this
 GPU" is one of the answers we need.
 
 === saving setup log ===
+committed 6d703ec
+--no-push set; push later with:  git push origin rebuttal-timing-minimal
+
+setup log: results/setup/20260731-225625-c1000a-s15/setup.log

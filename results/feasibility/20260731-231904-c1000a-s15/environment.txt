@@ -1,0 +1,39 @@
+date: 2026-07-31T23:19:04-04:00
+host: c1000a-s15
+pwd:  /orange/qi855292.ucf/yi217029.ucf/BadMoE
+git:  6d703ec on rebuttal-timing-minimal
+
+--- nvidia-smi ---
+Fri Jul 31 23:19:04 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:1B:00.0 Off |                    0 |
+| N/A   24C    P0            188W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+(nvidia-smi unavailable)
+
+--- python packages ---
+torch                2.13.0
+grouped_gemm         0.3.0
+megablocks           (not installed)
+transformer_engine   (not installed)
+transformers         5.14.1
+vllm                 (not installed)
+triton               3.7.1
+
+--- torch / CUDA ---
+torch           2.13.0+cu130
+cuda runtime    13.0
+cuda available  True
+device          NVIDIA B200
+capability      sm_100
+memory          178.4 GiB

@@ -1,0 +1,124 @@
+{
+  "environment": {
+    "gpu": "NVIDIA B200",
+    "capability": "10.0",
+    "torch": "2.13.0+cu130",
+    "cuda": "13.0",
+    "python": "3.12.11",
+    "dtype": "bfloat16"
+  },
+  "shapes": {
+    "hidden": 2048,
+    "intermediate": 768,
+    "num_experts": 128,
+    "top_k": 8,
+    "probed_layers": 25
+  },
+  "availability": {
+    "grouped_gemm": "importable",
+    "te_grouped": "unavailable: ModuleNotFoundError: No module named 'transformer_engine'",
+    "hf_loop": "builtin",
+    "bmm": "builtin"
+  },
+  "measurements": [
+    {
+      "backend": "hf_loop",
+      "seq_len": 128,
+      "max_abs_diff_vs_hf": 0.0,
+      "max_rel_diff_vs_hf": 0.0,
+      "forward_ms": 20.669858437031507,
+      "forward_backward_ms": 40.73546500876546,
+      "peak_allocated_gib": 2.3250088691711426,
+      "status": "ok",
+      "projected_probe_moe_ms": 1018.3866252191365
+    },
+    {
+      "backend": "bmm",
+      "seq_len": 128,
+      "max_abs_diff_vs_hf": 0.78515625,
+      "max_rel_diff_vs_hf": 1.3673468828201294,
+      "forward_ms": 22.37541787326336,
+      "forward_backward_ms": 24.04545759782195,
+      "peak_allocated_gib": 10.196604251861572,
+      "status": "ok",
+      "projected_probe_moe_ms": 601.1364399455488
+    },
+    {
+      "backend": "grouped_gemm",
+      "seq_len": 128,
+      "max_abs_diff_vs_hf": 0.8515625,
+      "max_rel_diff_vs_hf": 1.482993245124817,
+      "forward_ms": 0.6973063573241234,
+      "forward_backward_ms": 1.3016958255320787,
+      "peak_allocated_gib": 1.2081503868103027,
+      "status": "ok",
+      "projected_probe_moe_ms": 32.54239563830197
+    },
+    {
+      "backend": "hf_loop",
+      "seq_len": 512,
+      "max_abs_diff_vs_hf": 0.0,
+      "max_rel_diff_vs_hf": 0.0,
+      "forward_ms": 20.89883526787162,
+      "forward_backward_ms": 40.34388018772006,
+      "peak_allocated_gib": 2.3641066551208496,
+      "status": "ok",
+      "projected_probe_moe_ms": 1008.5970046930015
+    },
+    {
+      "backend": "bmm",
+      "seq_len": 512,
+      "max_abs_diff_vs_hf": 0.939453125,
+      "max_rel_diff_vs_hf": 1.5221519470214844,
+      "forward_ms": 87.82699983567,
+      "forward_backward_ms": 94.0241483040154,
+      "peak_allocated_gib": 37.224892139434814,
+      "status": "ok",
+      "projected_probe_moe_ms": 2350.603707600385
+    },
+    {
+      "backend": "grouped_gemm",
+      "seq_len": 512,
+      "max_abs_diff_vs_hf": 0.8125,
+      "max_rel_diff_vs_hf": 1.3164557218551636,
+      "forward_ms": 0.8097074460238218,
+      "forward_backward_ms": 1.5802003908902407,
+      "peak_allocated_gib": 1.271073818206787,
+      "status": "ok",
+      "projected_probe_moe_ms": 39.50500977225602
+    },
+    {
+      "backend": "hf_loop",
+      "seq_len": 2048,
+      "max_abs_diff_vs_hf": 0.0,
+      "max_rel_diff_vs_hf": 0.0,
+      "forward_ms": 21.277470979839563,
+      "forward_backward_ms": 41.28745151683688,
+      "peak_allocated_gib": 2.5558156967163086,
+      "status": "ok",
+      "projected_probe_moe_ms": 1032.186287920922
+    },
+    {
+      "backend": "bmm",
+      "seq_len": 2048,
+      "max_abs_diff_vs_hf": 1.03125,
+      "max_rel_diff_vs_hf": 1.263157844543457,
+      "forward_ms": 348.82771875709295,
+      "forward_backward_ms": 371.6005524620414,
+      "peak_allocated_gib": 145.33413743972778,
+      "status": "ok",
+      "projected_probe_moe_ms": 9290.013811551034
+    },
+    {
+      "backend": "grouped_gemm",
+      "seq_len": 2048,
+      "max_abs_diff_vs_hf": 0.935546875,
+      "max_rel_diff_vs_hf": 1.1459330320358276,
+      "forward_ms": 1.2988364323973656,
+      "forward_backward_ms": 2.465958008542657,
+      "peak_allocated_gib": 1.5178847312927246,
+      "status": "ok",
+      "projected_probe_moe_ms": 61.64895021356642
+    }
+  ]
+}
