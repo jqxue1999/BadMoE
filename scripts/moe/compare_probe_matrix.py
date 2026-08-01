@@ -1,0 +1,345 @@
+"""Probe cost matrix: HF vs SonicMoE, with and without gradient checkpointing.
+
+Five arms at a fixed prompt length, swept over batch size:
+
+  1. hf_ckpt        HF expert kernel (grouped_mm), gradient checkpointing ON
+  2. hf_nockpt      HF expert kernel, checkpointing OFF
+  3. sonic_ckpt     SonicMoE expert kernel, checkpointing ON
+  4. sonic_nockpt   SonicMoE expert kernel, checkpointing OFF
+  5. vllm_original  vLLM generation with no probe at all (the baseline)
+
+Arms 1-4 are the PIRA probe; arm 5 is measured separately because vLLM's
+inference path has no autograd and cannot host the probe. Run arm 5 with
+--vllm-only in the vLLM environment; arms 1-4 run in the HF environment.
+
+Two metrics per cell:
+
+  time            probe forward + backward seconds, median of --repeats
+  peak memory     BOTH peak_allocated (which includes the ~57 GiB of resident
+                  weights) and activation_gib (peak minus resident weights).
+                  Activation memory is the one that responds to these knobs:
+                  weights dominate the raw peak so completely that a kernel
+                  change is invisible in it -- 58.24 vs 58.57 GiB in an earlier
+                  SonicMoE run, a 0.6% difference, while the underlying
+                  activation figures were 1.24 vs 1.57 GiB.
+
+Checkpointing is the larger lever and it trades the two metrics against each
+other: it discards each layer's internal activations and recomputes them during
+backward, which measured 9.1x less activation memory for about 34% more time at
+4096 tokens. Expect the no-checkpointing arms to OOM first as batch grows;
+that boundary is a result, so an OOM is recorded rather than treated as an error.
+
+Usage (HF env, arms 1-4):
+    python scripts/moe/compare_probe_matrix.py \
+        --prompt-tokens 4096 --batch-sizes 1 4 8 16 32 \
+        --output timing_results/probe_matrix.json
+
+Usage (vLLM env, arm 5):
+    python scripts/moe/compare_probe_matrix.py --vllm-only \
+        --prompt-tokens 4096 --batch-sizes 1 4 8 16 32 \
+        --output timing_results/probe_matrix_vllm.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import statistics
+import sys
+from pathlib import Path
+
+import torch
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", default="Qwen/Qwen3-30B-A3B")
+    parser.add_argument("--probe-layer", type=int, default=24)
+    parser.add_argument("--prompt-tokens", type=int, default=4096)
+    parser.add_argument("--batch-sizes", type=int, nargs="+", default=[1, 4, 8, 16, 32])
+    parser.add_argument("--output-tokens", type=int, default=256,
+                        help="Generation length for the vLLM baseline arm only.")
+    parser.add_argument("--top-k", type=int, default=25)
+    parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--vllm-only",
+        action="store_true",
+        help="Measure only arm 5 (vLLM generation). Requires the vLLM environment.",
+    )
+    parser.add_argument(
+        "--skip-sonic",
+        action="store_true",
+        help="Skip arms 3-4 when SonicMoE is unavailable.",
+    )
+    parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
+    parser.add_argument("--output", type=Path, required=True)
+    return parser.parse_args()
+
+
+# --------------------------------------------------------------------------- #
+# Arms 1-4: the probe
+# --------------------------------------------------------------------------- #
+
+
+def register_sonicmoe() -> str | None:
+    """Point Transformers' kernel mapping at the installed sonicmoe package.
+
+    Returns the version, or None when it is unavailable -- reported rather than
+    fatal, so the HF arms still produce results.
+    """
+    try:
+        import sonicmoe
+        from transformers.integrations import hub_kernels
+
+        hub_kernels._KERNEL_MODULE_MAPPING["sonic-moe"] = sonicmoe
+        return sonicmoe.__version__
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def measure_probe(model, batch, direction, probe_layer, repeats, checkpoint):
+    """Median probe timing plus peak and activation memory, or an OOM record."""
+    from pira_probe import FastProbe, free_cuda
+
+    free_cuda()
+    # Resident weights, so activation memory can be separated from the raw peak.
+    resident_gib = torch.cuda.memory_allocated() / 2**30
+
+    probe = FastProbe(
+        model, probe_layer, direction,
+        checkpoint=checkpoint, truncate=True, efficient_attention=True,
+    )
+    try:
+        # Untimed warmup: keeps autotuning and allocator growth out of the numbers.
+        probe.run(batch.input_ids, batch.attention_mask, last_index=batch.last_index)
+        free_cuda()
+        torch.cuda.reset_peak_memory_stats()
+
+        totals, forwards, backwards, peaks = [], [], [], []
+        for _ in range(repeats):
+            result = probe.run(
+                batch.input_ids, batch.attention_mask, last_index=batch.last_index
+            )
+            totals.append(result.total_seconds)
+            forwards.append(result.forward_seconds)
+            backwards.append(result.backward_seconds)
+            peaks.append(result.peak_allocated_gib)
+            del result
+            free_cuda()
+        peak = max(peaks)
+        return {
+            "status": "ok",
+            "total_seconds": statistics.median(totals),
+            "forward_seconds": statistics.median(forwards),
+            "backward_seconds": statistics.median(backwards),
+            "seconds_per_request": statistics.median(totals) / batch.input_ids.shape[0],
+            "peak_allocated_gib": peak,
+            "resident_weight_gib": resident_gib,
+            "activation_gib": max(0.0, peak - resident_gib),
+            "all_total_seconds": totals,
+        }
+    except torch.OutOfMemoryError as error:
+        free_cuda()
+        # Where the no-checkpointing arms stop being usable is itself the result.
+        return {"status": "oom", "error": str(error)[:200],
+                "resident_weight_gib": resident_gib}
+    except Exception as error:  # noqa: BLE001
+        free_cuda()
+        return {"status": "error", "error": f"{type(error).__name__}: {error}"[:300]}
+
+
+def run_probe_arms(args) -> dict:
+    from pira_probe import free_cuda, unit_direction
+    from probe_workload import build_prompt_batch, load_model
+
+    sonic_version = register_sonicmoe()
+    model, tokenizer = load_model(args.model, torch.bfloat16)
+    device = next(model.parameters()).device
+    direction = unit_direction(model.config.hidden_size, device, args.seed)
+
+    can_switch = hasattr(model, "set_experts_implementation")
+    arms = [("hf", "grouped_mm", True), ("hf", "grouped_mm", False)]
+    if sonic_version and can_switch and not args.skip_sonic:
+        arms += [("sonic", "sonicmoe", True), ("sonic", "sonicmoe", False)]
+
+    print(f"GPU={torch.cuda.get_device_name(0)} model={args.model}")
+    print(f"prompt={args.prompt_tokens} probe_layer={args.probe_layer} "
+          f"sonicmoe={sonic_version or 'unavailable'} "
+          f"switchable={can_switch}")
+    print()
+
+    records = []
+    for batch_size in args.batch_sizes:
+        batch = build_prompt_batch(
+            tokenizer, prompt_tokens=args.prompt_tokens,
+            batch_size=batch_size, device=device, seed=args.seed,
+        )
+        for kernel_name, implementation, checkpoint in arms:
+            if can_switch:
+                try:
+                    model.set_experts_implementation(implementation)
+                except Exception as error:  # noqa: BLE001
+                    print(f"  could not select {implementation}: {error}")
+                    continue
+            arm = f"{kernel_name}_{'ckpt' if checkpoint else 'nockpt'}"
+            result = measure_probe(
+                model, batch, direction, args.probe_layer, args.repeats, checkpoint
+            )
+            record = {
+                "arm": arm, "kernel": kernel_name, "checkpointing": checkpoint,
+                "batch_size": batch_size, "prompt_tokens": args.prompt_tokens,
+                **result,
+            }
+            records.append(record)
+            if result["status"] == "ok":
+                print(f"  {arm:<14} b{batch_size:<3} "
+                      f"{result['total_seconds']:>8.3f} s  "
+                      f"act {result['activation_gib']:>7.2f} GiB  "
+                      f"peak {result['peak_allocated_gib']:>7.2f} GiB")
+            else:
+                print(f"  {arm:<14} b{batch_size:<3} {result['status'].upper()}")
+        del batch
+        free_cuda()
+        print()
+
+    return {
+        "metadata": {
+            "model": args.model, "gpu": torch.cuda.get_device_name(0),
+            "torch": torch.__version__,
+            "transformers": __import__("transformers").__version__,
+            "sonicmoe": sonic_version, "dtype": "bfloat16",
+            "prompt_tokens": args.prompt_tokens, "probe_layer": args.probe_layer,
+            "batch_sizes": args.batch_sizes, "repeats": args.repeats,
+            "arms": [f"{k}_{'ckpt' if c else 'nockpt'}" for k, _, c in arms],
+        },
+        "measurements": records,
+    }
+
+
+# --------------------------------------------------------------------------- #
+# Arm 5: vLLM generation baseline
+# --------------------------------------------------------------------------- #
+
+
+def run_vllm_arm(args) -> dict:
+    """Original vLLM generation, no probe. Measured in its own process.
+
+    Separate because vLLM's inference path has no autograd, so it cannot host the
+    probe; this arm exists to give the probe cost a denominator.
+    """
+    import time
+
+    from vllm import LLM, SamplingParams
+
+    max_len = args.prompt_tokens + args.output_tokens
+    llm = LLM(
+        model=args.model, dtype="bfloat16", tensor_parallel_size=1,
+        gpu_memory_utilization=args.gpu_memory_utilization,
+        max_model_len=max_len, max_num_seqs=max(args.batch_sizes),
+        max_num_batched_tokens=max_len,
+        enable_prefix_caching=False, trust_remote_code=True, seed=args.seed,
+    )
+    tokenizer = llm.get_tokenizer()
+    text = ("The mixture-of-experts layer routes each token to a small subset of "
+            "feed-forward experts, which lets the model grow its parameter count "
+            "without a proportional increase in compute per token. ")
+    ids = tokenizer.encode(text, add_special_tokens=False)
+    prompt_ids = (ids * ((args.prompt_tokens + len(ids) - 1) // len(ids)))[
+        : args.prompt_tokens
+    ]
+    sampling = SamplingParams(temperature=0.0, max_tokens=args.output_tokens,
+                              ignore_eos=True)
+
+    def peak_gib():
+        def _peak(worker):
+            import torch as _torch
+            return _torch.cuda.max_memory_allocated() / 2**30 if _torch.cuda.is_available() else 0.0
+        try:
+            values = [v for v in llm.collective_rpc(_peak) if isinstance(v, (int, float))]
+            return max(values) if values else None
+        except Exception:  # noqa: BLE001
+            return None
+
+    def reset_peak():
+        def _reset(worker):
+            import torch as _torch
+            if _torch.cuda.is_available():
+                _torch.cuda.reset_peak_memory_stats()
+        try:
+            llm.collective_rpc(_reset)
+        except Exception:  # noqa: BLE001
+            pass
+
+    records = []
+    for batch_size in args.batch_sizes:
+        prompts = [{"prompt_token_ids": prompt_ids} for _ in range(batch_size)]
+        llm.generate(prompts, SamplingParams(temperature=0.0, max_tokens=1,
+                                             ignore_eos=True), use_tqdm=False)
+        reset_peak()
+        totals = []
+        for _ in range(args.repeats):
+            started = time.perf_counter()
+            llm.generate(prompts, sampling, use_tqdm=False)
+            totals.append(time.perf_counter() - started)
+        median = statistics.median(totals)
+        record = {
+            "arm": "vllm_original", "kernel": "vllm", "checkpointing": None,
+            "batch_size": batch_size, "prompt_tokens": args.prompt_tokens,
+            "output_tokens": args.output_tokens, "status": "ok",
+            "total_seconds": median, "seconds_per_request": median / batch_size,
+            "peak_allocated_gib": peak_gib(), "all_total_seconds": totals,
+        }
+        records.append(record)
+        print(f"  vllm_original  b{batch_size:<3} {median:>8.3f} s  "
+              f"({median / batch_size:.4f} s/req)  peak {record['peak_allocated_gib']}")
+
+    return {
+        "metadata": {
+            "model": args.model, "gpu": torch.cuda.get_device_name(0),
+            "arm": "vllm_original", "prompt_tokens": args.prompt_tokens,
+            "output_tokens": args.output_tokens, "batch_sizes": args.batch_sizes,
+            "repeats": args.repeats,
+            "gpu_memory_utilization": args.gpu_memory_utilization,
+        },
+        "measurements": records,
+    }
+
+
+def main() -> int:
+    args = parse_args()
+    if not torch.cuda.is_available():
+        print("CUDA is required.", file=sys.stderr)
+        return 2
+
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+
+    payload = run_vllm_arm(args) if args.vllm_only else run_probe_arms(args)
+
+    print("\n=== summary ===")
+    header = f"{'arm':<15}{'batch':>6}{'time(s)':>10}{'act GiB':>10}{'peak GiB':>10}"
+    print(header)
+    print("-" * len(header))
+    for record in payload["measurements"]:
+        if record["status"] != "ok":
+            print(f"{record['arm']:<15}{record['batch_size']:>6}"
+                  f"{record['status'].upper():>10}")
+            continue
+        activation = record.get("activation_gib")
+        peak = record.get("peak_allocated_gib")
+        print(f"{record['arm']:<15}{record['batch_size']:>6}"
+              f"{record['total_seconds']:>10.3f}"
+              f"{activation if activation is not None else float('nan'):>10.2f}"
+              f"{peak if peak is not None else float('nan'):>10.2f}")
+
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(payload, indent=2) + "\n")
+    print(f"\nwrote {args.output}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -645,6 +645,18 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
     --compare-checkpointing \
     --output "$OUT/probe_scaling.json"
   echo
+
+  # 2x2 kernel x checkpointing matrix at one prompt length, swept over batch.
+  # Reports activation memory alongside the raw peak: resident weights (~57 GiB)
+  # dominate the peak so completely that a kernel change is invisible in it.
+  echo "--- probe matrix: HF vs SonicMoE, with/without checkpointing ---"
+  "$HF_PY" scripts/moe/compare_probe_matrix.py \
+    --model "$MODEL" \
+    --probe-layer "$PROBE_LAYER" \
+    --prompt-tokens "${MATRIX_PROMPT_TOKENS:-4096}" \
+    --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
+    --output "$OUT/probe_matrix.json"
+  echo
 fi
 
 # --------------------------------------------------------------------------- #
@@ -709,6 +721,18 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step2" ]]; then
       --requests-per-cell 32 \
       --output "$OUT/vllm_pira_grid.json"
     STEP2_STATUS=$?
+    echo
+
+    # Arm 5 of the probe matrix: Original generation with no probe, at the same
+    # prompt length and batch sizes, so the probe cost has a denominator measured
+    # on the same hardware. Runs here because it needs the vLLM environment.
+    echo "--- probe matrix arm 5: vLLM Original at matrix batch sizes ---"
+    "$VLLM_PY" scripts/moe/compare_probe_matrix.py --vllm-only \
+      --model "$MODEL" \
+      --prompt-tokens "${MATRIX_PROMPT_TOKENS:-4096}" \
+      --batch-sizes ${MATRIX_BATCH_SIZES:-1 4 8 16 32} \
+      --output-tokens "${MATRIX_OUTPUT_TOKENS:-256}" \
+      --output "$OUT/probe_matrix_vllm.json"
     echo
     echo "grid exit status: $STEP2_STATUS"
     echo
