@@ -255,6 +255,37 @@ def _vllm_worker_reset_peak_memory(worker) -> None:
         worker_torch.cuda.reset_peak_memory_stats()
 
 
+def _vllm_worker_weight_gib(worker):
+    """Bytes of resident model weights inside a vLLM worker, in GiB."""
+    total = sum(
+        parameter.numel() * parameter.element_size()
+        for parameter in worker.model_runner.get_model().parameters()
+    )
+    return total / 2**30
+
+
+def kv_cache_gib(config, tokens: int, batch_size: int) -> float | None:
+    """KV cache actually needed for these requests, in GiB.
+
+    Reported alongside the peak because the peak is dominated by preallocation:
+    vLLM claims gpu_memory_utilization of the device up front and hands whatever
+    is left after the weights to its KV pool, so at batch 1 the measured peak
+    reflects that setting rather than any per-request demand -- about 160 GiB
+    against a real requirement near 57 GiB. Comparing that peak against the
+    probe's would wrongly suggest generation needs three times the memory.
+    """
+    try:
+        layers = config.num_hidden_layers
+        kv_heads = getattr(config, "num_key_value_heads", None) or config.num_attention_heads
+        head_dim = getattr(config, "head_dim", None) or (
+            config.hidden_size // config.num_attention_heads
+        )
+    except AttributeError:
+        return None
+    # key and value, 2 bytes per bf16 element
+    return 2 * layers * tokens * kv_heads * head_dim * 2 * batch_size / 2**30
+
+
 def run_vllm_arm(args) -> dict:
     """Original vLLM generation, no probe. Measured in its own process.
 
@@ -293,6 +324,18 @@ def run_vllm_arm(args) -> dict:
             enable_prefix_caching=False, trust_remote_code=True, seed=args.seed,
         )
         tokenizer = llm.get_tokenizer()
+        # Weight footprint measured inside the worker. Read before generating so it
+        # reflects the weights alone, not the KV pool vLLM has already reserved.
+        try:
+            values = [
+                value for value in llm.collective_rpc(_vllm_worker_weight_gib)
+                if isinstance(value, (int, float))
+            ]
+            resident_gib = max(values) if values else None
+        except Exception as error:  # noqa: BLE001
+            print(f"warning: could not read worker weight footprint: {error}")
+            resident_gib = None
+        hf_config = llm.llm_engine.model_config.hf_config
         ids = tokenizer.encode(text, add_special_tokens=False)
         prompt_ids = (ids * ((prompt_tokens + len(ids) - 1) // len(ids)))[:prompt_tokens]
         sampling = SamplingParams(temperature=0.0, max_tokens=output_tokens,
@@ -316,6 +359,7 @@ def run_vllm_arm(args) -> dict:
                 print(f"warning: could not reset worker peak memory: {error}")
 
         for batch_size in args.batch_sizes:
+            kv_needed = kv_cache_gib(hf_config, max_len, batch_size)
             prompts = [{"prompt_token_ids": prompt_ids} for _ in range(batch_size)]
             llm.generate(prompts, SamplingParams(temperature=0.0, max_tokens=1,
                                                  ignore_eos=True), use_tqdm=False)
@@ -331,12 +375,23 @@ def run_vllm_arm(args) -> dict:
                 "batch_size": batch_size, "prompt_tokens": prompt_tokens,
                 "output_tokens": output_tokens, "status": "ok",
                 "total_seconds": median, "seconds_per_request": median / batch_size,
-                "peak_allocated_gib": peak_gib(), "all_total_seconds": totals,
+                "peak_allocated_gib": peak_gib(),
+                # What the run actually requires, as opposed to what vLLM reserved.
+                "weights_gib": resident_gib,
+                "kv_cache_gib": kv_needed,
+                "required_gib": (resident_gib + kv_needed
+                                 if resident_gib and kv_needed is not None else None),
+                "all_total_seconds": totals,
             }
             records.append(record)
+            required = record["required_gib"]
             print(f"  vllm_original  in{prompt_tokens:<6} b{batch_size:<3} "
                   f"{median:>8.3f} s  ({median / batch_size:.4f} s/req)  "
-                  f"peak {record['peak_allocated_gib']}")
+                  f"required {required:.2f} GiB  "
+                  f"(reserved peak {record['peak_allocated_gib']:.1f})"
+                  if required is not None else
+                  f"  vllm_original  in{prompt_tokens:<6} b{batch_size:<3} "
+                  f"{median:>8.3f} s  peak {record['peak_allocated_gib']}")
 
         # Free the engine before building the next one, or the second allocation
         # fails: vLLM preallocates a KV cache pool sized to gpu_memory_utilization.
