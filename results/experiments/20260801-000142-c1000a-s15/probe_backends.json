@@ -1,0 +1,146 @@
+{
+  "metadata": {
+    "model": "Qwen/Qwen3-30B-A3B",
+    "gpu": "NVIDIA B200",
+    "torch": "2.13.0+cu130",
+    "probe_layer": 24,
+    "num_layers": 48,
+    "top_k": 25,
+    "top_k_scope": "global across probed layers",
+    "batch_size": 1,
+    "repeats": 3,
+    "backend_status": {
+      "torch": "available",
+      "grouped_gemm": "available"
+    },
+    "dtype": "bfloat16"
+  },
+  "measurements": [
+    {
+      "backend": "hf_loop",
+      "prompt_tokens": 128,
+      "forward_seconds": 0.03812262788414955,
+      "backward_seconds": 0.08068880718201399,
+      "total_seconds": 0.11881143506616354,
+      "peak_allocated_gib": 57.009976387023926,
+      "status": "ok"
+    },
+    {
+      "backend": "hf_loop_self_variation",
+      "prompt_tokens": 128,
+      "status": "ok",
+      "layers": 25,
+      "num_requests": 1,
+      "max_abs_diff": 0.0,
+      "mean_abs_diff": 0.0,
+      "max_rel_diff": 0.0,
+      "spearman_min": 1.0,
+      "suppression_overlap_min": 1.0,
+      "suppression_overlap_mean": 1.0,
+      "identical_suppression_set": true,
+      "top_k": 25,
+      "reference_seconds": 0.11782607389613986,
+      "candidate_seconds": 0.1293215462937951,
+      "speedup": 0.9111093802455809,
+      "reference_peak_gib": 57.009976387023926,
+      "candidate_peak_gib": 57.009976387023926,
+      "memory_ratio": 1.0
+    },
+    {
+      "backend": "torch",
+      "prompt_tokens": 128,
+      "status": "unavailable",
+      "error": "no MoE block matched the expected structure (needs .experts, .gate and .top_k)"
+    },
+    {
+      "backend": "grouped_gemm",
+      "prompt_tokens": 128,
+      "status": "unavailable",
+      "error": "no MoE block matched the expected structure (needs .experts, .gate and .top_k)"
+    },
+    {
+      "backend": "hf_loop",
+      "prompt_tokens": 1024,
+      "forward_seconds": 0.038839173037558794,
+      "backward_seconds": 0.08046378893777728,
+      "total_seconds": 0.12084094807505608,
+      "peak_allocated_gib": 57.29930639266968,
+      "status": "ok"
+    },
+    {
+      "backend": "hf_loop_self_variation",
+      "prompt_tokens": 1024,
+      "status": "ok",
+      "layers": 25,
+      "num_requests": 1,
+      "max_abs_diff": 0.00017155311070382595,
+      "mean_abs_diff": 3.264705128458445e-06,
+      "max_rel_diff": 0.00373574486002326,
+      "spearman_min": 0.9941142008412306,
+      "suppression_overlap_min": 1.0,
+      "suppression_overlap_mean": 1.0,
+      "identical_suppression_set": true,
+      "top_k": 25,
+      "reference_seconds": 0.11830803425982594,
+      "candidate_seconds": 0.11662052990868688,
+      "speedup": 1.0144700453038618,
+      "reference_peak_gib": 57.29930639266968,
+      "candidate_peak_gib": 57.29930639266968,
+      "memory_ratio": 1.0
+    },
+    {
+      "backend": "torch",
+      "prompt_tokens": 1024,
+      "status": "unavailable",
+      "error": "no MoE block matched the expected structure (needs .experts, .gate and .top_k)"
+    },
+    {
+      "backend": "grouped_gemm",
+      "prompt_tokens": 1024,
+      "status": "unavailable",
+      "error": "no MoE block matched the expected structure (needs .experts, .gate and .top_k)"
+    },
+    {
+      "backend": "hf_loop",
+      "prompt_tokens": 4096,
+      "forward_seconds": 0.06261800602078438,
+      "backward_seconds": 0.1682157157920301,
+      "total_seconds": 0.23105010017752647,
+      "peak_allocated_gib": 58.273995876312256,
+      "status": "ok"
+    },
+    {
+      "backend": "hf_loop_self_variation",
+      "prompt_tokens": 4096,
+      "status": "ok",
+      "layers": 25,
+      "num_requests": 1,
+      "max_abs_diff": 0.0002589169889688492,
+      "mean_abs_diff": 3.0900819183443673e-06,
+      "max_rel_diff": 0.007231956347823143,
+      "spearman_min": 0.9955791886551942,
+      "suppression_overlap_min": 1.0,
+      "suppression_overlap_mean": 1.0,
+      "identical_suppression_set": true,
+      "top_k": 25,
+      "reference_seconds": 0.23080252017825842,
+      "candidate_seconds": 0.26098113087937236,
+      "speedup": 0.8843647791722431,
+      "reference_peak_gib": 58.273995876312256,
+      "candidate_peak_gib": 58.273995876312256,
+      "memory_ratio": 1.0
+    },
+    {
+      "backend": "torch",
+      "prompt_tokens": 4096,
+      "status": "unavailable",
+      "error": "no MoE block matched the expected structure (needs .experts, .gate and .top_k)"
+    },
+    {
+      "backend": "grouped_gemm",
+      "prompt_tokens": 4096,
+      "status": "unavailable",
+      "error": "no MoE block matched the expected structure (needs .experts, .gate and .top_k)"
+    }
+  ]
+}

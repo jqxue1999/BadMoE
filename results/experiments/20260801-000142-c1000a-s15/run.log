@@ -1,0 +1,190 @@
+==================================================================
+ PIRA measurements: all
+ started 2026-08-01T00:01:42-04:00   host c1000a-s15
+ model   Qwen/Qwen3-30B-A3B   probe_layer 24   K 25 (global)
+ results results/experiments/20260801-000142-c1000a-s15
+==================================================================
+Sat Aug  1 00:01:42 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.159.04             Driver Version: 580.159.04     CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA B200                    On  |   00000000:1B:00.0 Off |                    0 |
+| N/A   24C    P0            189W / 1000W |       0MiB / 183359MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+(nvidia-smi unavailable)
+
+--- disk space ---
+  model cache dir: /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+  model cache              201 GiB free   (need ~120 GiB)   ok
+  tmp / compile           1608 GiB free   (need ~20 GiB)   ok
+  home (python, misc)        2 GiB free   (need ~5 GiB)   <-- TOO SMALL
+  quota check (per-user limits, not filesystem size):
+    Filesystem quota usage for user yi217029.ucf on /home/yi217029.ucf
+    Quota    Used    Available
+    -------  ------  -----------
+    40G      39G     1.9G
+    
+    See additional options with 'home_quota -h'
+  resolved by huggingface_hub:
+    HF_HOME        /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface
+    HF_HUB_CACHE   /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/hub
+    HF_XET_CACHE   /orange/qi855292.ucf/yi217029.ucf/BadMoE/.cache/huggingface/xet
+
+### STEP 1: grouped-GEMM probe vs Hugging Face probe ###
+
+--- CPU sanity checks first (seconds, no GPU) ---
+last_index handling: max_abs_diff vs naive last-row read 5.604e-01 -> load-bearing (OK)
+
+ALL EQUIVALENCE CHECKS PASSED
+  shared-input rel_diff          3.173e-07  (vs 1.088e+00 for different inputs)
+
+SELF-CHECK PASSED (sort/scatter reconstruction is correct)
+
+--- isolated MoE-layer comparison (which backends work at all) ---
+GPU: NVIDIA B200 (sm_100)
+torch 2.13.0+cu130, CUDA 13.0, dtype bfloat16
+shapes: hidden=2048 intermediate=768 experts=128 top_k=8
+
+  grouped_gemm   importable
+  te_grouped     UNAVAILABLE: ModuleNotFoundError: No module named 'transformer_engine'
+
+=== sequence length 128 ===
+  hf_loop        fwd   20.720 ms   fwd+bwd   40.274 ms   peak   2.33 GiB   rel_diff 0.00e+00
+  bmm            fwd   22.327 ms   fwd+bwd   23.998 ms   peak  10.20 GiB   rel_diff 1.02e-02
+  grouped_gemm   fwd    0.694 ms   fwd+bwd    1.358 ms   peak   1.21 GiB   rel_diff 6.80e-03
+
+=== sequence length 1024 ===
+  hf_loop        fwd   21.224 ms   fwd+bwd   44.210 ms   peak   2.54 GiB   rel_diff 0.00e+00
+  bmm            fwd  174.893 ms   fwd+bwd  186.985 ms   peak  73.27 GiB   rel_diff 1.33e-02
+  grouped_gemm   fwd    0.945 ms   fwd+bwd    1.663 ms   peak   1.36 GiB   rel_diff 6.67e-03
+
+=== sequence length 4096 ===
+  hf_loop        fwd   21.049 ms   fwd+bwd   42.525 ms   peak   2.77 GiB   rel_diff 0.00e+00
+[W801 00:06:32.179811265 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 12884901888 bytes (free: 8564572160, total: 191503007744).
+[W801 00:06:32.180164977 CUDACachingAllocator.cpp:3933] memory allocation failed with OOM on device 0 while trying to allocate 12884901888 bytes (free: 8564572160, total: 191503007744).
+  bmm            OOM
+  grouped_gemm   fwd    2.024 ms   fwd+bwd    4.005 ms   peak   1.86 GiB   rel_diff 5.49e-03
+
+=== projected probe cost (25 layers, fwd+bwd, MoE only) ===
+backend          seq  per-layer(ms)  x25 layers(ms)  vs hf_loop
+hf_loop          128         40.274          1006.8        1.0x
+bmm              128         23.998           600.0        1.7x
+grouped_gemm     128          1.358            33.9       29.7x
+hf_loop         1024         44.210          1105.2        1.0x
+bmm             1024        186.985          4674.6        0.2x
+grouped_gemm    1024          1.663            41.6       26.6x
+hf_loop         4096         42.525          1063.1        1.0x
+grouped_gemm    4096          4.005           100.1       10.6x
+
+NOTE: this is the MoE portion only. Attention, norms and the router are
+unchanged, so the real probe will not improve by the full ratio. The
+numbers to read are the speedup column and rel_diff -- a backend is only
+usable if it is both faster AND numerically close enough that PIRA's
+top-K suppression set does not change.
+
+wrote results/experiments/20260801-000142-c1000a-s15/moe_layer_backends.json
+
+--- full probe, grouped vs HF, on the real model ---
+grouped backends:
+  torch          available
+  grouped_gemm   available
+
+Fetching 16 files:   0%|          | 0/16 [00:00<?, ?it/s]Fetching 16 files:   6%|▋         | 1/16 [00:28<07:06, 28.40s/it]Fetching 16 files:  12%|█▎        | 2/16 [00:29<02:50, 12.17s/it]Fetching 16 files:  19%|█▉        | 3/16 [00:29<01:27,  6.71s/it]Fetching 16 files:  25%|██▌       | 4/16 [00:29<00:49,  4.14s/it]Fetching 16 files:  31%|███▏      | 5/16 [00:30<00:32,  2.95s/it]Fetching 16 files:  38%|███▊      | 6/16 [00:31<00:23,  2.32s/it]Fetching 16 files:  44%|████▍     | 7/16 [00:31<00:14,  1.65s/it]Fetching 16 files:  50%|█████     | 8/16 [00:31<00:09,  1.16s/it]Fetching 16 files:  56%|█████▋    | 9/16 [00:36<00:16,  2.30s/it]Fetching 16 files:  62%|██████▎   | 10/16 [00:38<00:13,  2.21s/it]Fetching 16 files:  69%|██████▉   | 11/16 [00:44<00:16,  3.40s/it]Fetching 16 files:  75%|███████▌  | 12/16 [00:46<00:11,  2.76s/it]Fetching 16 files:  81%|████████▏ | 13/16 [00:46<00:05,  1.96s/it]Fetching 16 files:  88%|████████▊ | 14/16 [00:47<00:03,  1.78s/it]Fetching 16 files:  94%|█████████▍| 15/16 [00:47<00:01,  1.35s/it]Fetching 16 files: 100%|██████████| 16/16 [00:48<00:00,  1.13s/it]Fetching 16 files: 100%|██████████| 16/16 [00:48<00:00,  3.04s/it]
+Loading weights:   0%|          | 0/531 [00:00<?, ?it/s]Loading weights:   1%|          | 4/531 [00:00<01:15,  6.96it/s]Loading weights:   3%|▎         | 15/531 [00:00<00:27, 18.46it/s]Loading weights:   5%|▍         | 26/531 [00:01<00:23, 21.47it/s]Loading weights:   7%|▋         | 37/531 [00:01<00:22, 22.08it/s]Loading weights:   9%|▉         | 48/531 [00:02<00:21, 22.41it/s]Loading weights:  11%|█         | 59/531 [00:02<00:20, 22.54it/s]Loading weights:  13%|█▎        | 70/531 [00:03<00:20, 22.20it/s]Loading weights:  15%|█▌        | 81/531 [00:03<00:19, 23.01it/s]Loading weights:  17%|█▋        | 92/531 [00:04<00:19, 22.52it/s]Loading weights:  19%|█▉        | 103/531 [00:04<00:18, 23.20it/s]Loading weights:  21%|██▏       | 114/531 [00:05<00:18, 22.85it/s]Loading weights:  24%|██▎       | 125/531 [00:05<00:17, 23.24it/s]Loading weights:  26%|██▌       | 136/531 [00:06<00:17, 22.99it/s]Loading weights:  28%|██▊       | 147/531 [00:06<00:16, 23.23it/s]Loading weights:  30%|██▉       | 158/531 [00:07<00:16, 22.97it/s]Loading weights:  32%|███▏      | 169/531 [00:07<00:15, 23.30it/s]Loading weights:  34%|███▍      | 180/531 [00:08<00:15, 23.15it/s]Loading weights:  36%|███▌      | 191/531 [00:08<00:14, 23.23it/s]Loading weights:  38%|███▊      | 202/531 [00:09<00:14, 22.99it/s]Loading weights:  40%|████      | 213/531 [00:09<00:13, 23.23it/s]Loading weights:  42%|████▏     | 224/531 [00:09<00:13, 23.02it/s]Loading weights:  44%|████▍     | 235/531 [00:10<00:13, 22.70it/s]Loading weights:  46%|████▋     | 246/531 [00:10<00:12, 23.13it/s]Loading weights:  48%|████▊     | 257/531 [00:11<00:11, 23.07it/s]Loading weights:  50%|█████     | 268/531 [00:11<00:11, 22.95it/s]Loading weights:  53%|█████▎    | 279/531 [00:12<00:10, 23.06it/s]Loading weights:  55%|█████▍    | 290/531 [00:12<00:10, 22.99it/s]Loading weights:  57%|█████▋    | 301/531 [00:13<00:10, 22.83it/s]Loading weights:  59%|█████▉    | 312/531 [00:13<00:09, 23.15it/s]Loading weights:  61%|██████    | 323/531 [00:14<00:09, 22.91it/s]Loading weights:  63%|██████▎   | 334/531 [00:14<00:08, 23.27it/s]Loading weights:  65%|██████▍   | 345/531 [00:15<00:08, 23.16it/s]Loading weights:  67%|██████▋   | 356/531 [00:15<00:07, 23.30it/s]Loading weights:  69%|██████▉   | 367/531 [00:16<00:07, 22.90it/s]Loading weights:  71%|███████   | 378/531 [00:16<00:06, 23.23it/s]Loading weights:  73%|███████▎  | 389/531 [00:17<00:06, 23.17it/s]Loading weights:  75%|███████▌  | 400/531 [00:17<00:05, 23.17it/s]Loading weights:  77%|███████▋  | 411/531 [00:18<00:05, 22.93it/s]Loading weights:  79%|███████▉  | 422/531 [00:18<00:04, 23.14it/s]Loading weights:  82%|████████▏ | 433/531 [00:19<00:04, 23.02it/s]Loading weights:  84%|████████▎ | 444/531 [00:19<00:03, 23.25it/s]Loading weights:  86%|████████▌ | 455/531 [00:19<00:03, 23.01it/s]Loading weights:  88%|████████▊ | 466/531 [00:20<00:02, 23.30it/s]Loading weights:  90%|████████▉ | 477/531 [00:20<00:02, 22.98it/s]Loading weights:  92%|█████████▏| 488/531 [00:21<00:01, 23.14it/s]Loading weights:  94%|█████████▍| 499/531 [00:21<00:01, 22.86it/s]Loading weights:  96%|█████████▌| 510/531 [00:22<00:00, 23.30it/s]Loading weights:  98%|█████████▊| 521/531 [00:22<00:00, 23.15it/s]Loading weights: 100%|██████████| 531/531 [00:22<00:00, 23.27it/s]
+GPU=NVIDIA B200 model=Qwen/Qwen3-30B-A3B
+probe_layer=24/48 top_k=25 (global) batch=1
+
+=== prompt_tokens=128 ===
+  hf_loop        total     118.8 ms (fwd    38.1 / bwd    80.7)  peak 57.01 GiB
+  hf_loop (self) rel_diff 0.00e+00  spearman 1.000000  same top-25 set True  overlap 1.00
+  torch          unavailable: no MoE block matched the expected structure (needs .experts, .gate and .top_k)
+  grouped_gemm   unavailable: no MoE block matched the expected structure (needs .experts, .gate and .top_k)
+
+=== prompt_tokens=1024 ===
+  hf_loop        total     120.8 ms (fwd    38.8 / bwd    80.5)  peak 57.30 GiB
+  hf_loop (self) rel_diff 3.74e-03  spearman 0.994114  same top-25 set True  overlap 1.00
+  torch          unavailable: no MoE block matched the expected structure (needs .experts, .gate and .top_k)
+  grouped_gemm   unavailable: no MoE block matched the expected structure (needs .experts, .gate and .top_k)
+
+=== prompt_tokens=4096 ===
+  hf_loop        total     231.1 ms (fwd    62.6 / bwd   168.2)  peak 58.27 GiB
+  hf_loop (self) rel_diff 7.23e-03  spearman 0.995579  same top-25 set True  overlap 1.00
+  torch          unavailable: no MoE block matched the expected structure (needs .experts, .gate and .top_k)
+  grouped_gemm   unavailable: no MoE block matched the expected structure (needs .experts, .gate and .top_k)
+
+=== verdict ===
+  torch: no successful runs
+  grouped_gemm: no successful runs
+
+wrote results/experiments/20260801-000142-c1000a-s15/probe_backends.json
+
+step 1 exit status: 0
+
+--- probe scaling and activation memory (arm C) ---
+Loading weights:   0%|          | 0/531 [00:00<?, ?it/s]Loading weights:   1%|          | 4/531 [00:00<00:55,  9.54it/s]Loading weights:   3%|▎         | 15/531 [00:00<00:29, 17.68it/s]Loading weights:   5%|▍         | 26/531 [00:01<00:25, 19.85it/s]Loading weights:   7%|▋         | 37/531 [00:01<00:22, 21.65it/s]Loading weights:   9%|▉         | 48/531 [00:02<00:21, 22.06it/s]Loading weights:  11%|█         | 59/531 [00:02<00:20, 22.75it/s]Loading weights:  13%|█▎        | 70/531 [00:03<00:20, 22.44it/s]Loading weights:  15%|█▌        | 81/531 [00:03<00:19, 23.04it/s]Loading weights:  17%|█▋        | 92/531 [00:04<00:19, 23.10it/s]Loading weights:  19%|█▉        | 103/531 [00:04<00:18, 23.11it/s]Loading weights:  21%|██▏       | 114/531 [00:05<00:18, 23.10it/s]Loading weights:  24%|██▎       | 125/531 [00:05<00:17, 23.09it/s]Loading weights:  26%|██▌       | 136/531 [00:06<00:17, 23.05it/s]Loading weights:  28%|██▊       | 147/531 [00:06<00:16, 22.59it/s]Loading weights:  30%|██▉       | 158/531 [00:07<00:16, 23.28it/s]Loading weights:  32%|███▏      | 169/531 [00:07<00:15, 23.11it/s]Loading weights:  34%|███▍      | 180/531 [00:08<00:15, 23.25it/s]Loading weights:  36%|███▌      | 191/531 [00:08<00:14, 23.20it/s]Loading weights:  38%|███▊      | 202/531 [00:08<00:14, 22.95it/s]Loading weights:  40%|████      | 213/531 [00:09<00:14, 22.70it/s]Loading weights:  42%|████▏     | 224/531 [00:09<00:13, 23.22it/s]Loading weights:  44%|████▍     | 235/531 [00:10<00:12, 23.50it/s]Loading weights:  46%|████▋     | 246/531 [00:10<00:12, 23.10it/s]Loading weights:  48%|████▊     | 257/531 [00:11<00:11, 23.35it/s]Loading weights:  50%|█████     | 268/531 [00:11<00:11, 23.03it/s]Loading weights:  53%|█████▎    | 279/531 [00:12<00:10, 23.36it/s]Loading weights:  55%|█████▍    | 290/531 [00:12<00:10, 22.96it/s]Loading weights:  57%|█████▋    | 301/531 [00:13<00:09, 23.47it/s]Loading weights:  59%|█████▉    | 312/531 [00:13<00:09, 22.99it/s]Loading weights:  61%|██████    | 323/531 [00:14<00:08, 23.57it/s]Loading weights:  63%|██████▎   | 334/531 [00:14<00:08, 22.89it/s]Loading weights:  65%|██████▍   | 345/531 [00:15<00:07, 23.57it/s]Loading weights:  67%|██████▋   | 356/531 [00:15<00:07, 23.02it/s]Loading weights:  69%|██████▉   | 367/531 [00:16<00:07, 23.28it/s]Loading weights:  71%|███████   | 378/531 [00:16<00:06, 23.10it/s]Loading weights:  73%|███████▎  | 389/531 [00:17<00:06, 23.26it/s]Loading weights:  75%|███████▌  | 400/531 [00:17<00:05, 23.45it/s]Loading weights:  77%|███████▋  | 411/531 [00:17<00:05, 23.24it/s]Loading weights:  79%|███████▉  | 422/531 [00:18<00:04, 23.40it/s]Loading weights:  82%|████████▏ | 433/531 [00:18<00:04, 23.26it/s]Loading weights:  84%|████████▎ | 444/531 [00:19<00:03, 23.34it/s]Loading weights:  86%|████████▌ | 455/531 [00:19<00:03, 23.33it/s]Loading weights:  88%|████████▊ | 466/531 [00:20<00:02, 23.14it/s]Loading weights:  90%|████████▉ | 477/531 [00:20<00:02, 22.93it/s]Loading weights:  92%|█████████▏| 488/531 [00:21<00:01, 23.03it/s]Loading weights:  94%|█████████▍| 499/531 [00:21<00:01, 22.60it/s]Loading weights:  96%|█████████▌| 510/531 [00:22<00:00, 23.17it/s]Loading weights:  98%|█████████▊| 521/531 [00:22<00:00, 23.01it/s]Loading weights: 100%|██████████| 531/531 [00:22<00:00, 23.34it/s]
+GPU=NVIDIA B200 model=Qwen/Qwen3-30B-A3B probe_layer=24/48 dtype=bfloat16
+
+optimized (truncate+checkpoint+efficient attn): prompt=128 batch=1
+  fwd 0.043 s  bwd 0.079 s  total 0.122 s  activations 0.11 GiB
+
+no checkpointing (truncate+efficient attn): prompt=128 batch=1
+  fwd 0.037 s  bwd 0.034 s  total 0.072 s  activations 0.39 GiB
+
+optimized (truncate+checkpoint+efficient attn): prompt=128 batch=4
+  fwd 0.038 s  bwd 0.080 s  total 0.118 s  activations 0.18 GiB
+
+no checkpointing (truncate+efficient attn): prompt=128 batch=4
+  fwd 0.035 s  bwd 0.035 s  total 0.070 s  activations 1.51 GiB
+
+optimized (truncate+checkpoint+efficient attn): prompt=1024 batch=1
+  fwd 0.041 s  bwd 0.082 s  total 0.124 s  activations 0.33 GiB
+
+no checkpointing (truncate+efficient attn): prompt=1024 batch=1
+  fwd 0.044 s  bwd 0.035 s  total 0.079 s  activations 3.00 GiB
+
+optimized (truncate+checkpoint+efficient attn): prompt=1024 batch=4
+  fwd 0.054 s  bwd 0.140 s  total 0.194 s  activations 1.30 GiB
+
+no checkpointing (truncate+efficient attn): prompt=1024 batch=4
+  fwd 0.055 s  bwd 0.088 s  total 0.143 s  activations 11.94 GiB
+
+optimized (truncate+checkpoint+efficient attn): prompt=4096 batch=1
+  fwd 0.062 s  bwd 0.168 s  total 0.231 s  activations 1.30 GiB
+
+no checkpointing (truncate+efficient attn): prompt=4096 batch=1
+  fwd 0.063 s  bwd 0.108 s  total 0.171 s  activations 11.95 GiB
+
+optimized (truncate+checkpoint+efficient attn): prompt=4096 batch=4
+  fwd 0.219 s  bwd 0.601 s  total 0.819 s  activations 5.21 GiB
+
+no checkpointing (truncate+efficient attn): prompt=4096 batch=4
+  fwd 0.219 s  bwd 0.393 s  total 0.612 s  activations 47.71 GiB
+
+=== probe cost vs prompt length (optimized, per request) ===
+  prompt  batch    fwd(s)    bwd(s)  total(s)   act(GiB)
+     128      1     0.043     0.079     0.122       0.11
+     128      4     0.038     0.080     0.118       0.18
+    1024      1     0.041     0.082     0.124       0.33
+    1024      4     0.054     0.140     0.194       1.30
+    4096      1     0.062     0.168     0.231       1.30
+    4096      4     0.219     0.601     0.819       5.21
+
+=== activation memory: checkpointing vs not ===
+  prompt  batch   ckpt(GiB)  no-ckpt(GiB)   saving
+     128      1        0.11          0.39    3.67x
+     128      4        0.18          1.51    8.31x
+    1024      1        0.33          3.00    9.04x
+    1024      4        1.30         11.94    9.16x
+    4096      1        1.30         11.95    9.16x
+    4096      4        5.21         47.71    9.15x
+
+wrote results/experiments/20260801-000142-c1000a-s15/probe_scaling.json
+
+### STEP 2: vLLM Original vs PIRA-biased generation ###
+
+--- smoke: is the routing hook live under the compiled path? ---
