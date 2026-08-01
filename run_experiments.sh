@@ -178,6 +178,17 @@ if [[ "$WHICH" == "all" || "$WHICH" == "step1" ]]; then
   echo "--- CPU sanity checks first (seconds, no GPU) ---"
   "$HF_PY" scripts/moe/test_probe_equivalence_cpu.py 2>&1 | tail -3
   "$HF_PY" scripts/moe/probe_grouped_gemm_feasibility.py --self-check 2>&1 | tail -3
+  # Checks that the installed transformers MoE layout is one this code knows how
+  # to swap. A previous run downloaded 60 GiB, loaded the model, then skipped
+  # every layer because the layout had changed -- this catches that in seconds.
+  "$HF_PY" scripts/moe/pira_grouped_moe.py 2>&1 | tail -4
+  LAYOUT_STATUS=$?
+  if [[ $LAYOUT_STATUS -ne 0 ]]; then
+    echo
+    echo "The grouped-MoE layout self-check failed, so the grouped backends would"
+    echo "match no layers on this transformers version. Fix that before running"
+    echo "the comparison; the HF-only measurements below would still be valid."
+  fi
   echo
 
   echo "--- isolated MoE-layer comparison (which backends work at all) ---"
